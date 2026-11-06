@@ -1,7 +1,7 @@
 # GitHub Actions discovers YAML workflows in .github/workflows/.
 # When an event matches "on", GitHub schedules the jobs below on runners.
 # "ci.yml" is our filename; the directory and YAML keys give it meaning.
-# This workflow validates the API contract; it does not deploy to our servers.
+# This workflow checks the API contract and both applications; it does not deploy.
 
 # Display name in the repository's Actions tab; the name itself adds no behavior.
 name: CI
@@ -30,7 +30,7 @@ concurrency:
   # A newer run in the same group cancels the older run. This is CI, not deployment.
   cancel-in-progress: true
 
-# A workflow contains jobs. This workflow currently has one job.
+# Jobs run independently, so frontend and backend checks can run in parallel.
 jobs:
   # Internal job identifier; "name" below is its human-readable check name.
   contract:
@@ -73,3 +73,64 @@ jobs:
         # Exit status 0 means success; a nonzero status normally fails the job.
         # Branch protection separately decides whether this check must pass to merge.
         run: python contracts/check_contract.py
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        # npm ci fails if package.json and the committed lockfile disagree.
+        run: npm ci
+      - name: Check TypeScript
+        run: npm run typecheck
+      - name: Lint frontend
+        run: npm run lint
+      - name: Build production frontend
+        # Next.js builds do not replace the separate lint/type checks above.
+        run: npm run build
+      - name: Test production frontend routes
+        # Start the built server and check real HTTP responses without a Go server.
+        run: npm run test:smoke
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: backend/go.mod
+          # No external Go modules yet, so there is no go.sum cache input.
+          cache: false
+      - name: Check Go formatting
+        run: test -z "$(gofmt -l .)"
+      - name: Analyze Go source
+        run: go vet ./...
+      - name: Test backend with race detection
+        run: go test -race ./...
+      - name: Build backend binary
+        run: go build -trimpath -o bin/isaber-api ./cmd/api

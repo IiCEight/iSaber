@@ -27,4 +27,4 @@ The checker resolves local references only. API review is complete; client gener
 4. Run validation after changes.
 5. Review subsequent contract changes for compatibility; baseline owner approval is recorded in the architecture documents.
 
-The API branch is based on `docs/product-requirements` so it contains the approved product baseline. Review and merge that branch before merging this branch; source changes are not yet published to a Git host.
+The product baseline and API contract were merged into `main` with the initial CI setup. Subsequent application branches must preserve this reviewed contract or document and review intentional compatibility changes.

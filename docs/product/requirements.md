@@ -294,7 +294,7 @@ Approval of defaults does not supply values or materials that have not yet been 
 - [x] Owner confirms one account, no reader accounts, owner-only private content, and an integrated dashboard using the same Go backend.
 - [x] Owner approves first-release scope and deferred features.
 - [x] Owner explicitly approves all documented product defaults and acceptance criteria.
-- [ ] Functional requirements are translated into the prioritized implementation backlog.
+- [x] Functional requirements are translated into the [prioritized implementation backlog](backlog.md).
 - [x] Owner approves the logical data model and API design, which reference the approved requirements.
 - [ ] Design review uses real content fixtures and the owner-selected references.
 
