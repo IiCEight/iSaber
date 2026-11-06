@@ -1,6 +1,6 @@
 # Data model
 
-Status: Approved by the owner as the logical data model. No database migrations or application code have been implemented.
+Status: Approved by the owner as the logical data model. PostgreSQL migrations and readiness are implemented in the persistence branch; business API handlers remain subsequent work. See the [database guide](../operations/database.md).
 
 Source: [approved PRD](../product/requirements.md). Contract: [OpenAPI](../../contracts/openapi.yaml). Behavior and HTTP conventions: [API design](api-design.md).
 
@@ -10,7 +10,7 @@ Source: [approved PRD](../product/requirements.md). Contract: [OpenAPI](../../co
 - An article is a stable identity; revisions hold its Markdown and editorial metadata.
 - A draft never replaces the published revision until explicit publication succeeds.
 - Access rules depend on current article state, not an object's filename or storage location.
-- Go owns validation, publication transactions, and authorization. PostgreSQL and COS remain proposed infrastructure choices.
+- Go owns validation, publication transactions, and authorization. PostgreSQL and private COS are selected in [ADR 0004](decisions/0004-postgresql-and-private-storage.md); the COS adapter follows in the import slice.
 
 Identifiers are UUIDs. Store event timestamps in UTC and serialize them as RFC 3339 timestamps. Store `written_at` as a calendar date; display event times in Asia/Shanghai. Database column naming below describes the logical model, not a finalized physical schema.
 

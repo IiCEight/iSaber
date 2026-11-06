@@ -3,9 +3,11 @@
 package httpapi
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"net/http"
+	"time"
 )
 
 type problem struct {
@@ -18,7 +20,7 @@ type problem struct {
 
 // NewHandler exposes operational probes only. Unimplemented business routes
 // return a problem response instead of pretending to serve blog content.
-func NewHandler() http.Handler {
+func NewHandler(checkReady func(context.Context) error) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := rand.Text()
 		w.Header().Set("X-Request-ID", requestID)
@@ -32,13 +34,19 @@ func NewHandler() http.Handler {
 				writeProblem(w, http.StatusMethodNotAllowed, "method_not_allowed", requestID)
 				return
 			}
+			if r.URL.Path == "/readyz" {
+				ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+				defer cancel()
+				if checkReady == nil || checkReady(ctx) != nil {
+					writeProblem(w, http.StatusServiceUnavailable, "not_ready", requestID)
+					return
+				}
+			}
 			w.Header().Set("Content-Type", "application/json")
 			if r.Method == http.MethodHead {
 				w.WriteHeader(http.StatusOK)
 				return
 			}
-			// There are no external dependencies yet. When storage is added,
-			// readiness must check it and return 503 when unavailable.
 			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 		default:
 			writeProblem(w, http.StatusNotFound, "not_found", requestID)

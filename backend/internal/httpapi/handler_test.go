@@ -1,9 +1,12 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -18,7 +21,7 @@ func TestProbesAndUnimplementedRoutes(t *testing.T) {
 		{"unknown article", "GET", "/api/v1/articles/missing", "application/problem+json", "not_found", 404},
 		{"unimplemented owner action", "POST", "/api/v1/admin/imports", "application/problem+json", "not_found", 404},
 	}
-	handler := NewHandler()
+	handler := NewHandler(func(context.Context) error { return nil })
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rr := httptest.NewRecorder()
@@ -50,8 +53,47 @@ func TestProbesAndUnimplementedRoutes(t *testing.T) {
 
 func TestHeadProbeHasNoBody(t *testing.T) {
 	rr := httptest.NewRecorder()
-	NewHandler().ServeHTTP(rr, httptest.NewRequest("HEAD", "/healthz", nil))
+	NewHandler(nil).ServeHTTP(rr, httptest.NewRequest("HEAD", "/healthz", nil))
 	if rr.Code != http.StatusOK || rr.Body.Len() != 0 {
 		t.Fatalf("HEAD returned status %d and %d body bytes", rr.Code, rr.Body.Len())
+	}
+}
+
+func TestDependencyFailureAffectsOnlyReadiness(t *testing.T) {
+	handler := NewHandler(func(ctx context.Context) error {
+		if _, ok := ctx.Deadline(); !ok {
+			t.Fatal("readiness must have a deadline")
+		}
+		return errors.New("sensitive database diagnostic")
+	})
+	for _, path := range []string{"/healthz", "/readyz"} {
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, httptest.NewRequest("GET", path, nil))
+		if path == "/healthz" && rr.Code != 200 {
+			t.Fatal("dependency failures must not fail liveness")
+		}
+		if path == "/readyz" {
+			if rr.Code != 503 {
+				t.Fatalf("readiness status = %d", rr.Code)
+			}
+			var p problem
+			if err := json.Unmarshal(rr.Body.Bytes(), &p); err != nil || p.Code != "not_ready" {
+				t.Fatalf("unexpected readiness response: %s", rr.Body.String())
+			}
+			if rr.Header().Get("Cache-Control") != "no-store" {
+				t.Fatal("readiness failures must not be cached")
+			}
+			if strings.Contains(rr.Body.String(), "sensitive") {
+				t.Fatal("readiness leaked a dependency diagnostic")
+			}
+		}
+	}
+}
+
+func TestMissingReadinessCheckIsNotReady(t *testing.T) {
+	rr := httptest.NewRecorder()
+	NewHandler(nil).ServeHTTP(rr, httptest.NewRequest("GET", "/readyz", nil))
+	if rr.Code != 503 {
+		t.Fatalf("missing readiness dependency returned %d", rr.Code)
 	}
 }

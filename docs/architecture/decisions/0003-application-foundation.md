@@ -23,11 +23,11 @@ The existing local Linux Go installation is 1.22.2 and there is no Linux Node.js
 
 Frontend server rendering requires a Node.js runtime alongside Go in eventual deployment. React can be built and tested without a running Go server, and Go can be tested without Node.js. The frontend lockfile and Go version pin must be updated deliberately as security and maintenance releases arrive.
 
-Backend readiness is currently process-only because there are no external dependencies. Adding a database or object storage must update readiness checks and their failure tests. Health probes are operational endpoints outside the versioned business API contract.
+At introduction, backend readiness was process-only because there were no external dependencies. [ADR 0004](0004-postgresql-and-private-storage.md) adds database-aware readiness and failure tests. Future object-storage integration must also review readiness. Health probes are operational endpoints outside the versioned business API contract.
 
 Initial HTTP timeouts and request sizes are foundation defaults, not final upload configuration. Markdown upload work must reconcile them with the approved file limits and real server/network behavior.
 
-Database drivers, migrations, storage clients, generated API clients, credentials, container builds, and deployment configuration remain subsequent tasks. No cloud server is modified by this foundation.
+Database drivers and migrations follow in ADR 0004. Storage clients, generated API clients, credentials, container builds, and deployment configuration remain subsequent tasks. No cloud server is modified by this foundation.
 
 ## References
 

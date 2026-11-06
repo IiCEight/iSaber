@@ -287,7 +287,7 @@ Approval of defaults does not supply values or materials that have not yet been 
 - Owner-selected design references, branding preferences, portfolio content, and representative articles are needed before visual direction approval.
 - Numerical performance budgets, test device/network profile, recovery objectives, expected content volume, and traffic assumptions must be defined before their respective design or release acceptance checks.
 - Login, session, credential storage, and owner recovery implementations remain architecture decisions, as do unselected frameworks and infrastructure details.
-- The logical data model and API contract are drafted and owner-approved. Backlog preparation, physical schema implementation, visual prototype review, and release validation remain work to perform.
+- The logical data model and API contract are owner-approved, and the implementation backlog is prepared. Physical migrations are implemented in the persistence branch for review. Business feature implementation, visual prototype review, and release validation remain work to perform.
 
 ## 10. Review and approval
 

@@ -10,7 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/IiCEight/iSaber/backend/internal/database"
 	"github.com/IiCEight/iSaber/backend/internal/httpapi"
+	"github.com/IiCEight/iSaber/backend/internal/migrations"
 )
 
 func main() {
@@ -22,13 +24,23 @@ func main() {
 }
 
 func run(logger *slog.Logger) error {
+	if os.Getenv("DATABASE_URL") == "" {
+		return errors.New("DATABASE_URL is required; see the database setup guide")
+	}
+	db, err := database.Open(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
 	addr := os.Getenv("HTTP_ADDR")
 	if addr == "" {
 		addr = "127.0.0.1:8080"
 	}
 	server := &http.Server{
-		Addr:              addr,
-		Handler:           httpapi.NewHandler(),
+		Addr: addr,
+		Handler: httpapi.NewHandler(func(ctx context.Context) error {
+			return migrations.CheckReady(ctx, db)
+		}),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,
