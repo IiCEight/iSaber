@@ -2,7 +2,7 @@ openapi: 3.1.1
 info:
   title: iSaber Blog API
   version: 0.1.0
-  description: Draft for architecture/API review against the approved PRD. Not an implemented server. One owner,
+  description: Owner-approved API contract baseline against the approved PRD. Not an implemented server. One owner,
     no reader accounts. See docs/architecture/api-design.md and data-model.md. All article, session, admin, search,
     and asset delivery uses no-store until an explicit cache/privacy design is approved.
 servers:

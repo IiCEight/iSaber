@@ -6,7 +6,7 @@ This document defines approved first-release behavior, incorporating requirement
 
 Related documents: [development plan](../../DEVELOPMENT_PLAN.md), [repository decision](../architecture/decisions/0001-monorepo.md).
 
-Implementation design drafts: [data model](../architecture/data-model.md), [API design and requirement coverage](../architecture/api-design.md), and [OpenAPI contract](../../contracts/openapi.yaml). These are proposed for separate review and do not change this approved product baseline.
+Approved implementation design: [data model](../architecture/data-model.md), [API design and requirement coverage](../architecture/api-design.md), and [OpenAPI contract](../../contracts/openapi.yaml). The owner approved the logical data model and API contract; they do not change this product baseline or imply an implemented server.
 
 ## 1. Purpose and outcomes
 
@@ -287,7 +287,7 @@ Approval of defaults does not supply values or materials that have not yet been 
 - Owner-selected design references, branding preferences, portfolio content, and representative articles are needed before visual direction approval.
 - Numerical performance budgets, test device/network profile, recovery objectives, expected content volume, and traffic assumptions must be defined before their respective design or release acceptance checks.
 - Login, session, credential storage, and owner recovery implementations remain architecture decisions, as do unselected frameworks and infrastructure details.
-- Backlog preparation, domain modeling, API contract review, visual prototype review, and release validation remain work to perform.
+- The logical data model and API contract are drafted and owner-approved. Backlog preparation, physical schema implementation, visual prototype review, and release validation remain work to perform.
 
 ## 10. Review and approval
 
@@ -295,7 +295,7 @@ Approval of defaults does not supply values or materials that have not yet been 
 - [x] Owner approves first-release scope and deferred features.
 - [x] Owner explicitly approves all documented product defaults and acceptance criteria.
 - [ ] Functional requirements are translated into the prioritized implementation backlog.
-- [ ] Architecture and API design reference the approved requirements.
+- [x] Owner approves the logical data model and API design, which reference the approved requirements.
 - [ ] Design review uses real content fixtures and the owner-selected references.
 
 Revisions to this PRD should record changed behavior and its impact on scope, contracts, design, and acceptance checks through focused pull requests.

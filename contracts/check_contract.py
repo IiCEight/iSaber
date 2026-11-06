@@ -1,4 +1,4 @@
-"""Validate the proposed contract without starting an application server."""
+"""Validate the API contract without starting an application server."""
 
 import json
 import re

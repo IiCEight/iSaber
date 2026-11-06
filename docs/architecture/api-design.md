@@ -1,6 +1,6 @@
 # API design
 
-Status: Proposed for review. The machine-readable contract is [OpenAPI](../../contracts/openapi.yaml); this document explains conventions and end-to-end workflows. The [data model](data-model.md) defines persistence invariants.
+Status: Approved by the owner as the API design baseline. The machine-readable contract is [OpenAPI](../../contracts/openapi.yaml); this document explains conventions and end-to-end workflows. The [data model](data-model.md) defines persistence invariants.
 
 ## 1. Boundaries and naming
 
@@ -10,9 +10,9 @@ Public article routes return only current public published data, even when the c
 
 Unknown and inaccessible public resources return the same `404` problem. API responses never include private storage keys, password hashes, session tokens, or pending comment text for visitors.
 
-## 2. Authentication proposal
+## 2. Authentication
 
-Propose owner username/password login and opaque server-side sessions, with secure password hashing selected during implementation review. Owner setup and credential recovery are operational commands, not public APIs. Recovery revokes all sessions; session lifetime, idle timeout, hashing parameters, and rate-limit thresholds remain implementation decisions requiring documentation before release.
+Use owner username/password login and opaque server-side sessions, with secure password hashing selected during implementation review. Owner setup and credential recovery are operational commands, not public APIs. Recovery revokes all sessions; session lifetime, idle timeout, hashing parameters, and rate-limit thresholds remain implementation decisions requiring documentation before release.
 
 - Login creates a fresh `__Host-isaber_session` cookie with `Secure`, `HttpOnly`, `SameSite=Strict`, and `Path=/`, with no `Domain` attribute. The cookie value is never returned in JSON.
 - Session responses return a CSRF token. `GET /auth/session` restores owner information and that token after a page reload; unauthenticated requests return `401`.
@@ -22,7 +22,7 @@ Propose owner username/password login and opaque server-side sessions, with secu
 - Sign-out revokes the session and clears its cookie. Successful recovery revokes all owner sessions.
 - Same-origin routing keeps the public site, dashboard, and API on one origin. Local development uses HTTPS or a clearly isolated development cookie configuration that cannot be used in production.
 
-The specification declares proposed session/CSRF mechanisms to allow client development. They remain architecture proposals until reviewed, rather than additional reader-account requirements.
+The owner approved these session and CSRF mechanisms. Implementation parameters listed above remain to be defined; no reader accounts are introduced.
 
 ## 3. Responses and errors
 
@@ -94,7 +94,7 @@ Article, search, preview, management, session, and asset responses initially use
 
 Idempotency semantics and publication transactions follow the data model. Scope and retain keys for 24 hours; reject changed payloads and in-progress duplicates explicitly. Repeat attempts after expiry require state inspection; the server does not promise replay beyond retention.
 
-Add optional response fields compatibly. Changes to required requests, response meaning, public access, or enum values require compatibility review; do not assume every enum extension is safe for generated clients. Retain `/api/v1` compatibility across independently deployed frontend/backend versions. Generate clients only after this draft is reviewed and tooling is selected.
+Add optional response fields compatibly. Changes to required requests, response meaning, public access, or enum values require compatibility review; do not assume every enum extension is safe for generated clients. Retain `/api/v1` compatibility across independently deployed frontend/backend versions. The contract is approved; select code-generation tooling before generating clients.
 
 ## 8. Requirement coverage
 
@@ -117,4 +117,4 @@ Add optional response fields compatibly. Changes to required requests, response 
 - [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html): contract structure, schemas, multipart requests, and security schemes.
 - [RFC 9457](https://www.rfc-editor.org/info/rfc9457/): problem details for HTTP APIs.
 
-These standards define contract and error formats; lifecycle, version fields, and idempotency policies above are project design proposals.
+These standards define contract and error formats; lifecycle, version fields, and idempotency policies above are approved project design decisions.

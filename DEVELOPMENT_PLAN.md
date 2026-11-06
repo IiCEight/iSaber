@@ -92,7 +92,7 @@ Record final technology choices and their tradeoffs in architecture decision rec
 
 ## 3. Requirements and acceptance criteria
 
-The first-release [product requirements document](docs/product/requirements.md) is approved as the product baseline, including its documented defaults, acceptance criteria, and deferred scope. Its Section 9 lists outstanding design inputs and unspecified targets; technical architecture and API contracts still require their own review.
+The first-release [product requirements document](docs/product/requirements.md) is approved as the product baseline, including its documented defaults, acceptance criteria, and deferred scope. Its Section 9 lists outstanding design inputs and unspecified targets. The logical data model and API contract are also owner-approved; remaining implementation choices require documentation.
 
 Translate product requirements into a prioritized backlog. Each feature must define:
 
@@ -110,7 +110,7 @@ For Markdown import, define behavior for missing images, invalid files, duplicat
 
 Use OpenAPI as the shared API contract. Specify endpoints, schemas, authentication, pagination, errors, and examples before connecting the applications.
 
-Review drafts are available in the [data model](docs/architecture/data-model.md), [API design](docs/architecture/api-design.md), and [OpenAPI contract](contracts/openapi.yaml). The [contract guide](contracts/README.md) includes validation instructions. These drafts are not implemented endpoints and have not yet received architecture/API approval.
+Approved baselines are available in the [data model](docs/architecture/data-model.md), [API design](docs/architecture/api-design.md), and [OpenAPI contract](contracts/openapi.yaml). The [contract guide](contracts/README.md) includes validation instructions. The owner approved these documents and the API contract; no endpoints have been implemented. Physical schema and tooling decisions remain for the foundation milestone.
 
 - Generate a TypeScript API client and types from the contract.
 - Provide mock responses so frontend development can proceed independently.
@@ -151,7 +151,7 @@ Backend work can proceed while the design prototype is refined. Frontend work us
 
 ## 6. Proposed content and publishing behavior
 
-These are proposals to resolve during product review:
+These behaviors are approved in the PRD:
 
 - Upload a Markdown file, or a ZIP containing Markdown and its image folder.
 - Validate imports, store assets, and rewrite relative image references to managed asset links.
@@ -240,6 +240,8 @@ A change is complete when:
 ## 12. Owner review checklist
 
 - [x] Use one repository with independently buildable, testable, and deployable frontend and backend projects.
+- [x] Approve the logical data model, API design, and OpenAPI contract.
+- [ ] Translate the approved requirements into a prioritized implementation backlog.
 - [ ] Confirm React + TypeScript, with Next.js proposed for presentation.
 - [ ] Confirm Go REST API, PostgreSQL, and COS as the proposed backend foundation.
 - [x] Use one owner account with owner-only private articles; defer reader accounts and public registration.

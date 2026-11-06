@@ -1,6 +1,6 @@
 # API contract
 
-Status: Draft for review, not an implemented API. Start with the [API design](../docs/architecture/api-design.md) and [data model](../docs/architecture/data-model.md).
+Status: Approved API contract baseline, not an implemented API. Start with the [API design](../docs/architecture/api-design.md) and [data model](../docs/architecture/data-model.md).
 
 - `openapi.yaml`: OpenAPI 3.1.1 contract for the public blog and owner dashboard.
 - `examples.json`: synthetic response/request fixtures for review and initial mocks. These do not represent real owner content or credentials.
@@ -17,7 +17,7 @@ python3 -m venv /tmp/isaber-contract-venv
 /tmp/isaber-contract-venv/bin/python contracts/check_contract.py
 ```
 
-The checker resolves local references only. Client generation, server contract testing, and mock-server tooling will be selected after API review. Additive compatibility checks and CI wiring belong to the application foundation milestone.
+The checker resolves local references only. API review is complete; client generation, server contract testing, and mock-server tooling remain to be selected. Additive compatibility checks and CI wiring belong to the application foundation milestone.
 
 ## Review workflow
 
@@ -25,6 +25,6 @@ The checker resolves local references only. Client generation, server contract t
 2. Review endpoints and their schemas in `openapi.yaml`.
 3. Review representative content in `examples.json`; keep schema examples synchronized.
 4. Run validation after changes.
-5. Approve the contract before generating application clients or implementing handlers.
+5. Review subsequent contract changes for compatibility; baseline owner approval is recorded in the architecture documents.
 
 The API branch is based on `docs/product-requirements` so it contains the approved product baseline. Review and merge that branch before merging this branch; source changes are not yet published to a Git host.

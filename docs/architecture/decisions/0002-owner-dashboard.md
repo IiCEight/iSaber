@@ -15,7 +15,7 @@ The owner writes articles in Typora and needs an interface to upload content, ed
 - Require Go to authenticate and authorize every management request, including direct API requests.
 - Prioritize efficient, responsive, accessible management in the dashboard while developing the public site's artistic design separately.
 
-The login mechanism, session handling, credential storage, and recovery process require detailed architecture review. This decision does not select those implementations or approve unrelated PRD defaults.
+The subsequently approved [API design](../api-design.md) specifies username/password login, opaque owner sessions, CSRF handling, and operational credential recovery. Hashing parameters, session lifetimes, and detailed recovery commands remain implementation decisions. This ADR itself does not approve unrelated PRD defaults.
 
 ## Consequences
 

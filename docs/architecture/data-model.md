@@ -1,6 +1,6 @@
 # Data model
 
-Status: Proposed for architecture and API review. No database migrations or application code have been implemented.
+Status: Approved by the owner as the logical data model. No database migrations or application code have been implemented.
 
 Source: [approved PRD](../product/requirements.md). Contract: [OpenAPI](../../contracts/openapi.yaml). Behavior and HTTP conventions: [API design](api-design.md).
 
@@ -18,7 +18,7 @@ Identifiers are UUIDs. Store event timestamps in UTC and serialize them as RFC 3
 
 | Entity | Main fields | Constraints and purpose |
 | --- | --- | --- |
-| Owner | `id`, `username`, `password_hash`, `created_at`, `credentials_changed_at` | Exactly one provisioned owner; no registration API. Username/password authentication is proposed, pending review. Never expose the hash. |
+| Owner | `id`, `username`, `password_hash`, `created_at`, `credentials_changed_at` | Exactly one provisioned owner; no registration API. Username/password authentication is approved; hashing parameters remain an implementation decision. Never expose the hash. |
 | Session | `id`, `owner_id`, `token_hash`, `csrf_token_hash`, `created_at`, `last_seen_at`, `expires_at`, `revoked_at` | Store hashes, not bearer secrets. Sign-out and credential recovery revoke sessions. Expiry and password-hashing parameters require implementation review. |
 | Article | `id`, `slug`, `visibility`, `comments_enabled`, `draft_revision_id`, `published_revision_id`, `published_at`, `updated_at`, `version`, `created_at`, `modified_at` | Stable identity and global access controls. Unique non-null slugs; incomplete imports may have no slug. `version` increments on every article mutation. |
 | Revision | `id`, `article_id`, `markdown`, `title`, `summary`, `language`, `written_at`, `category_id`, `created_at`, `first_published_at`, `restored_from_revision_id` | Immutable editorial snapshot. Incomplete drafts allow missing required publication fields. Each snapshot belongs to exactly one article. |
@@ -71,7 +71,7 @@ An import can succeed with a non-publishable draft, such as a missing writing da
 
 Managed Markdown image URLs use `/api/v1/articles/{article_id}/assets/{asset_id}`. That route checks current access on every request. Anonymous access requires that the asset belong to the current live revision of a public article; an authenticated owner may retrieve assets from that article's other retained revisions. History does not create a public storage URL. Do not deduplicate asset identities across articles in the first implementation.
 
-Use private storage and authenticated application delivery. Proposed initial policy: `Cache-Control: no-store` for article data, media, previews, search, and management responses. This prioritizes immediate privacy transitions over public caching. Any later CDN or page cache requires an explicit invalidation/access-control design. Next.js rendering must follow the same policy.
+Use private storage and authenticated application delivery. Approved initial policy: `Cache-Control: no-store` for article data, media, previews, search, and management responses. This prioritizes immediate privacy transitions over public caching. Any later CDN or page cache requires an explicit invalidation/access-control design. Next.js rendering must follow the same policy.
 
 Staged objects are not public. Retry failed jobs safely; abandon unfinished work with a clear error after restart if resumption is unsupported. Cleanup may remove only unreferenced staged objects, never assets referenced by retained revisions. Back up both object bytes and their database associations.
 
@@ -81,7 +81,7 @@ Owner mutations include `expected_version` for the target article, label, or com
 
 Renaming a label also increments versions of affected live articles when their metadata dates change, so an in-progress owner edit cannot silently overlook that change.
 
-Publish/unpublish, revision restoration, imports, and guest comment submission require `Idempotency-Key`. For the proposed 24-hour retention period, the same key and semantic payload replay the original result, even if its expected version has since changed. A different payload using that key returns `409 idempotency_conflict`. An in-progress duplicate returns `409 request_in_progress` with `Retry-After`. Re-authenticate and authorize before replaying owner responses.
+Publish/unpublish, revision restoration, imports, and guest comment submission require `Idempotency-Key`. For the approved 24-hour retention period, the same key and semantic payload replay the original result, even if its expected version has since changed. A different payload using that key returns `409 idempotency_conflict`. An in-progress duplicate returns `409 request_in_progress` with `Retry-After`. Re-authenticate and authorize before replaying owner responses.
 
 Scope keys by authenticated owner and operation/target, or by public comment operation and article. Unpredictable client-generated UUID keys protect against accidental collisions; key possession is not an authorization method. Pending/rejected comment content is never returned by the public replay response.
 
@@ -95,10 +95,8 @@ Transactions must protect publication pointers, dates, revision/asset membership
 - Search reads only current public published revisions and their labels. Draft imports do not change search results. English case-insensitive word matching and Chinese literal substring matching follow the PRD.
 - Prefer database queries for the first release; no external index is assumed. Changes must be visible on subsequent requests. Define indexes and query performance once expected volumes and the database choice are reviewed.
 
-## 7. Review focus
+## 7. Approval and remaining implementation decisions
 
-- Review revision pointers, immediate visibility controls, and the meaning of public dates.
-- Review asynchronous imports, incomplete draft handling, limits, and retry semantics.
-- Review proposed owner authentication/session design before implementation.
-- Review the no-store delivery policy against the artistic frontend's performance needs.
-- Approve physical database, storage, validation, and code-generation tooling separately; this document does not introduce migrations.
+The owner approved revision pointers, immediate visibility controls, public date semantics, asynchronous imports, incomplete drafts, version checks, retry semantics, owner sessions, and the no-store delivery policy.
+
+Physical database/storage selection, password-hashing parameters, session expiry, rate-limit thresholds, and code-generation tooling still require implementation decisions. Performance budgets remain open. This approval does not introduce migrations or approve a visual design.
