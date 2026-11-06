@@ -1,6 +1,6 @@
 # GitHub CI/CD: guided setup
 
-Status: The initial CI workflow is prepared locally. It has not yet run on GitHub. Deployment is a plan, not a configured pipeline.
+Status: Initial contract CI has passed on GitHub and was merged. The foundation branch adds independent frontend and backend checks, pending its first remote run. Deployment is a plan, not a configured pipeline.
 
 Repository: `IiCEight/iSaber`. The repository is public. GitHub reported no default branch during the initial inspection. Recheck branch state before executing the bootstrap steps if the repository has since changed.
 
@@ -24,7 +24,7 @@ flowchart TD
     Release --> Production[Tencent Cloud production]
 ```
 
-Only the first CI job exists today. Image builds, staging, production deployment, and rollback will be implemented once runnable applications and health endpoints exist.
+Contract CI exists on main; the foundation branch adds frontend and backend source checks and builds. Image builds, staging, production deployment, and rollback remain to be implemented after application and infrastructure readiness are verified.
 
 ## 2. Proposed server roles
 
@@ -158,9 +158,9 @@ Before the first live deployment:
 
 - [x] Inspect repository visibility and server OS/tools without modifying servers.
 - [x] Prepare initial contract CI workflow locally.
-- [ ] Owner pushes the baseline and feature branch, opens the first PR, and observes a real Actions run.
+- [x] Owner pushes the baseline and feature branch, opens the first PR, and observes a real Actions run.
 - [ ] Configure branch protection and merge after checks pass.
-- [ ] Add application CI when scaffolding is ready.
+- [x] Prepare application CI in the foundation branch; observe its first remote run before requiring the new checks.
 - [ ] Confirm server roles and existing workloads.
 - [ ] Select registry and deployment connectivity after server/network checks.
 - [ ] Prepare staging through guided commands.

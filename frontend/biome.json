@@ -1,0 +1,5 @@
+{
+	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+	"files": { "includes": ["app/**", "tests/**", "next.config.ts"] },
+	"linter": { "enabled": true, "rules": { "preset": "recommended" } }
+}

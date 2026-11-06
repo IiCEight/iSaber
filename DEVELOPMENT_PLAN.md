@@ -19,6 +19,8 @@ Requirements from `AGENTS.md`:
 
 Implementation begins after review of the scope and architecture. Visual implementation follows review of the design direction.
 
+The [implementation backlog](docs/product/backlog.md) tracks current foundation work. React/Next.js and Go scaffolding with independent CI is underway; business features, persistence/migrations, and cloud deployment are not implemented yet.
+
 ## 2. Application separation
 
 Decision: Use one repository with independently buildable, testable, and deployable frontend and backend applications. This keeps cross-application changes reviewable together while maintaining explicit boundaries. Separate repositories remain an option if ownership or access needs justify them later.
@@ -38,7 +40,7 @@ The rationale and reconsideration criteria are recorded in [ADR 0001](docs/archi
 iSaber/
 ├── AGENTS.md
 ├── DEVELOPMENT_PLAN.md
-├── frontend/                # React and TypeScript; Next.js proposed
+├── frontend/                # React, TypeScript, and Next.js
 ├── backend/                 # Go API and database migrations
 ├── contracts/
 │   └── openapi.yaml         # Shared API specification
@@ -81,7 +83,7 @@ flowchart TD
     API --> Storage[Tencent COS]
 ```
 
-- React with TypeScript; Next.js proposed for server-rendered article pages and page metadata. This requires a Node.js runtime alongside Go.
+- React with TypeScript and Next.js for server-rendered article pages and page metadata, implemented in the foundation branch for review. This requires a Node.js runtime alongside Go.
 - One modular Go application exposing a REST API.
 - PostgreSQL for Markdown, metadata, revisions, comments, and sessions.
 - Tencent COS for images and attachments.
@@ -244,7 +246,7 @@ A change is complete when:
 - [x] Use one repository with independently buildable, testable, and deployable frontend and backend projects.
 - [x] Approve the logical data model, API design, and OpenAPI contract.
 - [ ] Translate the approved requirements into a prioritized implementation backlog.
-- [ ] Confirm React + TypeScript, with Next.js proposed for presentation.
+- [ ] Review the React + TypeScript + Next.js foundation implementation and its CI checks.
 - [ ] Confirm Go REST API, PostgreSQL, and COS as the proposed backend foundation.
 - [x] Use one owner account with owner-only private articles; defer reader accounts and public registration.
 - [x] Manage content through `/admin` in the React application and the same Go backend; provision the owner through a setup command.

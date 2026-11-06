@@ -1,0 +1,12 @@
+/* Neutral foundation styles; the artistic direction is pending design review. */
+:root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; line-height: 1.6; }
+header, main { width: min(64rem, 100%); margin-inline: auto; padding: 1.5rem; }
+header a { color: inherit; font-weight: 700; text-decoration: none; }
+main { padding-block: 4rem; }
+h1 { font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.15; overflow-wrap: anywhere; }
+p { max-width: 65ch; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
+.skip-link { position: absolute; top: -5rem; left: 1rem; padding: 0.5rem; background: Canvas; color: CanvasText; }
+.skip-link:focus { top: 0.5rem; }
