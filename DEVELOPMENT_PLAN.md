@@ -19,7 +19,7 @@ Requirements from `AGENTS.md`:
 
 Implementation begins after review of the scope and architecture. Visual implementation follows review of the design direction.
 
-The [implementation backlog](docs/product/backlog.md) tracks current foundation work. React/Next.js and Go scaffolding with independent CI is underway; business features, persistence/migrations, and cloud deployment are not implemented yet.
+The [implementation backlog](docs/product/backlog.md) tracks current foundation work. React/Next.js and Go scaffolding with independent CI is merged. The persistence branch adds PostgreSQL migrations and database readiness for review; business endpoints, object-storage integration, and cloud deployment are not implemented yet.
 
 ## 2. Application separation
 
@@ -85,8 +85,8 @@ flowchart TD
 
 - React with TypeScript and Next.js for server-rendered article pages and page metadata, implemented in the foundation branch for review. This requires a Node.js runtime alongside Go.
 - One modular Go application exposing a REST API.
-- PostgreSQL for Markdown, metadata, revisions, comments, and sessions.
-- Tencent COS for images and attachments.
+- PostgreSQL for Markdown, metadata, revisions, comments, and sessions; pgx/Goose and the initial migrations are selected in [ADR 0004](docs/architecture/decisions/0004-postgresql-and-private-storage.md).
+- Private Tencent COS for images and staged uploads; its adapter will be implemented with the import feature.
 - Containers on Tencent CVM, with managed PostgreSQL proposed.
 - Same-origin routing for the website and API where practical, simplifying session handling.
 
@@ -247,7 +247,7 @@ A change is complete when:
 - [x] Approve the logical data model, API design, and OpenAPI contract.
 - [ ] Translate the approved requirements into a prioritized implementation backlog.
 - [ ] Review the React + TypeScript + Next.js foundation implementation and its CI checks.
-- [ ] Confirm Go REST API, PostgreSQL, and COS as the proposed backend foundation.
+- [ ] Review the PostgreSQL/pgx/Goose persistence foundation and private COS storage boundary.
 - [x] Use one owner account with owner-only private articles; defer reader accounts and public registration.
 - [x] Manage content through `/admin` in the React application and the same Go backend; provision the owner through a setup command.
 - [x] Use guest comments with a display name and plain text, owner moderation, and no email or reader accounts.

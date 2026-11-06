@@ -23,8 +23,10 @@ Visual design discovery can run alongside backend development after the owner pr
 - [x] Go process health endpoints, problem responses, HTTP timeouts, and shutdown handling.
 - [x] Frontend/backend CI jobs added alongside the existing contract check.
 - [x] Complete local build, static analysis, and smoke verification for the foundation branch, including real Next.js-to-Go forwarding and clean Go shutdown.
-- [ ] Push the branch, review the pull request, and observe all three real GitHub checks.
+- [x] Merge the application foundation in PR #3 and observe all three successful GitHub checks.
 - [ ] Add Frontend and Backend as required checks after they report successfully.
-- [ ] Select database/storage tooling and introduce migrations; Milestone 1 is not complete until this remaining foundation work is done.
+- [x] Implement PostgreSQL/pgx and Goose migrations in the persistence branch; select private COS as the production object-storage boundary, with its adapter deferred to import work.
+- [x] Validate migration upgrades/reruns, ownership constraints, the migration CLI, and readiness transitions against real local PostgreSQL; verify unit/race tests and builds.
+- [ ] Review the persistence branch and observe the new PostgreSQL CI checks before considering this foundation slice complete.
 
 The next implementation slice is owner access backed by persistent data, after the database and migration decisions. It must not be represented by a fake login or hardcoded owner session.

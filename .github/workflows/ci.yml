@@ -115,6 +115,23 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # A fresh disposable database on the GitHub runner, not either cloud server.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: isaber_test
+          POSTGRES_PASSWORD: isaber_ci_only
+          POSTGRES_DB: isaber_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U isaber_test -d isaber_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://isaber_test:isaber_ci_only@127.0.0.1:5432/isaber_test?sslmode=disable
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -124,13 +141,18 @@ jobs:
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: backend/go.mod
-          # No external Go modules yet, so there is no go.sum cache input.
-          cache: false
+          cache: true
+          cache-dependency-path: backend/go.sum
       - name: Check Go formatting
         run: test -z "$(gofmt -l .)"
       - name: Analyze Go source
         run: go vet ./...
       - name: Test backend with race detection
         run: go test -race ./...
+      - name: Test real PostgreSQL migrations and constraints
+        # Tests create isolated schemas and verify upgrades, reruns, and ownership.
+        run: go test -race -tags=integration ./internal/migrations
       - name: Build backend binary
         run: go build -trimpath -o bin/isaber-api ./cmd/api
+      - name: Build migration command
+        run: go build -trimpath -o bin/isaber-migrate ./cmd/migrate
