@@ -1,39 +1,75 @@
+# GitHub Actions discovers YAML workflows in .github/workflows/.
+# When an event matches "on", GitHub schedules the jobs below on runners.
+# "ci.yml" is our filename; the directory and YAML keys give it meaning.
+# This workflow validates the API contract; it does not deploy to our servers.
+
+# Display name in the repository's Actions tab; the name itself adds no behavior.
 name: CI
 
+# Any one of these events can start a separate workflow run.
 on:
+  # Run when a PR is opened, reopened, or updated with new commits.
   pull_request:
+  # Run when main changes, including when a PR is merged into main.
   push:
     branches:
       - main
+  # Allow a manual run; this trigger requires the workflow on the default branch.
   workflow_dispatch:
 
+# Limit the automatic GITHUB_TOKEN to reading repository contents.
+# This controls GitHub API/repository access, not shell permissions on the runner.
 permissions:
   contents: read
 
+# Avoid spending time validating an outdated commit for the same PR or branch.
 concurrency:
+  # ${{ ... }} evaluates a GitHub expression. Use the PR number when present;
+  # otherwise use the Git ref (for example, refs/heads/main).
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # A newer run in the same group cancels the older run. This is CI, not deployment.
   cancel-in-progress: true
 
+# A workflow contains jobs. This workflow currently has one job.
 jobs:
+  # Internal job identifier; "name" below is its human-readable check name.
   contract:
     name: API contract
+    # Request a fresh GitHub-hosted Ubuntu machine, not Tencent or JD Cloud.
     runs-on: ubuntu-24.04
+    # Stop the job if it takes more than ten minutes.
     timeout-minutes: 10
+    # Steps normally run sequentially on this job's runner.
     steps:
       - name: Check out source
+        # "uses" executes a reusable action. Checkout fetches our code so later
+        # commands can read files from this repository. The full SHA pins the
+        # action implementation to an exact commit; the v6 comment is a label.
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        # "with" passes inputs defined by this particular action.
         with:
+          # Do not retain checkout authentication for subsequent Git commands.
           persist-credentials: false
 
       - name: Set up Python
+        # Make the requested Python version available to subsequent steps.
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+          # Cache pip downloads to speed up later runs. Installation is still needed.
           cache: pip
+          # Include this file's contents when computing the dependency cache key.
           cache-dependency-path: contracts/requirements.txt
 
       - name: Install contract validation dependencies
+        # "run" executes a shell command in the checked-out repository.
+        # Install the libraries listed in requirements.txt using the selected Python.
         run: python -m pip install --disable-pip-version-check -r contracts/requirements.txt
 
       - name: Validate API contract and examples
+        # Our Python script defines validation; GitHub does not interpret the API.
+        # It checks schemas, references, examples, selected invalid requests, and
+        # declared owner security requirements. It does not test a running server.
+        # Exit status 0 means success; a nonzero status normally fails the job.
+        # Branch protection separately decides whether this check must pass to merge.
         run: python contracts/check_contract.py
