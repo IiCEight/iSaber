@@ -2,7 +2,7 @@
 
 Status: Draft for owner review.
 
-This document defines proposed first-release behavior. Requirements explicitly stated in `AGENTS.md` are confirmed inputs; defaults introduced here remain proposals until the owner approves them. Approval of the development workflow does not imply approval of these product choices.
+This document defines first-release behavior. Requirements explicitly stated in `AGENTS.md` and the owner decisions recorded below are confirmed inputs; other defaults remain proposals until the owner approves them. Approval of the development workflow does not imply approval of all product choices.
 
 Related documents: [development plan](../../DEVELOPMENT_PLAN.md), [repository decision](../architecture/decisions/0001-monorepo.md).
 
@@ -15,7 +15,7 @@ First-release success means:
 - The owner can upload a representative Typora article with local images, preview it, and publish without manually repairing image URLs.
 - English and Chinese articles, code blocks, and LaTeX math render correctly on desktop and mobile.
 - Public visitors can discover articles through browsing, categories, tags, and search.
-- Private material remains accessible only to authorized readers across every access path.
+- Private material remains accessible only to the signed-in owner across every access path.
 - Visitors can submit comments and the owner can moderate them.
 - The owner approves the visual prototype and the final representative page layouts.
 
@@ -23,18 +23,35 @@ These are release acceptance outcomes. Traffic and engagement targets will be se
 
 ## 2. Users and permissions
 
-| User | Proposed first-release capabilities |
+| User | First-release capabilities |
 | --- | --- |
 | Visitor | Read public published content, browse and search, submit comments |
 | Owner | Sign in, manage articles and metadata, preview and publish, read private content, moderate comments |
 
-Proposed default: one owner account, no public registration, and private articles readable only by the signed-in owner. Selected-reader access and password-protected sharing are deferred unless requested during review.
+Confirmed owner decision: one owner account, no reader accounts, and no public registration in the first release. Private articles are readable only by the signed-in owner. Selected-reader access, memberships, and password-protected sharing are deferred.
+
+### 2.1 Owner dashboard
+
+The owner manages the blog at `/admin`, a protected section of the same React application that serves the public blog. The dashboard uses the same Go backend and storage as the public site. It does not require a separate management application, service, or deployment.
+
+The public blog receives the artistic design treatment. The dashboard prioritizes clear navigation, efficient content management, and reliable feedback, while retaining accessible and responsive controls.
+
+The dashboard provides:
+
+- Article lists with search and draft/published and public/private filters.
+- Markdown and image upload, metadata editing, and preview.
+- Publication, unpublishing, visibility changes, and revision management.
+- Category and tag management.
+- Comment moderation and per-article comment controls.
+
+Go verifies the owner session and authorization for every management operation. Protecting frontend routes or omitting navigation links alone is insufficient.
 
 ## 3. First-release scope
 
 | ID | Capability | Scope |
 | --- | --- | --- |
-| AUTH-01 | Owner access | Sign-in, sign-out, and a documented owner recovery process |
+| AUTH-01 | Owner access | Initial owner setup, sign-in, sign-out, and a documented recovery process |
+| ADMIN-01 | Owner dashboard | Protected `/admin` section in the React application, backed by the existing Go API |
 | PUB-01 | Markdown import | Markdown file or ZIP with one article and its images |
 | PUB-02 | Preview and publication | Drafts, preview, explicit publication, and unpublishing |
 | PUB-03 | Article revisions | Re-upload into an existing article; preserve URL and prior published revisions |
@@ -52,7 +69,7 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 
 ### 4.1 Publish a new article
 
-1. Owner signs in and selects a Markdown file or article ZIP.
+1. Owner signs in at `/admin` and selects a Markdown file or article ZIP.
 2. The system validates the upload and reports import issues.
 3. Owner reviews rendered content and supplies or adjusts metadata.
 4. Owner selects public or private visibility and publishes explicitly.
@@ -81,11 +98,23 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 
 ### AUTH-01: Owner access
 
+- Provision the single owner through a documented setup command; there is no browser-based registration flow. Re-running setup must not create another owner or silently replace credentials.
 - Unauthenticated users cannot access administration or perform owner actions.
+- Public visitors can browse and read without signing in; reader sign-in and registration are absent.
 - Sign-out ends the active session. Expired sessions require sign-in again.
 - Failed sign-in gives a useful error without exposing account details; repeated attempts are rate-limited.
 - The owner has a documented recovery process before release. Login method and recovery mechanism require architecture review.
 - A session expiring during upload or editing produces a recoverable state and never silently publishes or discards a previously saved draft.
+
+### ADMIN-01: Owner dashboard
+
+- `/admin` presents owner sign-in when unauthenticated and the management interface when authenticated. Management data is not included in unauthenticated page responses.
+- The article list includes drafts, public articles, and private articles, with title search and filters for publication status and visibility. Empty lists, no matches, loading, and request failures have distinct states.
+- From the dashboard, the owner can upload an article, edit metadata, preview, publish, unpublish, change visibility, and manage revisions as defined in PUB-01 through PUB-03.
+- Category/tag management and comment moderation are reachable from dashboard navigation.
+- Management actions use protected operations in the same Go API; there is no separate management backend or database. Direct unauthenticated API calls cannot read management data or perform mutations.
+- Success and failure feedback identify whether an operation completed. Destructive or visibility-changing actions clearly identify the affected article and intended outcome before submission.
+- The dashboard works on desktop and mobile with keyboard-accessible forms; artistic public-site animation is not a prerequisite for performing management tasks.
 
 ### PUB-01: Markdown and image import
 
@@ -208,13 +237,13 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 
 ## 7. Explicitly deferred scope
 
-Unless promoted during review, defer multiple authors, reader registration, paid memberships, newsletters, automatic translations, collaborative editing, an in-browser rich-text authoring replacement for Typora, scheduled publishing, custom executable Markdown, advanced search, nested comments, a portfolio CMS, and a standalone media library.
+Unless promoted during review, defer multiple authors, reader accounts and registration, selected-reader sharing, paid memberships, newsletters, automatic translations, collaborative editing, an in-browser rich-text authoring replacement for Typora, scheduled publishing, custom executable Markdown, advanced search, nested comments, a portfolio CMS, and a standalone media library. A separate management service or separately deployed admin frontend is also outside the first-release scope.
 
 RSS and additional feed formats are optional follow-up features; privacy protections apply if they are introduced. Ordinary public page metadata and a public sitemap belong to release preparation.
 
 ## 8. Proposed implementation slices
 
-1. Owner access and one Markdown article through upload, preview, publication, and reading, including authorization from the outset.
+1. Owner setup and sign-in, the `/admin` dashboard, and one Markdown article through upload, preview, publication, and reading, including backend authorization from the outset.
 2. Local-image packaging, import failures, revisions, metadata, and unpublishing.
 3. Approved visual direction applied to real English/Chinese article fixtures and portfolio content.
 4. Categories, tags, language filtering, and search.
@@ -225,11 +254,20 @@ The backend and design workstreams can progress independently against agreed con
 
 ## 9. Decisions needed from the owner
 
+### Confirmed decisions
+
+- One owner account; no reader accounts or public registration in the first release.
+- Private articles are owner-only.
+- A protected `/admin` section in the existing React application provides content management.
+- Both public and management functions use the same Go backend and data stores.
+- Owner provisioning uses a setup command rather than a registration page. Login and recovery implementation details remain for architecture review.
+
+### Remaining decisions
+
 The defaults below are proposals, not approvals inferred from silence.
 
 | Decision | Proposed default | When to resolve |
 | --- | --- | --- |
-| Who can read private articles? | Signed-in owner only | Before domain model and API contract approval |
 | How do visitors comment? | Guest name and text, owner moderation, no email | Before comment API design |
 | Does upload publish immediately? | Upload creates a draft; explicit preview and publish | Before import API design |
 | What can be uploaded? | One Markdown file or one-article ZIP with images; limits above | Before import implementation |
@@ -242,6 +280,7 @@ The defaults below are proposals, not approvals inferred from silence.
 
 ## 10. Review and approval
 
+- [x] Owner confirms one account, no reader accounts, owner-only private content, and an integrated dashboard using the same Go backend.
 - [ ] Owner reviews first-release scope and deferred features.
 - [ ] Owner accepts or revises proposed behavior and the decisions above.
 - [ ] Functional requirements are translated into the prioritized implementation backlog.

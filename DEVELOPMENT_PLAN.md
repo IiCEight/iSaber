@@ -61,6 +61,14 @@ iSaber/
 
 All application data flows through the Go API. Only the backend accesses the database and storage credentials. If Next.js is selected, its server handles presentation and API consumption; Go retains business rules and access control. Client-side hiding is never an authorization mechanism.
 
+### Owner dashboard and accounts
+
+Confirmed decision: the first release has one owner account and no reader accounts or public registration. Private articles are owner-only. Provision the owner through a documented setup command; define sign-in and recovery mechanisms during architecture review.
+
+The React application contains the public blog and a protected `/admin` dashboard for article lists and filters, Markdown uploads, metadata, preview, revisions, publication, categories, tags, and comment moderation. Both sections use the same Go backend and data stores. Each management operation requires backend authorization; route protection alone does not grant security.
+
+The dashboard prioritizes efficient, accessible management; the public blog follows the separately reviewed artistic direction. No separate management service or admin deployment is required. See [ADR 0002](docs/architecture/decisions/0002-owner-dashboard.md).
+
 ### Proposed infrastructure
 
 ```mermaid
@@ -161,7 +169,7 @@ Privacy must cover article bodies, metadata, images, attachments, revisions, sea
 | --- | --- |
 | 0. Planning | Approved scope, system boundaries, architecture decisions, and initial API contract |
 | 1. Foundation | Both applications run locally; migrations, API tooling, and CI work |
-| 2. First publishing flow | Owner can log in, upload Markdown with images, preview, publish, and read |
+| 2. First publishing flow | Owner setup and login work; `/admin` supports upload with images, preview, publication, and reading through the same Go backend |
 | 3. Reading experience | Approved design displays real articles, code, math, and responsive layouts |
 | 4. Content organization | Categories, tags, dates, English/Chinese content, and search work |
 | 5. Privacy and comments | Private access rules, comment submission, and moderation work |
@@ -232,8 +240,9 @@ A change is complete when:
 - [x] Use one repository with independently buildable, testable, and deployable frontend and backend projects.
 - [ ] Confirm React + TypeScript, with Next.js proposed for presentation.
 - [ ] Confirm Go REST API, PostgreSQL, and COS as the proposed backend foundation.
-- [ ] Define who can read private articles: owner only, selected accounts, or another model.
-- [ ] Define the comment model: anonymous moderated comments, authenticated readers, or an external provider.
+- [x] Use one owner account with owner-only private articles; defer reader accounts and public registration.
+- [x] Manage content through `/admin` in the React application and the same Go backend; provision the owner through a setup command.
+- [ ] Define the comment model without reader accounts: guest comments with owner moderation or an external provider that permits guest submissions.
 - [ ] Confirm Markdown/image import and revision behavior.
 - [ ] Define the first-release search expectations, including Chinese search quality.
 - [ ] Supply design references and review the prototype before visual implementation.
