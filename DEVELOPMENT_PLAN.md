@@ -215,6 +215,8 @@ Tests should verify behavior and meaningful failure cases. Prioritize authorizat
 
 ## 10. Environments and releases
 
+The [GitHub CI/CD guided setup](docs/operations/github-cicd.md) records the initial contract workflow, owner exercises, and the proposed use of JD Cloud for staging and Tencent Cloud for production. Server roles require confirmation of existing workloads. The owner will participate in GitHub and server setup with guidance; no cloud deployment pipeline is active yet.
+
 Maintain local, staging, and production environments with separate configuration, secrets, databases, and storage. Staging should resemble production and use non-sensitive test content.
 
 - Build versioned artifacts once and promote the tested artifacts.
@@ -250,7 +252,7 @@ A change is complete when:
 - [x] Use draft-first Markdown/image import and explicit revision updates with stable URLs and history, as defined in the PRD.
 - [x] Use the PRD search scope, including literal substring matching for Chinese.
 - [ ] Supply design references and review the prototype before visual implementation.
-- [ ] Confirm the Git hosting and CI provider; GitHub is proposed.
+- [x] Use GitHub for source hosting and GitHub Actions for CI/CD, with guided owner participation.
 - [ ] Confirm target hosting region and operational requirements before deployment design is finalized.
 - [x] Approve the documented milestone order and first-release product scope.
 
