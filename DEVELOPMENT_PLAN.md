@@ -84,6 +84,8 @@ Record final technology choices and their tradeoffs in architecture decision rec
 
 ## 3. Requirements and acceptance criteria
 
+The first-release [product requirements document](docs/product/requirements.md) is drafted for owner review. It distinguishes confirmed inputs from proposed defaults and includes acceptance criteria and outstanding decisions.
+
 Translate product requirements into a prioritized backlog. Each feature must define:
 
 - User journey and expected outcome.
