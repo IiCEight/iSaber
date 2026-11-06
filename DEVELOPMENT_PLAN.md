@@ -61,6 +61,14 @@ iSaber/
 
 All application data flows through the Go API. Only the backend accesses the database and storage credentials. If Next.js is selected, its server handles presentation and API consumption; Go retains business rules and access control. Client-side hiding is never an authorization mechanism.
 
+### Owner dashboard and accounts
+
+Confirmed decision: the first release has one owner account and no reader accounts or public registration. Private articles are owner-only. Provision the owner through a documented setup command; define sign-in and recovery mechanisms during architecture review.
+
+The React application contains the public blog and a protected `/admin` dashboard for article lists and filters, Markdown uploads, metadata, preview, revisions, publication, categories, tags, and comment moderation. Both sections use the same Go backend and data stores. Each management operation requires backend authorization; route protection alone does not grant security.
+
+The dashboard prioritizes efficient, accessible management; the public blog follows the separately reviewed artistic direction. No separate management service or admin deployment is required. See [ADR 0002](docs/architecture/decisions/0002-owner-dashboard.md).
+
 ### Proposed infrastructure
 
 ```mermaid
@@ -84,6 +92,8 @@ Record final technology choices and their tradeoffs in architecture decision rec
 
 ## 3. Requirements and acceptance criteria
 
+The first-release [product requirements document](docs/product/requirements.md) is approved as the product baseline, including its documented defaults, acceptance criteria, and deferred scope. Its Section 9 lists outstanding design inputs and unspecified targets. The logical data model and API contract are also owner-approved; remaining implementation choices require documentation.
+
 Translate product requirements into a prioritized backlog. Each feature must define:
 
 - User journey and expected outcome.
@@ -99,6 +109,8 @@ For Markdown import, define behavior for missing images, invalid files, duplicat
 ## 4. API contract and independent development
 
 Use OpenAPI as the shared API contract. Specify endpoints, schemas, authentication, pagination, errors, and examples before connecting the applications.
+
+Approved baselines are available in the [data model](docs/architecture/data-model.md), [API design](docs/architecture/api-design.md), and [OpenAPI contract](contracts/openapi.yaml). The [contract guide](contracts/README.md) includes validation instructions. The owner approved these documents and the API contract; no endpoints have been implemented. Physical schema and tooling decisions remain for the foundation milestone.
 
 - Generate a TypeScript API client and types from the contract.
 - Provide mock responses so frontend development can proceed independently.
@@ -139,7 +151,7 @@ Backend work can proceed while the design prototype is refined. Frontend work us
 
 ## 6. Proposed content and publishing behavior
 
-These are proposals to resolve during product review:
+These behaviors are approved in the PRD:
 
 - Upload a Markdown file, or a ZIP containing Markdown and its image folder.
 - Validate imports, store assets, and rewrite relative image references to managed asset links.
@@ -159,7 +171,7 @@ Privacy must cover article bodies, metadata, images, attachments, revisions, sea
 | --- | --- |
 | 0. Planning | Approved scope, system boundaries, architecture decisions, and initial API contract |
 | 1. Foundation | Both applications run locally; migrations, API tooling, and CI work |
-| 2. First publishing flow | Owner can log in, upload Markdown with images, preview, publish, and read |
+| 2. First publishing flow | Owner setup and login work; `/admin` supports upload with images, preview, publication, and reading through the same Go backend |
 | 3. Reading experience | Approved design displays real articles, code, math, and responsive layouts |
 | 4. Content organization | Categories, tags, dates, English/Chinese content, and search work |
 | 5. Privacy and comments | Private access rules, comment submission, and moderation work |
@@ -203,6 +215,8 @@ Tests should verify behavior and meaningful failure cases. Prioritize authorizat
 
 ## 10. Environments and releases
 
+The [GitHub CI/CD guided setup](docs/operations/github-cicd.md) records the initial contract workflow, owner exercises, and the proposed use of JD Cloud for staging and Tencent Cloud for production. Server roles require confirmation of existing workloads. The owner will participate in GitHub and server setup with guidance; no cloud deployment pipeline is active yet.
+
 Maintain local, staging, and production environments with separate configuration, secrets, databases, and storage. Staging should resemble production and use non-sensitive test content.
 
 - Build versioned artifacts once and promote the tested artifacts.
@@ -228,16 +242,19 @@ A change is complete when:
 ## 12. Owner review checklist
 
 - [x] Use one repository with independently buildable, testable, and deployable frontend and backend projects.
+- [x] Approve the logical data model, API design, and OpenAPI contract.
+- [ ] Translate the approved requirements into a prioritized implementation backlog.
 - [ ] Confirm React + TypeScript, with Next.js proposed for presentation.
 - [ ] Confirm Go REST API, PostgreSQL, and COS as the proposed backend foundation.
-- [ ] Define who can read private articles: owner only, selected accounts, or another model.
-- [ ] Define the comment model: anonymous moderated comments, authenticated readers, or an external provider.
-- [ ] Confirm Markdown/image import and revision behavior.
-- [ ] Define the first-release search expectations, including Chinese search quality.
+- [x] Use one owner account with owner-only private articles; defer reader accounts and public registration.
+- [x] Manage content through `/admin` in the React application and the same Go backend; provision the owner through a setup command.
+- [x] Use guest comments with a display name and plain text, owner moderation, and no email or reader accounts.
+- [x] Use draft-first Markdown/image import and explicit revision updates with stable URLs and history, as defined in the PRD.
+- [x] Use the PRD search scope, including literal substring matching for Chinese.
 - [ ] Supply design references and review the prototype before visual implementation.
-- [ ] Confirm the Git hosting and CI provider; GitHub is proposed.
+- [x] Use GitHub for source hosting and GitHub Actions for CI/CD, with guided owner participation.
 - [ ] Confirm target hosting region and operational requirements before deployment design is finalized.
-- [ ] Approve the milestone order and first-release scope.
+- [x] Approve the documented milestone order and first-release product scope.
 
 ## References
 

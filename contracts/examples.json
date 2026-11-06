@@ -1,0 +1,160 @@
+[
+  {
+    "schema": "PublicArticle",
+    "value": {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "slug": "building-my-blog",
+      "title": "Building my blog / 我的博客",
+      "summary": "An English and Chinese example.",
+      "language": "en",
+      "written_at": "2026-11-06",
+      "published_at": "2026-11-06T06:00:00Z",
+      "updated_at": "2026-11-06T06:00:00Z",
+      "category": null,
+      "tags": [],
+      "markdown": "# Building my blog\n\n中文与 English.\n\n```go\nfmt.Println(\"hello\")\n```\n\nInline math: $E=mc^2$.\n",
+      "comments_enabled": true
+    }
+  },
+  {
+    "schema": "ArticlePage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "slug": "building-my-blog",
+          "title": "Building my blog / 我的博客",
+          "summary": "An English and Chinese example.",
+          "language": "en",
+          "written_at": "2026-11-06",
+          "published_at": "2026-11-06T06:00:00Z",
+          "updated_at": "2026-11-06T06:00:00Z",
+          "category": null,
+          "tags": []
+        }
+      ],
+      "next_cursor": null
+    }
+  },
+  {
+    "schema": "AdminArticle",
+    "value": {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "slug": "draft-article",
+      "title": "Draft article",
+      "status": "draft",
+      "visibility": "private",
+      "has_draft": true,
+      "version": 1,
+      "published_at": null,
+      "updated_at": null,
+      "modified_at": "2026-11-06T06:00:00Z",
+      "comments_enabled": true,
+      "draft": {
+        "id": "22222222-2222-4222-8222-222222222222",
+        "article_id": "11111111-1111-4111-8111-111111111111",
+        "title": "Draft article",
+        "summary": null,
+        "language": "en",
+        "written_at": null,
+        "category": null,
+        "tags": [],
+        "markdown": "# Draft\n",
+        "created_at": "2026-11-06T06:00:00Z",
+        "first_published_at": null,
+        "restored_from_revision_id": null
+      },
+      "published": null,
+      "publishable": false,
+      "issues": [
+        {
+          "severity": "blocking",
+          "code": "written_at_required",
+          "path": "written_at",
+          "message": "Choose a writing date before publication."
+        }
+      ]
+    }
+  },
+  {
+    "schema": "Preview",
+    "value": {
+      "article_id": "11111111-1111-4111-8111-111111111111",
+      "article_version": 1,
+      "revision": {
+        "id": "22222222-2222-4222-8222-222222222222",
+        "article_id": "11111111-1111-4111-8111-111111111111",
+        "title": "Draft article",
+        "summary": null,
+        "language": "en",
+        "written_at": null,
+        "category": null,
+        "tags": [],
+        "markdown": "# Draft\n",
+        "created_at": "2026-11-06T06:00:00Z",
+        "first_published_at": null,
+        "restored_from_revision_id": null
+      },
+      "publishable": false,
+      "issues": [
+        {
+          "severity": "blocking",
+          "code": "written_at_required",
+          "path": "written_at",
+          "message": "Choose a writing date before publication."
+        }
+      ]
+    }
+  },
+  {
+    "schema": "ImportJob",
+    "value": {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "status": "succeeded",
+      "article_id": "11111111-1111-4111-8111-111111111111",
+      "revision_id": "22222222-2222-4222-8222-222222222222",
+      "publishable": false,
+      "issues": [
+        {
+          "severity": "blocking",
+          "code": "written_at_required",
+          "path": "written_at",
+          "message": "Choose a writing date before publication."
+        }
+      ],
+      "created_at": "2026-11-06T06:00:00Z",
+      "finished_at": "2026-11-06T06:00:00Z"
+    }
+  },
+  {
+    "schema": "DraftPatch",
+    "value": {
+      "expected_version": 1,
+      "written_at": "2026-11-06"
+    }
+  },
+  {
+    "schema": "ArticleControls",
+    "value": {
+      "expected_version": 2,
+      "visibility": "public"
+    }
+  },
+  {
+    "schema": "CommentReceipt",
+    "value": {
+      "status": "pending"
+    }
+  },
+  {
+    "schema": "Problem",
+    "value": {
+      "type": "about:blank",
+      "title": "Article changed",
+      "status": 409,
+      "code": "version_conflict",
+      "request_id": "example-request-1",
+      "detail": "Reload the current owner article before applying your edit."
+    }
+  }
+]
