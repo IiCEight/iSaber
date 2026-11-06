@@ -1,0 +1,2179 @@
+openapi: 3.1.1
+info:
+  title: iSaber Blog API
+  version: 0.1.0
+  description: Draft for architecture/API review against the approved PRD. Not an implemented server. One owner,
+    no reader accounts. See docs/architecture/api-design.md and data-model.md. All article, session, admin, search,
+    and asset delivery uses no-store until an explicit cache/privacy design is approved.
+servers:
+- url: /api/v1
+  description: Same origin as the React website
+security: []
+tags:
+- name: Authentication
+- name: Public
+- name: Administration
+- name: Publishing
+- name: Imports
+- name: Taxonomy
+- name: Comments
+- name: Assets
+paths:
+  /auth/login:
+    post:
+      operationId: loginOwner
+      summary: Sign in as the owner
+      tags:
+      - Authentication
+      security: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Set-Cookie:
+              schema:
+                type: string
+              description: Opaque __Host-isaber_session cookie; Secure; HttpOnly; SameSite=Strict; Path=/; no Domain.
+                Never return its value in JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+      description: Same-origin JSON only; rate-limited. Invalid credentials return 401. Creates a fresh session
+        cookie and returns the CSRF token. Owner provisioning is an operational command, not an API.
+  /auth/session:
+    get:
+      operationId: getOwnerSession
+      summary: Get the current owner session
+      tags:
+      - Authentication
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        default:
+          $ref: '#/components/responses/Problem'
+  /auth/logout:
+    post:
+      operationId: logoutOwner
+      summary: Revoke the session
+      tags:
+      - Authentication
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '204':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Set-Cookie:
+              schema:
+                type: string
+              description: Clear the session cookie with the same attributes and Max-Age=0.
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/Origin'
+  /articles:
+    get:
+      operationId: listPublicArticles
+      summary: List public published articles
+      tags:
+      - Public
+      security: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticlePage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+      - $ref: '#/components/parameters/language'
+      - $ref: '#/components/parameters/category'
+      - $ref: '#/components/parameters/tag'
+      description: Newest first by first publication time then ID. Never returns drafts, private articles, or their
+        metadata.
+  /articles/search:
+    get:
+      operationId: searchPublicArticles
+      summary: Search public published articles
+      tags:
+      - Public
+      security: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticlePage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/q'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+      - $ref: '#/components/parameters/language'
+      - $ref: '#/components/parameters/category'
+      - $ref: '#/components/parameters/tag'
+      description: Rank by title, then summary/tags, then body matches; ties by publication time and ID. Does not
+        search comments. No shared caching.
+  /articles/{slug}:
+    get:
+      operationId: getPublicArticle
+      summary: Read a public published article
+      tags:
+      - Public
+      security: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicArticle'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/slug'
+      description: Returns only the live public revision even with an owner cookie. Missing or nonpublic articles
+        return 404.
+  /categories:
+    get:
+      operationId: listPublicCategories
+      summary: List public categories
+      tags:
+      - Public
+      security: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelPage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+      description: Include only labels used by current public published revisions. Order by name then ID.
+  /admin/categories:
+    get:
+      operationId: listAdminCategories
+      summary: List all categories
+      tags:
+      - Taxonomy
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLabelPage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+    post:
+      operationId: createCategory
+      summary: Create a category
+      tags:
+      - Taxonomy
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '201':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLabel'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLabel'
+      description: Duplicate slug returns 409. Creating a label does not assign it to an article.
+  /admin/categories/{label_id}:
+    patch:
+      operationId: renameCategory
+      summary: Rename a category
+      tags:
+      - Taxonomy
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLabel'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/label_id'
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenameLabel'
+      description: Stable slug and associations; stale version returns 409. Update live metadata dates and article
+        versions for affected articles transactionally.
+  /tags:
+    get:
+      operationId: listPublicTags
+      summary: List public tags
+      tags:
+      - Public
+      security: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelPage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+      description: Include only labels used by current public published revisions. Order by name then ID.
+  /admin/tags:
+    get:
+      operationId: listAdminTags
+      summary: List all tags
+      tags:
+      - Taxonomy
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLabelPage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+    post:
+      operationId: createTag
+      summary: Create a tag
+      tags:
+      - Taxonomy
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '201':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLabel'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLabel'
+      description: Duplicate slug returns 409. Creating a label does not assign it to an article.
+  /admin/tags/{label_id}:
+    patch:
+      operationId: renameTag
+      summary: Rename a tag
+      tags:
+      - Taxonomy
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLabel'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/label_id'
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenameLabel'
+      description: Stable slug and associations; stale version returns 409. Update live metadata dates and article
+        versions for affected articles transactionally.
+  /articles/{article_id}/assets/{asset_id}:
+    get:
+      operationId: getArticleAsset
+      summary: Read an authorized article image
+      tags:
+      - Assets
+      security:
+      - {}
+      - ownerSession: []
+      responses:
+        '200':
+          description: Validated image bytes. Authorization is checked before streaming.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      - $ref: '#/components/parameters/asset_id'
+      description: 'Anonymous callers can read only assets attached to the current live revision of a public article.
+        An authenticated owner can read retained revisions of this article. All other cases return 404. Never redirect
+        to a public object URL. Always Cache-Control: no-store.'
+  /articles/{article_id}/comments:
+    get:
+      operationId: listPublicComments
+      summary: List approved article comments
+      tags:
+      - Comments
+      security: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentPage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+      description: Public published articles only; otherwise 404. Order by created_at then ID ascending. Existing
+        approved comments remain visible if new submissions are disabled.
+    post:
+      operationId: submitGuestComment
+      summary: Submit a comment for moderation
+      tags:
+      - Comments
+      security: []
+      responses:
+        '202':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentReceipt'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      - $ref: '#/components/parameters/Origin'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitComment'
+      description: 'No reader account. Require a currently public published article with comments enabled. Return
+        only pending status, never moderation details or comment text. Nonpublic article: 404; comments disabled:
+        409; invalid text: 422; rate limit: 429.'
+  /admin/articles:
+    get:
+      operationId: listAdminArticles
+      summary: List owner articles
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminArticlePage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+      - $ref: '#/components/parameters/admin_q'
+      - $ref: '#/components/parameters/article_status'
+      - $ref: '#/components/parameters/visibility'
+      description: Includes private and draft articles. Newest modified_at first, then ID. Status is published if
+        a live revision exists; has_draft is independent.
+  /admin/articles/{article_id}:
+    get:
+      operationId: getAdminArticle
+      summary: Get live and draft owner state
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminArticle'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+    patch:
+      operationId: updateArticleControls
+      summary: Change visibility or comment controls
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminArticle'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleControls'
+      description: Controls apply immediately to current article state and all read paths. This does not publish
+        the draft. Stale expected_version returns 409.
+  /admin/articles/{article_id}/draft:
+    patch:
+      operationId: updateDraftMetadata
+      summary: Save draft metadata
+      tags:
+      - Publishing
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminArticle'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftPatch'
+      description: Requires an existing draft; otherwise 409 no_draft. Creates a new snapshot. Omitted fields remain
+        unchanged. Slug edits after first publication are rejected. Content replacement uses import, not this operation.
+        Invalid references are blocking draft issues.
+  /admin/articles/{article_id}/preview:
+    get:
+      operationId: previewDraft
+      summary: Preview the current draft
+      tags:
+      - Publishing
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preview'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      description: Only current draft; no draft returns 404. Normalized Markdown and issue details use the same
+        content rendering specification as the live page.
+  /admin/articles/{article_id}/publish:
+    post:
+      operationId: publishArticle
+      summary: Publish an article
+      tags:
+      - Publishing
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminArticle'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      - $ref: '#/components/parameters/Origin'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCommand'
+      description: Requires a publishable current draft. Atomically switch the live pointer and dates; clear draft
+        pointer. 422 if blocked; 409 if stale or no draft. Visibility is set separately.
+  /admin/articles/{article_id}/unpublish:
+    post:
+      operationId: unpublishArticle
+      summary: Unpublish an article
+      tags:
+      - Publishing
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminArticle'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      - $ref: '#/components/parameters/Origin'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCommand'
+      description: Immediately remove the live pointer. Retain a newer draft, or use the withdrawn live snapshot
+        as the draft. Preserve publication time and history. Already unpublished with matching version is a no-op.
+  /admin/articles/{article_id}/revisions:
+    get:
+      operationId: listArticleRevisions
+      summary: List previously published snapshots
+      tags:
+      - Publishing
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevisionPage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+      description: Only snapshots that have been published. Order by first_published_at descending then ID. Draft
+        is returned in owner article detail.
+  /admin/articles/{article_id}/revisions/{revision_id}:
+    get:
+      operationId: getArticleRevision
+      summary: Read a historical published snapshot
+      tags:
+      - Publishing
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Revision'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      - $ref: '#/components/parameters/revision_id'
+      description: Revision must belong to the article and have publication history; otherwise 404.
+  /admin/articles/{article_id}/revisions/{revision_id}/restore:
+    post:
+      operationId: restoreArticleRevision
+      summary: Copy history into a new draft
+      tags:
+      - Publishing
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminArticle'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/article_id'
+      - $ref: '#/components/parameters/revision_id'
+      - $ref: '#/components/parameters/Origin'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCommand'
+      description: Only a previously published revision of this article. Does not publish, change visibility, or
+        change the stable slug. Stale article version returns 409.
+  /admin/imports:
+    post:
+      operationId: createImport
+      summary: Upload Markdown or a ZIP for draft import
+      tags:
+      - Imports
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '202':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Location:
+              schema:
+                type: string
+              description: /api/v1/admin/imports/{import_id} for polling.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/Origin'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      description: 'One UTF-8 .md or ZIP with exactly one article and images. New import: omit article_id and expected_version.
+        Replacement: require both. 5 MiB Markdown; 10 MiB per image; 50 MiB compressed ZIP; 100 MiB expanded ZIP;
+        200 files. 413 for request size, 415 for unsupported file kind, 422 for invalid request fields. Structural
+        processing errors appear in a failed job. Missing editorial metadata/assets can produce a successful but
+        non-publishable draft. Existing state changes only after complete processing and a second version check.
+        Jobs and staged files are durable; restart failures must be explicit. Replayed requests return the original
+        acceptance, then poll the job.'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                article_id:
+                  type: string
+                  format: uuid
+                expected_version:
+                  type: integer
+                  minimum: 1
+              required:
+              - file
+              additionalProperties: false
+              dependentRequired:
+                article_id:
+                - expected_version
+                expected_version:
+                - article_id
+            encoding:
+              file:
+                contentType: text/markdown, application/zip, application/octet-stream
+  /admin/imports/{import_id}:
+    get:
+      operationId: getImport
+      summary: Get import progress and results
+      tags:
+      - Imports
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/import_id'
+      description: Returns 200 for all existing job states, including failure. Poll until succeeded or failed; article/revision
+        IDs identify the committed draft after success.
+  /admin/comments:
+    get:
+      operationId: listAdminComments
+      summary: List comments for moderation
+      tags:
+      - Comments
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCommentPage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+      - $ref: '#/components/parameters/comment_article'
+      - $ref: '#/components/parameters/comment_status'
+      description: Newest created_at first then ID; includes pending comments and comments on unpublished/private
+        articles.
+  /admin/comments/{comment_id}:
+    patch:
+      operationId: moderateComment
+      summary: Approve, reject, or remove a comment
+      tags:
+      - Comments
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminComment'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/comment_id'
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerateComment'
+      description: Stale version returns 409. Removing is a logical moderation state, not physical deletion. Approved
+        comments are public only while the article is public and published.
+components:
+  securitySchemes:
+    ownerSession:
+      type: apiKey
+      in: cookie
+      name: __Host-isaber_session
+      description: Opaque HttpOnly Secure SameSite=Strict owner session; never store in browser localStorage.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: CSRF token returned by owner login/session. Required with session for every owner mutation except
+        login.
+  parameters:
+    article_id:
+      name: article_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    revision_id:
+      name: revision_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    import_id:
+      name: import_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    asset_id:
+      name: asset_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    label_id:
+      name: label_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    comment_id:
+      name: comment_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    slug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 160
+        pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+    limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 4096
+      description: Opaque continuation token tied to the original filters and query.
+    q:
+      name: q
+      in: query
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
+        pattern: .*\S.*
+      description: Nonempty search text. English case-insensitive word matching; Chinese literal substring matching.
+    admin_q:
+      name: q
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
+        pattern: .*\S.*
+      description: Title search across draft or latest retained article titles.
+    language:
+      name: language
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+        - en
+        - zh
+    category:
+      name: category
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 160
+        pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+    tag:
+      name: tag
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 160
+        pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+    article_status:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+        - draft
+        - published
+    visibility:
+      name: visibility
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+        - public
+        - private
+    comment_status:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+        - pending
+        - approved
+        - rejected
+        - removed
+    comment_article:
+      name: article_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Retained for 24 hours. Replays the original result for the same semantic payload; mismatched
+        payload or in-progress request returns 409. See API design for scope and authorization.
+    Origin:
+      name: Origin
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uri
+      description: Must exactly match the configured browser site origin. Missing/mismatched origins are rejected.
+  responses:
+    Problem:
+      description: Error; see code, field errors, and request_id. Private and missing public resources use indistinguishable
+        404 responses.
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+          description: no-store
+        Retry-After:
+          schema:
+            type: string
+          description: Seconds until retry for rate limits, temporary unavailability, or an in-progress idempotent
+            request.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Problem:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        code:
+          type: string
+        detail:
+          type: string
+        request_id:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              code:
+                type: string
+              message:
+                type: string
+            required:
+            - path
+            - code
+            - message
+            additionalProperties: false
+      required:
+      - type
+      - title
+      - status
+      - code
+      - request_id
+      additionalProperties: false
+      examples:
+      - type: about:blank
+        title: Article changed
+        status: 409
+        code: version_conflict
+        request_id: example-request-1
+        detail: Reload the current owner article before applying your edit.
+    Issue:
+      type: object
+      properties:
+        severity:
+          type: string
+          enum:
+          - warning
+          - blocking
+        code:
+          type: string
+        path:
+          anyOf:
+          - type: string
+          - type: 'null'
+        message:
+          type: string
+      required:
+      - severity
+      - code
+      - path
+      - message
+      additionalProperties: false
+    Label:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: .*\S.*
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+      required:
+      - id
+      - name
+      - slug
+      additionalProperties: false
+    AdminLabel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: .*\S.*
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - id
+      - name
+      - slug
+      - version
+      additionalProperties: false
+    CreateLabel:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: .*\S.*
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+      required:
+      - name
+      - slug
+      additionalProperties: false
+    RenameLabel:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: .*\S.*
+      required:
+      - expected_version
+      - name
+      additionalProperties: false
+    Owner:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required:
+      - id
+      - username
+      additionalProperties: false
+    Session:
+      type: object
+      properties:
+        owner:
+          $ref: '#/components/schemas/Owner'
+        csrf_token:
+          type: string
+          minLength: 1
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - owner
+      - csrf_token
+      - expires_at
+      additionalProperties: false
+    Login:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 120
+        password:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          format: password
+      required:
+      - username
+      - password
+      additionalProperties: false
+    ArticleSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+        title:
+          type: string
+          minLength: 1
+          pattern: .*\S.*
+        summary:
+          type: string
+        language:
+          type: string
+          enum:
+          - en
+          - zh
+        written_at:
+          type: string
+          format: date
+        published_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        category:
+          anyOf:
+          - $ref: '#/components/schemas/Label'
+          - type: 'null'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Label'
+      required:
+      - id
+      - slug
+      - title
+      - summary
+      - language
+      - written_at
+      - published_at
+      - updated_at
+      - category
+      - tags
+      additionalProperties: false
+    PublicArticle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+        title:
+          type: string
+          minLength: 1
+          pattern: .*\S.*
+        summary:
+          type: string
+        language:
+          type: string
+          enum:
+          - en
+          - zh
+        written_at:
+          type: string
+          format: date
+        published_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        category:
+          anyOf:
+          - $ref: '#/components/schemas/Label'
+          - type: 'null'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Label'
+        markdown:
+          type: string
+          description: Normalized safe-to-render Markdown; raw HTML and unsafe links still require renderer sanitization.
+        comments_enabled:
+          type: boolean
+      required:
+      - id
+      - slug
+      - title
+      - summary
+      - language
+      - written_at
+      - published_at
+      - updated_at
+      - category
+      - tags
+      - markdown
+      - comments_enabled
+      additionalProperties: false
+      examples:
+      - id: 11111111-1111-4111-8111-111111111111
+        slug: building-my-blog
+        title: Building my blog / 我的博客
+        summary: An English and Chinese example.
+        language: en
+        written_at: '2026-11-06'
+        published_at: '2026-11-06T06:00:00Z'
+        updated_at: '2026-11-06T06:00:00Z'
+        category: null
+        tags: []
+        markdown: '# Building my blog
+
+
+          中文与 English.
+
+
+          ```go
+
+          fmt.Println("hello")
+
+          ```
+
+
+          Inline math: $E=mc^2$.
+
+          '
+        comments_enabled: true
+    Revision:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        article_id:
+          type: string
+          format: uuid
+        title:
+          anyOf:
+          - type: string
+            maxLength: 300
+          - type: 'null'
+        summary:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+        language:
+          anyOf:
+          - type: string
+            enum:
+            - en
+            - zh
+          - type: 'null'
+        written_at:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        category:
+          anyOf:
+          - $ref: '#/components/schemas/Label'
+          - type: 'null'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Label'
+        markdown:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        first_published_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        restored_from_revision_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+      required:
+      - id
+      - article_id
+      - title
+      - summary
+      - language
+      - written_at
+      - category
+      - tags
+      - markdown
+      - created_at
+      - first_published_at
+      - restored_from_revision_id
+      additionalProperties: false
+    AdminArticleSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 160
+            pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+            description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+          - type: 'null'
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - draft
+          - published
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+        has_draft:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+        published_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        modified_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - slug
+      - title
+      - status
+      - visibility
+      - has_draft
+      - version
+      - published_at
+      - updated_at
+      - modified_at
+      additionalProperties: false
+    AdminArticle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 160
+            pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+            description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+          - type: 'null'
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - draft
+          - published
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+        has_draft:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+        published_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        modified_at:
+          type: string
+          format: date-time
+        comments_enabled:
+          type: boolean
+        draft:
+          anyOf:
+          - $ref: '#/components/schemas/Revision'
+          - type: 'null'
+        published:
+          anyOf:
+          - $ref: '#/components/schemas/Revision'
+          - type: 'null'
+        publishable:
+          type: boolean
+          description: True only when a current draft exists and has no blocking issues.
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+      required:
+      - id
+      - slug
+      - title
+      - status
+      - visibility
+      - has_draft
+      - version
+      - published_at
+      - updated_at
+      - modified_at
+      - comments_enabled
+      - draft
+      - published
+      - publishable
+      - issues
+      additionalProperties: false
+      examples:
+      - id: 11111111-1111-4111-8111-111111111111
+        slug: draft-article
+        title: Draft article
+        status: draft
+        visibility: private
+        has_draft: true
+        version: 1
+        published_at: null
+        updated_at: null
+        modified_at: '2026-11-06T06:00:00Z'
+        comments_enabled: true
+        draft:
+          id: 22222222-2222-4222-8222-222222222222
+          article_id: 11111111-1111-4111-8111-111111111111
+          title: Draft article
+          summary: null
+          language: en
+          written_at: null
+          category: null
+          tags: []
+          markdown: '# Draft
+
+            '
+          created_at: '2026-11-06T06:00:00Z'
+          first_published_at: null
+          restored_from_revision_id: null
+        published: null
+        publishable: false
+        issues:
+        - severity: blocking
+          code: written_at_required
+          path: written_at
+          message: Choose a writing date before publication.
+    Preview:
+      type: object
+      properties:
+        article_id:
+          type: string
+          format: uuid
+        article_version:
+          type: integer
+          minimum: 1
+        revision:
+          $ref: '#/components/schemas/Revision'
+        publishable:
+          type: boolean
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+      required:
+      - article_id
+      - article_version
+      - revision
+      - publishable
+      - issues
+      additionalProperties: false
+      examples:
+      - article_id: 11111111-1111-4111-8111-111111111111
+        article_version: 1
+        revision:
+          id: 22222222-2222-4222-8222-222222222222
+          article_id: 11111111-1111-4111-8111-111111111111
+          title: Draft article
+          summary: null
+          language: en
+          written_at: null
+          category: null
+          tags: []
+          markdown: '# Draft
+
+            '
+          created_at: '2026-11-06T06:00:00Z'
+          first_published_at: null
+          restored_from_revision_id: null
+        publishable: false
+        issues:
+        - severity: blocking
+          code: written_at_required
+          path: written_at
+          message: Choose a writing date before publication.
+    DraftPatch:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+        title:
+          anyOf:
+          - type: string
+            maxLength: 300
+          - type: 'null'
+        summary:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+        language:
+          anyOf:
+          - type: string
+            enum:
+            - en
+            - zh
+          - type: 'null'
+        written_at:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        category_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        tag_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+      required:
+      - expected_version
+      additionalProperties: false
+      minProperties: 2
+      description: Omitted fields are unchanged; null clears nullable metadata. Creates a draft snapshot; an existing
+        draft is required. Slug may change only before first publication.
+      examples:
+      - expected_version: 1
+        written_at: '2026-11-06'
+    ArticleControls:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+        comments_enabled:
+          type: boolean
+      required:
+      - expected_version
+      additionalProperties: false
+      minProperties: 2
+      description: Apply controls immediately without publishing a draft.
+      examples:
+      - expected_version: 2
+        visibility: public
+    VersionCommand:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+      required:
+      - expected_version
+      additionalProperties: false
+    ImportJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - queued
+          - processing
+          - succeeded
+          - failed
+        article_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        revision_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        publishable:
+          type: boolean
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+        created_at:
+          type: string
+          format: date-time
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - id
+      - status
+      - article_id
+      - revision_id
+      - publishable
+      - issues
+      - created_at
+      - finished_at
+      additionalProperties: false
+      description: Publishable is false until success; succeeded may still contain blocking draft issues. A failed
+        job does not modify an article.
+      examples:
+      - id: 33333333-3333-4333-8333-333333333333
+        status: succeeded
+        article_id: 11111111-1111-4111-8111-111111111111
+        revision_id: 22222222-2222-4222-8222-222222222222
+        publishable: false
+        issues:
+        - severity: blocking
+          code: written_at_required
+          path: written_at
+          message: Choose a writing date before publication.
+        created_at: '2026-11-06T06:00:00Z'
+        finished_at: '2026-11-06T06:00:00Z'
+    PublicComment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - display_name
+      - body
+      - created_at
+      additionalProperties: false
+    SubmitComment:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: .*\S.*
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          pattern: '[\s\S]*\S[\s\S]*'
+      required:
+      - display_name
+      - body
+      additionalProperties: false
+    CommentReceipt:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - pending
+      required:
+      - status
+      additionalProperties: false
+      examples:
+      - status: pending
+    AdminComment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        article_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+          - removed
+        version:
+          type: integer
+          minimum: 1
+        moderated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - id
+      - display_name
+      - body
+      - created_at
+      - article_id
+      - status
+      - version
+      - moderated_at
+      additionalProperties: false
+    ModerateComment:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - approved
+          - rejected
+          - removed
+      required:
+      - expected_version
+      - status
+      additionalProperties: false
+    ArticlePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArticleSummary'
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - items
+      - next_cursor
+      additionalProperties: false
+      examples:
+      - items:
+        - id: 11111111-1111-4111-8111-111111111111
+          slug: building-my-blog
+          title: Building my blog / 我的博客
+          summary: An English and Chinese example.
+          language: en
+          written_at: '2026-11-06'
+          published_at: '2026-11-06T06:00:00Z'
+          updated_at: '2026-11-06T06:00:00Z'
+          category: null
+          tags: []
+        next_cursor: null
+    AdminArticlePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminArticleSummary'
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - items
+      - next_cursor
+      additionalProperties: false
+    LabelPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Label'
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - items
+      - next_cursor
+      additionalProperties: false
+    AdminLabelPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminLabel'
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - items
+      - next_cursor
+      additionalProperties: false
+    RevisionPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Revision'
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - items
+      - next_cursor
+      additionalProperties: false
+    CommentPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicComment'
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - items
+      - next_cursor
+      additionalProperties: false
+    AdminCommentPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminComment'
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - items
+      - next_cursor
+      additionalProperties: false

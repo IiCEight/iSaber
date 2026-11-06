@@ -110,6 +110,8 @@ For Markdown import, define behavior for missing images, invalid files, duplicat
 
 Use OpenAPI as the shared API contract. Specify endpoints, schemas, authentication, pagination, errors, and examples before connecting the applications.
 
+Review drafts are available in the [data model](docs/architecture/data-model.md), [API design](docs/architecture/api-design.md), and [OpenAPI contract](contracts/openapi.yaml). The [contract guide](contracts/README.md) includes validation instructions. These drafts are not implemented endpoints and have not yet received architecture/API approval.
+
 - Generate a TypeScript API client and types from the contract.
 - Provide mock responses so frontend development can proceed independently.
 - Verify backend behavior against the contract using contract tests.

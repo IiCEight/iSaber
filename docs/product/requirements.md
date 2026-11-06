@@ -6,6 +6,8 @@ This document defines approved first-release behavior, incorporating requirement
 
 Related documents: [development plan](../../DEVELOPMENT_PLAN.md), [repository decision](../architecture/decisions/0001-monorepo.md).
 
+Implementation design drafts: [data model](../architecture/data-model.md), [API design and requirement coverage](../architecture/api-design.md), and [OpenAPI contract](../../contracts/openapi.yaml). These are proposed for separate review and do not change this approved product baseline.
+
 ## 1. Purpose and outcomes
 
 Create a personal publishing home for journals, technical articles, and portfolio content. The owner writes in Typora and publishes through a reliable Markdown import workflow. Visitors discover and read content through an artistic, distinctive interface that remains comfortable for long-form reading.
