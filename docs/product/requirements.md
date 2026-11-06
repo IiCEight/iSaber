@@ -1,8 +1,8 @@
 # Product requirements: iSaber blog
 
-Status: Draft for owner review.
+Status: Approved first-release product baseline. The owner explicitly approved all documented defaults. Design references and numerical targets not yet specified remain open as listed in Section 9.
 
-This document defines first-release behavior. Requirements explicitly stated in `AGENTS.md` and the owner decisions recorded below are confirmed inputs; other defaults remain proposals until the owner approves them. Approval of the development workflow does not imply approval of all product choices.
+This document defines approved first-release behavior, incorporating requirements from `AGENTS.md` and the owner’s explicit approval of the defaults in this PRD. Product approval does not select unresolved technical implementations or constitute visual design approval.
 
 Related documents: [development plan](../../DEVELOPMENT_PLAN.md), [repository decision](../architecture/decisions/0001-monorepo.md).
 
@@ -124,7 +124,7 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 - Missing local images or invalid metadata block publication and identify the problem. Valid drafts may be retained for correction.
 - External HTTPS image links remain external and are identified during preview; importing does not silently download remote content. Private articles show a notice that external images contact another host.
 - Failed or interrupted imports cannot create a partially published article. Retrying does not publish or overwrite an existing article automatically.
-- Reject unsafe archive paths, encrypted archives, unsupported file types, and excessive archive expansion. Proposed limits: 5 MiB Markdown, 10 MiB per image, 50 MiB compressed ZIP, 100 MiB expanded ZIP, and 200 files.
+- Reject unsafe archive paths, encrypted archives, unsupported file types, and excessive archive expansion. Limits: 5 MiB Markdown, 10 MiB per image, 50 MiB compressed ZIP, 100 MiB expanded ZIP, and 200 files.
 - Initially accept PNG, JPEG, GIF, and WebP images. SVG uploads and general-purpose attachments are deferred pending a defined handling policy.
 
 ### PUB-02: Preview and publication
@@ -148,7 +148,7 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 
 ### META-01: Metadata and dates
 
-| Field | Proposed behavior |
+| Field | Approved behavior |
 | --- | --- |
 | Title | Required; supports English and Chinese |
 | Summary | Optional; derive a plain-text excerpt if omitted |
@@ -162,10 +162,10 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 | Visibility | Public or private; default private until explicitly chosen |
 
 - Writing, publication, and update dates appear with distinct labels on article pages; identical timestamps may be visually combined only if meaning remains clear.
-- Proposed display timezone is Asia/Shanghai, shown where needed to avoid ambiguity. Writing date remains a calendar date.
+- Display timezone is Asia/Shanghai, shown where needed to avoid ambiguity. Writing date remains a calendar date.
 - Optional front matter supplies metadata; the form displays parsed values before publication. Form corrections take precedence for that import. Invalid fields produce actionable errors.
 - Owner can create categories and tags and assign them to articles. Renaming a label preserves article associations.
-- Scheduled publication, backdated first-publication times, and slug redirects are outside the proposed first release.
+- Scheduled publication, backdated first-publication times, and slug redirects are outside the first release.
 
 ### READ-01: Content rendering
 
@@ -198,12 +198,12 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 
 ### COMM-01: Comments and moderation
 
-- Proposed guest form requires a display name and plain-text comment. Email, website fields, reader accounts, and nested replies are excluded initially.
+- The guest form requires a display name and plain-text comment. Email, website fields, reader accounts, and nested replies are excluded initially.
 - Submission confirms receipt and explains that moderation is pending. Pending and rejected comments are invisible to visitors.
 - Owner can approve, reject, or remove comments. Approved comments appear chronologically on the associated public article.
 - Owner can disable new comments per article. Private or unpublished articles accept no visitor comments and expose no comment history publicly.
 - Renaming or revising an article preserves its comments. Comment text is never treated as executable markup.
-- Proposed limits: 80 characters for a name and 5,000 for a comment. Rate-limited or invalid submissions show a useful error without clearing the entered text.
+- Limits: 80 characters for a name and 5,000 for a comment. Rate-limited or invalid submissions show a useful error without clearing the entered text.
 
 ### DESIGN-01: Artistic and usable interface
 
@@ -214,7 +214,7 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 - Keyboard users can reach interactive elements with a visible focus indicator; forms have labels and actionable errors.
 - Reduced-motion preferences remove nonessential motion while preserving all content and controls.
 - Verify representative layouts at 360, 768, and 1440 CSS pixels and with text enlarged to 200%. Article pages have no unintended page-level horizontal scrolling.
-- Proposed accessibility target: WCAG 2.2 AA. Agree on the detailed audit checklist during design review.
+- Accessibility target: WCAG 2.2 AA. Agree on the detailed audit checklist during design review.
 - Define measurable page-loading and interaction budgets against an agreed device/network profile before accepting expensive motion or media. Final performance thresholds remain an open decision.
 
 ### PORT-01: Portfolio
@@ -231,17 +231,17 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 - Preview and publication use the same rendering specification, verified against shared content examples.
 - Backups include article data and managed media. A restoration exercise succeeds before production launch.
 - Staging uses separate data and credentials; real private journals are not required as test fixtures.
-- Proposed browser coverage: current stable Chrome, Firefox, Safari, and Edge, plus iOS Safari and Android Chrome. Record versions used during release verification.
+- Browser coverage: current stable Chrome, Firefox, Safari, and Edge, plus iOS Safari and Android Chrome. Record versions used during release verification.
 - Monitoring can identify failed publication, unavailable dependencies, and application errors without recording article bodies or comment text in logs.
 - Agree on recovery objectives, expected content volume, traffic assumptions, and performance targets before production sizing and release acceptance.
 
 ## 7. Explicitly deferred scope
 
-Unless promoted during review, defer multiple authors, reader accounts and registration, selected-reader sharing, paid memberships, newsletters, automatic translations, collaborative editing, an in-browser rich-text authoring replacement for Typora, scheduled publishing, custom executable Markdown, advanced search, nested comments, a portfolio CMS, and a standalone media library. A separate management service or separately deployed admin frontend is also outside the first-release scope.
+Unless approved through a subsequent scope change, defer multiple authors, reader accounts and registration, selected-reader sharing, paid memberships, newsletters, automatic translations, collaborative editing, an in-browser rich-text authoring replacement for Typora, scheduled publishing, custom executable Markdown, advanced search, nested comments, a portfolio CMS, and a standalone media library. A separate management service or separately deployed admin frontend is also outside the first-release scope.
 
 RSS and additional feed formats are optional follow-up features; privacy protections apply if they are introduced. Ordinary public page metadata and a public sitemap belong to release preparation.
 
-## 8. Proposed implementation slices
+## 8. Implementation slices
 
 1. Owner setup and sign-in, the `/admin` dashboard, and one Markdown article through upload, preview, publication, and reading, including backend authorization from the outset.
 2. Local-image packaging, import failures, revisions, metadata, and unpublishing.
@@ -252,7 +252,7 @@ RSS and additional feed formats are optional follow-up features; privacy protect
 
 The backend and design workstreams can progress independently against agreed contracts and realistic fixtures. Each slice receives acceptance criteria, focused changes, and review under the development plan.
 
-## 9. Decisions needed from the owner
+## 9. Approved defaults and outstanding inputs
 
 ### Confirmed decisions
 
@@ -262,27 +262,36 @@ The backend and design workstreams can progress independently against agreed con
 - Both public and management functions use the same Go backend and data stores.
 - Owner provisioning uses a setup command rather than a registration page. Login and recovery implementation details remain for architecture review.
 
-### Remaining decisions
+### Approved defaults
 
-The defaults below are proposals, not approvals inferred from silence.
+The owner explicitly approved all defaults documented in this PRD, including the acceptance criteria and limits in Sections 3–8.
 
-| Decision | Proposed default | When to resolve |
-| --- | --- | --- |
-| How do visitors comment? | Guest name and text, owner moderation, no email | Before comment API design |
-| Does upload publish immediately? | Upload creates a draft; explicit preview and publish | Before import API design |
-| What can be uploaded? | One Markdown file or one-article ZIP with images; limits above | Before import implementation |
-| How are updates handled? | Explicit article selection, draft revision, stable URL, history | Before domain model approval |
-| How are dates handled? | Owner sets writing date; first publication time is automatic; public update date changes only on publication | Before metadata contract approval |
-| How does Chinese search work initially? | Literal substring matching | Before search implementation |
-| What portfolio is needed? | Public introduction and curated project entries maintained in configuration | Before portfolio design |
-| Which design references and content? | Owner supplies references, branding preferences, and representative material | Before visual direction approval |
-| What quality targets apply? | Proposed accessibility/browser checks above; performance and recovery targets to be agreed | Before design and release acceptance |
+| Decision | Approved behavior |
+| --- | --- |
+| Comments | Guest name and plain text, owner moderation, no email or reader accounts |
+| Publication | Upload creates a draft; explicit preview and publication |
+| Uploads | One Markdown file or one-article ZIP with images, using the documented limits and file types |
+| Updates | Explicit article selection, draft revisions, stable URL, and revision history |
+| Metadata and dates | Documented field defaults, owner-selected writing date, automatic first-publication time, and public update date changed on publication; Asia/Shanghai display timezone |
+| Chinese search | Literal substring matching for the first release |
+| Portfolio | Public introduction and curated project entries maintained in configuration |
+| Quality | Documented responsive and keyboard checks, WCAG 2.2 AA target, and browser coverage |
+| Scope | First-release capabilities, deferred features, and implementation slice order as documented above |
+
+### Outstanding inputs and technical decisions
+
+Approval of defaults does not supply values or materials that have not yet been specified:
+
+- Owner-selected design references, branding preferences, portfolio content, and representative articles are needed before visual direction approval.
+- Numerical performance budgets, test device/network profile, recovery objectives, expected content volume, and traffic assumptions must be defined before their respective design or release acceptance checks.
+- Login, session, credential storage, and owner recovery implementations remain architecture decisions, as do unselected frameworks and infrastructure details.
+- Backlog preparation, domain modeling, API contract review, visual prototype review, and release validation remain work to perform.
 
 ## 10. Review and approval
 
 - [x] Owner confirms one account, no reader accounts, owner-only private content, and an integrated dashboard using the same Go backend.
-- [ ] Owner reviews first-release scope and deferred features.
-- [ ] Owner accepts or revises proposed behavior and the decisions above.
+- [x] Owner approves first-release scope and deferred features.
+- [x] Owner explicitly approves all documented product defaults and acceptance criteria.
 - [ ] Functional requirements are translated into the prioritized implementation backlog.
 - [ ] Architecture and API design reference the approved requirements.
 - [ ] Design review uses real content fixtures and the owner-selected references.

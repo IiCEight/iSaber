@@ -92,7 +92,7 @@ Record final technology choices and their tradeoffs in architecture decision rec
 
 ## 3. Requirements and acceptance criteria
 
-The first-release [product requirements document](docs/product/requirements.md) is drafted for owner review. It distinguishes confirmed inputs from proposed defaults and includes acceptance criteria and outstanding decisions.
+The first-release [product requirements document](docs/product/requirements.md) is approved as the product baseline, including its documented defaults, acceptance criteria, and deferred scope. Its Section 9 lists outstanding design inputs and unspecified targets; technical architecture and API contracts still require their own review.
 
 Translate product requirements into a prioritized backlog. Each feature must define:
 
@@ -242,13 +242,13 @@ A change is complete when:
 - [ ] Confirm Go REST API, PostgreSQL, and COS as the proposed backend foundation.
 - [x] Use one owner account with owner-only private articles; defer reader accounts and public registration.
 - [x] Manage content through `/admin` in the React application and the same Go backend; provision the owner through a setup command.
-- [ ] Define the comment model without reader accounts: guest comments with owner moderation or an external provider that permits guest submissions.
-- [ ] Confirm Markdown/image import and revision behavior.
-- [ ] Define the first-release search expectations, including Chinese search quality.
+- [x] Use guest comments with a display name and plain text, owner moderation, and no email or reader accounts.
+- [x] Use draft-first Markdown/image import and explicit revision updates with stable URLs and history, as defined in the PRD.
+- [x] Use the PRD search scope, including literal substring matching for Chinese.
 - [ ] Supply design references and review the prototype before visual implementation.
 - [ ] Confirm the Git hosting and CI provider; GitHub is proposed.
 - [ ] Confirm target hosting region and operational requirements before deployment design is finalized.
-- [ ] Approve the milestone order and first-release scope.
+- [x] Approve the documented milestone order and first-release product scope.
 
 ## References
 
