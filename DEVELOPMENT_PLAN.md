@@ -19,7 +19,7 @@ Requirements from `AGENTS.md`:
 
 Implementation begins after review of the scope and architecture. Visual implementation follows review of the design direction.
 
-The [implementation backlog](docs/product/backlog.md) tracks current foundation work. React/Next.js and Go scaffolding with independent CI is merged. The persistence branch adds PostgreSQL migrations and database readiness for review; business endpoints, object-storage integration, and cloud deployment are not implemented yet.
+The [implementation backlog](docs/product/backlog.md) tracks progress. React/Next.js, Go, PostgreSQL migrations, and database readiness are merged. Owner setup/recovery, sessions, sign-in/out, and the authenticated dashboard entry are implemented in the authentication branch for review. Article management, object-storage integration, publishing, and cloud deployment remain subsequent work.
 
 ## 2. Application separation
 
@@ -65,7 +65,7 @@ All application data flows through the Go API. Only the backend accesses the dat
 
 ### Owner dashboard and accounts
 
-Confirmed decision: the first release has one owner account and no reader accounts or public registration. Private articles are owner-only. Provision the owner through a documented setup command; define sign-in and recovery mechanisms during architecture review.
+Confirmed decision: the first release has one owner account and no reader accounts or public registration. Private articles are owner-only. Setup, recovery, and session mechanisms are implemented for review in [ADR 0005](docs/architecture/decisions/0005-owner-authentication.md) and the [owner operations guide](docs/operations/owner-account.md).
 
 The React application contains the public blog and a protected `/admin` dashboard for article lists and filters, Markdown uploads, metadata, preview, revisions, publication, categories, tags, and comment moderation. Both sections use the same Go backend and data stores. Each management operation requires backend authorization; route protection alone does not grant security.
 

@@ -4,7 +4,7 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 ## Current state
 
-The PRD and logical API/data model are approved. The project has a runnable Next.js/React shell, a Go HTTP service, and separate CI jobs. The persistence branch adds PostgreSQL migrations and database-aware readiness. The visual direction, owner authentication, Markdown import, object-storage adapter, and publishing features are not implemented yet. No cloud deployment is configured.
+The PRD and logical API/data model are approved. React/Next.js, the Go service, PostgreSQL migrations, and CI are merged. The owner-authentication branch adds real owner setup/recovery, sign-in/out, sessions, and an authenticated `/admin` entry page. Markdown import, article management, object storage, publishing, and the final visual design remain subsequent work. No cloud deployment is configured.
 
 ## Local development
 
@@ -24,8 +24,11 @@ set -a
 . ./.env.example
 set +a
 go run ./cmd/migrate up
+go run ./cmd/owner setup --username owner
 go run ./cmd/api
 ```
+
+Owner setup is a first-time step and refuses to replace an existing account. It prompts for a password without echoing it. See the [owner guide](docs/operations/owner-account.md) for recovery and production configuration.
 
 Start React in another:
 
@@ -35,20 +38,22 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`. The public shell and `/admin` shell contain no real article or owner data. Go listens on `127.0.0.1:8080` by default. Next.js forwards `/api/*` requests to Go, keeping browser requests on one origin.
+Open `http://127.0.0.1:3000`, then `/admin` to sign in. Article content is not implemented yet. Go listens on `127.0.0.1:8080` by default. Next.js forwards `/api/*` requests to Go, keeping browser requests on one origin.
 
 | Endpoint | Current behavior |
 | --- | --- |
 | Frontend `/` | Neutral public shell; final visual design is pending |
-| Frontend `/admin` | Nonfunctional owner-access shell; no sign-in form or management data |
+| Frontend `/admin` | Owner sign-in, authenticated identity, and sign-out; article tools are not implemented yet |
 | Frontend `/healthz` | Frontend process liveness |
 | Go `/healthz` | Go process liveness |
 | Go `/readyz` | Database connectivity and required schema readiness; returns `503` when unavailable or unmigrated |
-| `/api/v1/*` | Problem-format `404` until business endpoints are implemented |
+| `/api/v1/auth/*` | Owner login, session, and logout |
+| `/api/v1/admin/*` | Requires an owner session and CSRF/origin checks on mutations, then returns `404` for unimplemented tools |
+| Other `/api/v1/*` routes | Problem-format `404` until implemented |
 
 Configure Go's bind address with `HTTP_ADDR`. Configure the frontend's proxy target with `BACKEND_ORIGIN` (see `frontend/.env.example`). Next.js evaluates the proxy target at build/dev startup; rebuild production after changing it. Do not put credentials into this URL or browser-visible environment variables.
 
-Both development servers bind to loopback. There is no production authentication or TLS setup yet; these commands are for local development, not public server deployment.
+Both development servers bind to loopback. Development authentication uses an isolated local HTTP cookie. Production authentication requires an HTTPS site origin, secure cookies, and an injected CSRF key; TLS hosting and cloud deployment are not configured by these local commands.
 
 ## Checks
 
@@ -61,7 +66,7 @@ npm run build
 npm run test:smoke
 ```
 
-The smoke test requires a successful production build and temporarily uses port 4317. It verifies server-rendered pages, uncached responses, the admin shell, liveness, and missing-page behavior without requiring Go. It is not browser-based visual or accessibility verification.
+The smoke test requires a successful production build and temporarily uses port 4317. It verifies server-rendered pages, uncached responses, the visitor sign-in page, liveness, and missing-page behavior without requiring Go. It is not browser-based visual or accessibility verification.
 
 Run from `backend/`:
 
@@ -71,6 +76,7 @@ go vet ./...
 go test -race ./...
 go build -trimpath -o bin/isaber-api ./cmd/api
 go build -trimpath -o bin/isaber-migrate ./cmd/migrate
+go build -trimpath -o bin/isaber-owner ./cmd/owner
 ```
 
 `gofmt -l` should print nothing. Go dependency versions/checksums are committed in `go.mod` and `go.sum`. See the [database guide](docs/operations/database.md) for real PostgreSQL integration tests and migration operations, and the [contract guide](contracts/README.md) for API specification checks.
@@ -87,4 +93,5 @@ GitHub Actions runs **API contract**, **Frontend**, and **Backend** independentl
 - [Foundation technology decision](docs/architecture/decisions/0003-application-foundation.md)
 - [PostgreSQL and private storage decision](docs/architecture/decisions/0004-postgresql-and-private-storage.md)
 - [Database setup and migrations](docs/operations/database.md)
+- [Owner setup, sign-in, and recovery](docs/operations/owner-account.md)
 - [Guided GitHub CI/CD setup](docs/operations/github-cicd.md)

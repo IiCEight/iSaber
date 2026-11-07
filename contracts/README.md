@@ -1,6 +1,6 @@
 # API contract
 
-Status: Approved API contract baseline, not an implemented API. Start with the [API design](../docs/architecture/api-design.md) and [data model](../docs/architecture/data-model.md).
+Status: Approved API contract baseline. Owner authentication is implemented in its branch for review; article, import, taxonomy, and comment handlers remain subsequent work. Start with the [API design](../docs/architecture/api-design.md) and [data model](../docs/architecture/data-model.md).
 
 - `openapi.yaml`: OpenAPI 3.1.1 contract for the public blog and owner dashboard.
 - `examples.json`: synthetic response/request fixtures for review and initial mocks. These do not represent real owner content or credentials.

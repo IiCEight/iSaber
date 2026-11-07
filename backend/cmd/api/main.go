@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/IiCEight/iSaber/backend/internal/auth"
 	"github.com/IiCEight/iSaber/backend/internal/database"
 	"github.com/IiCEight/iSaber/backend/internal/httpapi"
 	"github.com/IiCEight/iSaber/backend/internal/migrations"
@@ -32,15 +33,26 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 	defer db.Close()
+	config, err := auth.LoadConfig(os.Getenv)
+	if err != nil {
+		return err
+	}
+	service, err := auth.NewService(auth.NewStore(db), config.Secret)
+	if err != nil {
+		return err
+	}
 	addr := os.Getenv("HTTP_ADDR")
 	if addr == "" {
 		addr = "127.0.0.1:8080"
+	}
+	if err := config.ValidateListenAddress(addr); err != nil {
+		return err
 	}
 	server := &http.Server{
 		Addr: addr,
 		Handler: httpapi.NewHandler(func(ctx context.Context) error {
 			return migrations.CheckReady(ctx, db)
-		}),
+		}, httpapi.WithAuthentication(auth.NewHTTPHandler(service, config))),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,

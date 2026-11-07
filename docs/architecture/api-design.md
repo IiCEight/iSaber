@@ -12,7 +12,7 @@ Unknown and inaccessible public resources return the same `404` problem. API res
 
 ## 2. Authentication
 
-Use owner username/password login and opaque server-side sessions, with secure password hashing selected during implementation review. Owner setup and credential recovery are operational commands, not public APIs. Recovery revokes all sessions; session lifetime, idle timeout, hashing parameters, and rate-limit thresholds remain implementation decisions requiring documentation before release.
+Use owner username/password login and opaque server-side sessions. The implementation uses Argon2id, an eight-hour absolute session lifetime, a 30-minute idle limit, and bounded per-process login attempts. Setup and atomic credential recovery are operational commands, not public APIs. See [ADR 0005](decisions/0005-owner-authentication.md) for parameters and the [owner guide](../operations/owner-account.md) for setup and deployment requirements.
 
 - Login creates a fresh `__Host-isaber_session` cookie with `Secure`, `HttpOnly`, `SameSite=Strict`, and `Path=/`, with no `Domain` attribute. The cookie value is never returned in JSON.
 - Session responses return a CSRF token. `GET /auth/session` restores owner information and that token after a page reload; unauthenticated requests return `401`.
@@ -22,7 +22,7 @@ Use owner username/password login and opaque server-side sessions, with secure p
 - Sign-out revokes the session and clears its cookie. Successful recovery revokes all owner sessions.
 - Same-origin routing keeps the public site, dashboard, and API on one origin. Local development uses HTTPS or a clearly isolated development cookie configuration that cannot be used in production.
 
-The owner approved these session and CSRF mechanisms. Implementation parameters listed above remain to be defined; no reader accounts are introduced.
+The owner approved these session and CSRF mechanisms; their implementation is in the authentication branch for review. Development uses a separate loopback-only HTTP cookie, while production requires HTTPS and a stable injected CSRF key. No reader accounts are introduced.
 
 ## 3. Responses and errors
 

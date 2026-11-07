@@ -1,6 +1,6 @@
 # Database setup and migrations
 
-Status: PostgreSQL foundation implemented for local/CI use. No cloud data has been created or changed. Authentication and article APIs remain subsequent slices.
+Status: PostgreSQL foundation is merged for local/CI use. Owner authentication follows in its own branch using the existing identity tables. Article APIs and cloud deployment remain subsequent slices; no cloud data has been changed.
 
 ## Local development
 
@@ -72,7 +72,7 @@ go test -race -tags=integration ./internal/migrations -v
 
 Each test creates a uniquely named schema, sets its own search path, and drops only that schema afterward. Tests never apply migrations to the database's default schema. A missing test URL fails explicitly rather than skipping the integration checks. The CI backend job provisions its own PostgreSQL service and runs the same tests.
 
-Tests cover upgrade from the identity migration while preserving existing data, repeated migration runs, readiness before/after migration, cross-article revision and asset rejection, the single-owner constraint, private article defaults, and pending-comment/validation constraints. They are persistence tests, not proof that sign-in or publication is implemented.
+Tests cover upgrade from the identity migration while preserving existing data, repeated migration runs, readiness before/after migration, cross-article revision and asset rejection, the single-owner constraint, private article defaults, and pending-comment/validation constraints. Authentication adds its own integration tests; run `go test -race -tags=integration ./internal/...` to include them. Publication is not implemented yet.
 
 ## Migration authoring and release policy
 
