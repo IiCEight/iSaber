@@ -24,6 +24,7 @@ import (
 
 func (s *Service) AdminHandler() http.Handler {
 	mux := http.NewServeMux()
+	s.historyRoutes(mux)
 	mux.HandleFunc("GET /api/v1/admin/articles", s.listAdmin)
 	mux.HandleFunc("GET /api/v1/admin/articles/{article_id}", func(w http.ResponseWriter, r *http.Request) {
 		id, ok := pathID(w, r, "article_id")
