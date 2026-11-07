@@ -1,6 +1,6 @@
 # ADR 0009: English/Chinese public search
 
-Status: Implemented locally on `feat/article-labels` as part of the content organization/search milestone; pending one combined PR.
+Status: Accepted and merged in PR #9.
 
 ## Decision
 

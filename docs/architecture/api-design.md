@@ -2,7 +2,7 @@
 
 Status: Approved by the owner as the API design baseline. The machine-readable contract is [OpenAPI](../../contracts/openapi.yaml); this document explains conventions and end-to-end workflows. The [data model](data-model.md) defines persistence invariants.
 
-Implementation status: owner authentication and the first Markdown flow are merged; ZIPs and authorized image delivery are merged; published snapshot browsing/restoration is merged; the content-discovery branch combines category/tag management, public browsing, and public search; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
+Implementation status: owner authentication and the first Markdown flow are merged; ZIPs and authorized image delivery are merged; published snapshot browsing/restoration is merged; content discovery is merged; the comments branch adds guest submission and moderation; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
 
 ## 1. Boundaries and naming
 
@@ -87,6 +87,8 @@ The normalized Markdown excludes parsed front matter and uses managed image rout
 Owner category/tag endpoints create labels and rename their display names using versions. Slugs remain stable; deletion and merging are deferred. Unknown or conflicting references block draft publication with actionable issues.
 
 Guest comment submission requires a UUID idempotency key and returns only `{status: pending}`. It never issues an account or returns the submitted text as a public resource. Submission is allowed only for a currently public published article with comments enabled. Disabled comments return `409 comments_disabled`; nonpublic articles return `404`.
+
+Comment limits are five accepted submissions per article and twenty globally per sliding minute, coordinated in PostgreSQL; retries do not consume quota. Two per-process admission slots bound concurrency. Validate exact Origin, bounded text, and a UUID idempotency key; recheck article eligibility before both insert and replay. See [ADR 0010](decisions/0010-guest-comments.md) for persistence and UI retry semantics.
 
 Owner comment lists can filter by article and moderation status. A versioned moderation update selects `approved`, `rejected`, or `removed`. All public reads recheck article visibility, including comment-list pagination.
 

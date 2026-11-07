@@ -34,3 +34,10 @@ p { max-width: 65ch; }
 .image-warning { display: inline-block; border: 1px dashed; padding: 0.5rem; }
 .article-dates { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.9rem; }
 .article-dates dt { font-weight: 600; }.article-dates dd { margin: 0; }
+
+.article-comments { border-top: 1px solid; margin-top: 3rem; padding-top: 1.5rem; }
+.article-comments form { display: grid; gap: 0.75rem; max-width: 40rem; margin-block: 1rem; }
+.article-comments input, .article-comments textarea, .article-comments button { font: inherit; max-width: 100%; padding: 0.5rem; }
+.article-comments textarea { min-height: 8rem; }
+.comment-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+#comments li { margin-block: 1.5rem; }

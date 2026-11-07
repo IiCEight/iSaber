@@ -47,7 +47,7 @@ func newImageFixture(t *testing.T) *imageFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := NewService(db, t.TempDir()+"/uploads")
+	s, err := NewService(db, t.TempDir()+"/uploads", WithCommentOrigin(cfg.Origin))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -42,7 +42,7 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	articles, err := publishing.NewService(db, os.Getenv("UPLOAD_DIR"))
+	articles, err := publishing.NewService(db, os.Getenv("UPLOAD_DIR"), publishing.WithCommentOrigin(config.Origin))
 	if err != nil {
 		return err
 	}

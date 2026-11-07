@@ -58,7 +58,7 @@ The container image is pinned to major version 16 so compatible patch updates ca
 
 Foreign keys ensure that article pointers, restored revision references, and revision assets cannot cross article ownership. They do not replace reader authorization. Incomplete drafts are permitted; publication completeness is validated by the future publishing service.
 
-Migration `00004_revision_import_issues.sql` adds internal saved revision issues and the original import filename. The current API requires schema version 4. Apply it with `migrate up` before starting the new binary; it preserves existing rows.
+Migration `00004_revision_import_issues.sql` adds internal saved revision issues and the original import filename. The comment milestone adds `00005_comment_rate_index.sql` for creation-time quota lookups and requires schema version 5. Apply it with `migrate up` before starting the new binary; it preserves existing rows.
 
 The Go pool allows five open connections and two idle connections initially. Both are modest development defaults; review aggregate pool sizes against the database limit before adding replicas or migration workers.
 
@@ -74,7 +74,7 @@ go test -race -tags=integration ./internal/migrations -v
 
 Each test creates a uniquely named schema, sets its own search path, and drops only that schema afterward. Tests never apply migrations to the database's default schema. A missing test URL fails explicitly rather than skipping the integration checks. The CI backend job provisions its own PostgreSQL service and runs the same tests.
 
-Tests cover upgrade from the identity migration while preserving existing data, repeated migration runs, readiness before/after migration, cross-article revision and asset rejection, the single-owner constraint, private article defaults, and pending-comment/validation constraints. Authentication adds its own integration tests; run `go test -race -tags=integration ./internal/...` to include them. Publishing integration tests now cover draft/live isolation, version conflicts, retries, private access, and failed imports.
+Tests cover upgrade from the identity migration while preserving existing data, repeated migration runs, readiness before/after migration, cross-article revision and asset rejection, the single-owner constraint, private article defaults, and pending-comment/validation constraints. Authentication adds its own integration tests; run `go test -race -tags=integration ./internal/...` to include them. Comment tests additionally cover guest admission, quota/replay/privacy behavior and owner moderation. Publishing integration tests cover draft/live isolation, version conflicts, retries, private access, and failed imports.
 
 ## Migration authoring and release policy
 

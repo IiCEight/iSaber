@@ -1,6 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import ArticleComments from "../../../components/article-comments";
+import { backendOrigin } from "../../../lib/public-api";
+import type { Page } from "../../../lib/articles";
+import type { PublicComment } from "../../../lib/comments";
 import Markdown from "../../../components/markdown";
 import { getPublicArticle } from "../../../lib/public-api";
 
@@ -18,6 +22,13 @@ function date(value: string) {
 export default async function ArticlePage({ params }: Props) {
   const article = await getPublicArticle((await params).slug);
   if (!article) notFound();
+  let commentPage: Page<PublicComment> | null = null;
+  let missing = false;
+  try {
+    const response = await fetch(`${backendOrigin()}/api/v1/articles/${article.id}/comments`, { cache: "no-store", signal: AbortSignal.timeout(5000) });
+    if (response.status === 404) missing = true;
+    else if (response.ok) commentPage = await response.json();
+  } catch { /* Keep article reading available when comment storage is unavailable. */ }
   return <article lang={article.language === "zh" ? "zh-CN" : "en"}>
     <h1>{article.title}</h1>
     <dl className="article-dates">
@@ -30,5 +41,6 @@ export default async function ArticlePage({ params }: Props) {
       {article.tags.length > 0 && <ul>{article.tags.map((tag) => <li key={tag.id}><Link href={{ pathname: "/", query: { tag: tag.slug } }}>{tag.name}</Link></li>)}</ul>}
     </nav>}
     <Markdown content={article.markdown} />
+    <ArticleComments articleId={article.id} enabled={!missing && article.comments_enabled} initialPage={commentPage} unavailable={!commentPage} />
   </article>;
 }

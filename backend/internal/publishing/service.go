@@ -14,12 +14,20 @@ import (
 )
 
 type Service struct {
-	db          *sql.DB
-	root        *os.Root
-	searchSlots chan struct{}
+	db            *sql.DB
+	root          *os.Root
+	searchSlots   chan struct{}
+	commentSlots  chan struct{}
+	commentOrigin string
 }
 
-func NewService(db *sql.DB, directory string) (*Service, error) {
+type ServiceOption func(*Service)
+
+func WithCommentOrigin(origin string) ServiceOption {
+	return func(s *Service) { s.commentOrigin = origin }
+}
+
+func NewService(db *sql.DB, directory string, options ...ServiceOption) (*Service, error) {
 	if directory == "" {
 		directory = ".data/uploads"
 	}
@@ -34,7 +42,11 @@ func NewService(db *sql.DB, directory string) (*Service, error) {
 	if err != nil {
 		return nil, errors.New("cannot open private upload directory")
 	}
-	return &Service{db: db, root: root, searchSlots: make(chan struct{}, 2)}, nil
+	service := &Service{db: db, root: root, searchSlots: make(chan struct{}, 2), commentSlots: make(chan struct{}, 2)}
+	for _, option := range options {
+		option(service)
+	}
+	return service, nil
 }
 func (s *Service) Close() error { return s.root.Close() }
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
@@ -10,10 +11,19 @@ const require = createRequire(import.meta.url);
 const root = fileURLToPath(new URL("../", import.meta.url));
 const origin = "http://127.0.0.1:4317";
 
-test("production frontend serves its shell without a running backend", async (t) => {
+test("production frontend handles unavailable and older backend capabilities", async (t) => {
+  const olderAPI = createServer((request, response) => {
+    if (request.url === "/api/v1/articles/legacy-article") {
+      response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+      response.end(JSON.stringify({ id: "11111111-1111-4111-8111-111111111111", slug: "legacy-article", title: "Legacy article", summary: "A readable existing article.", language: "en", written_at: "2026-11-07", published_at: "2026-11-07T08:00:00Z", updated_at: "2026-11-07T08:00:00Z", category: null, tags: [], markdown: "Existing article body.", comments_enabled: true }));
+    } else { response.writeHead(404, { "Content-Type": "application/problem+json" }); response.end(JSON.stringify({ status: 404, code: "not_found" })); }
+  });
+  olderAPI.listen(0, "127.0.0.1"); await once(olderAPI, "listening");
+  t.after(() => new Promise((resolve, reject) => olderAPI.close((error) => error ? reject(error) : resolve())));
+  const backend = `http://127.0.0.1:${olderAPI.address().port}`;
   const server = spawn(process.execPath, [require.resolve("next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", "4317"], {
     cwd: root,
-    env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" },
+    env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1", BACKEND_ORIGIN: backend },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let logs = "";
@@ -68,6 +78,14 @@ test("production frontend serves its shell without a running backend", async (t)
     const response = await fetch(`${origin}/?q=go&q=database`);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /Use a single search query/);
+  });
+  await t.test("an older API without comments still serves existing articles", async () => {
+    const response = await fetch(`${origin}/articles/legacy-article`);
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.match(html, /Existing article body/);
+    assert.match(html, /Comments are temporarily unavailable/);
+    assert.match(html, /New comments are disabled or unavailable/);
   });
   await t.test("liveness is explicitly uncached", async () => {
     const response = await fetch(`${origin}/healthz`);

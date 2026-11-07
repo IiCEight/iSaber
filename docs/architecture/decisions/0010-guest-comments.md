@@ -1,0 +1,23 @@
+# ADR 0010: Guest comments and owner moderation
+
+Status: Implemented locally in `feat/guest-comments`; guest submission, public reading, owner moderation, and article comment controls share one milestone PR.
+
+## Decision
+
+Accept only a display name and plain-text body, with no reader account, email, website, or threaded replies. Preserve text as entered, requiring nonblank values, at most 80/5,000 Unicode characters, and no NUL bytes. Bound JSON requests to 32 KiB. Require the exact configured site Origin and a UUID idempotency key; guest requests require no owner session or CSRF token. Fail closed when no comment origin is configured. Render names/bodies as escaped React text with preserved line breaks, never through Markdown or HTML execution.
+
+Create pending comments and return only `{status: pending}` with 202. Successful retries return the original receipt without inserting or consuming quota again. Add a transaction guard to the existing idempotency helper: check current article public/publication state and comment setting before both acceptance and replay, holding an article shared row lock until the transaction ends. Privacy/unpublishing changes cannot race an accepted submission; private or unpublished articles return 404, disabled submissions return 409. A replay receipt describes the original acceptance, not current moderation status.
+
+Public lists ignore owner cookies, recheck public publication on every request, and expose approved comments only, oldest creation time/ID first. Disabling new submissions keeps existing approvals visible. A repeatable-read transaction keeps article eligibility and the comment page coherent. Owner lists include all states and private/unpublished articles, with status/article filters and newest-first pagination. Bind cursors to audience, article, and applicable filters.
+
+Owner approval/rejection/removal uses the established session, exact-Origin, CSRF, and expected-version boundary. Lock each comment before changing its status/version/moderation timestamp. Stale versions return 409; saving an unchanged status with the current version is a no-op. Removal is logical and may be changed later; text and article association are immutable. Comment operations never alter article publication dates or versions. Article-wide enable/disable uses the existing versioned article-control endpoint.
+
+## Admission and persistence
+
+Allow two active guest submissions per Go process. Use database transaction advisory lock `7311172` to serialize a recent-window quota check with insertion across API instances: at most five accepted comments per article and twenty globally in a sliding minute. Rejected/removed comments still count; retries do not. Return 429 with `Retry-After: 60`, or 503 with `Retry-After: 1` when per-process submission slots are busy. Idempotency transactions explicitly use read committed, so the quota check after acquiring the advisory lock sees prior committed submissions. No client IPs or forwarded headers are used or stored. These conservative shared quotas can affect legitimate visitors during abuse; tune them and add appropriate ingress controls during deployment work.
+
+Migration 00005 adds a creation-time index for the global recent-window lookup. The new API requires schema version 5; existing comment data is preserved and older binaries remain compatible with the additive index. Apply migrations before starting this binary. No extra database tables, queue services, or dependencies are required.
+
+The browser preserves typed values on failures. It keeps an uncertain submission's key stable, locks editing until retry or an explicit new-comment choice, and waits after a 429. Session storage retains only the article-scoped retry key and payload hash, not name/body text or a reader credential. Re-entering the same text within that browser session can reuse the key; text itself is not persisted across reloads. The 24-hour server retry retention boundary remains unchanged.
+
+Approved comments are server rendered and readable without JavaScript. Article reading remains available if comment routes are missing during an older-backend deployment window; the new submission form is disabled in that case. Apply migration 00005 and upgrade Go before enabling the new frontend capability. Submission and continuation require JavaScript; disabled pre-hydration controls and a POST fallback prevent accidental comment text in GET URLs. Owner moderation is linked from dashboard navigation. Public search continues to exclude comments. Browser/keyboard/visual acceptance and ingress/retention/backup work remain release tasks.
