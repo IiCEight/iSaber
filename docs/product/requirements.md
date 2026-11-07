@@ -262,7 +262,7 @@ The backend and design workstreams can progress independently against agreed con
 - Private articles are owner-only.
 - A protected `/admin` section in the existing React application provides content management.
 - Both public and management functions use the same Go backend and data stores.
-- Owner provisioning uses a setup command rather than a registration page. Login and recovery implementation details remain for architecture review.
+- Owner provisioning uses a setup command rather than a registration page. Login and recovery are implemented for review in the [owner-authentication decision](../architecture/decisions/0005-owner-authentication.md).
 
 ### Approved defaults
 
@@ -286,8 +286,8 @@ Approval of defaults does not supply values or materials that have not yet been 
 
 - Owner-selected design references, branding preferences, portfolio content, and representative articles are needed before visual direction approval.
 - Numerical performance budgets, test device/network profile, recovery objectives, expected content volume, and traffic assumptions must be defined before their respective design or release acceptance checks.
-- Login, session, credential storage, and owner recovery implementations remain architecture decisions, as do unselected frameworks and infrastructure details.
-- The logical data model and API contract are owner-approved, and the implementation backlog is prepared. Physical migrations are implemented in the persistence branch for review. Business feature implementation, visual prototype review, and release validation remain work to perform.
+- Login, sessions, password storage, and recovery are implemented in the authentication branch for review. Production secrets, TLS hosting, ingress abuse controls, and other unselected deployment details remain to be configured.
+- The logical data model and API contract are owner-approved, the implementation backlog is prepared, and PostgreSQL migrations are merged. Article feature implementation, visual prototype review, and release validation remain work to perform.
 
 ## 10. Review and approval
 

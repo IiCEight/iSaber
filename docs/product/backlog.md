@@ -27,6 +27,15 @@ Visual design discovery can run alongside backend development after the owner pr
 - [ ] Add Frontend and Backend as required checks after they report successfully.
 - [x] Implement PostgreSQL/pgx and Goose migrations in the persistence branch; select private COS as the production object-storage boundary, with its adapter deferred to import work.
 - [x] Validate migration upgrades/reruns, ownership constraints, the migration CLI, and readiness transitions against real local PostgreSQL; verify unit/race tests and builds.
-- [ ] Review the persistence branch and observe the new PostgreSQL CI checks before considering this foundation slice complete.
+- [x] Merge persistence in PR #4 and observe its successful PostgreSQL CI checks.
 
-The next implementation slice is owner access backed by persistent data, after the database and migration decisions. It must not be represented by a fake login or hardcoded owner session.
+## Owner authentication progress
+
+- [x] Implement hidden-prompt/stdin owner setup and atomic credential recovery with session revocation.
+- [x] Implement password hashing, bounded login requests, session expiry, origin/CSRF checks, and production/development cookie isolation.
+- [x] Connect the `/admin` sign-in page and sign-out to the real Go API; return owner identity only after a session check.
+- [x] Verify unit/race tests and PostgreSQL integration coverage for sessions, recovery, expiry, cookies, and rate limits.
+- [x] Verify the full local Next.js/Go proxy, setup/recovery CLI, cookie forwarding, protected SSR, and live OpenAPI response schemas.
+- [ ] Review the authentication branch and observe its real GitHub checks before merging.
+
+The next implementation slice is the first Markdown import, preview, and publishing flow. Article management and private content must reuse the owner authorization boundary and receive their own access tests.

@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -18,14 +19,30 @@ type problem struct {
 	RequestID string `json:"request_id"`
 }
 
-// NewHandler exposes operational probes only. Unimplemented business routes
-// return a problem response instead of pretending to serve blog content.
-func NewHandler(checkReady func(context.Context) error) http.Handler {
+type options struct{ authentication http.Handler }
+type Option func(*options)
+
+func WithAuthentication(handler http.Handler) Option {
+	return func(config *options) { config.authentication = handler }
+}
+
+// NewHandler exposes probes and configured authentication. Unimplemented business
+// endpoints remain unavailable; owner operations pass through authorization.
+func NewHandler(checkReady func(context.Context) error, opts ...Option) http.Handler {
+	config := options{}
+	for _, option := range opts {
+		option(&config)
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := rand.Text()
 		w.Header().Set("X-Request-ID", requestID)
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
+		if config.authentication != nil && (strings.HasPrefix(r.URL.Path, "/api/v1/auth/") ||
+			r.URL.Path == "/api/v1/admin" || strings.HasPrefix(r.URL.Path, "/api/v1/admin/")) {
+			config.authentication.ServeHTTP(w, r)
+			return
+		}
 
 		switch r.URL.Path {
 		case "/healthz", "/readyz":

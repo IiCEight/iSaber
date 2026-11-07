@@ -49,13 +49,15 @@ test("production frontend serves its shell without a running backend", async (t)
     assert.match(html, /A home for words and ideas\./);
     assert.match(html, /Skip to content/);
   });
-  await t.test("admin shell exposes no management form or data", async () => {
+  await t.test("admin page offers sign-in but exposes no owner data", async () => {
     const response = await fetch(`${origin}/admin`);
     assert.equal(response.status, 200);
     assert.match(response.headers.get("cache-control") ?? "", /no-store/);
     const html = await response.text();
-    assert.match(html, /Sign-in is not available yet\./);
-    assert.doesNotMatch(html, /<form[\s>]/);
+    assert.match(html, /Owner sign-in/);
+    assert.match(html, /name="password"/);
+    assert.match(html, /method="post"/);
+    assert.doesNotMatch(html, /Signed in as/);
   });
   await t.test("liveness is explicitly uncached", async () => {
     const response = await fetch(`${origin}/healthz`);
