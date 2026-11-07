@@ -49,7 +49,7 @@ func NewHandler(checkReady func(context.Context) error, opts ...Option) http.Han
 			config.authentication.ServeHTTP(w, r)
 			return
 		}
-		if config.public != nil && (r.URL.Path == "/api/v1/articles" || strings.HasPrefix(r.URL.Path, "/api/v1/articles/")) {
+		if config.public != nil && (r.URL.Path == "/api/v1/categories" || r.URL.Path == "/api/v1/tags" || r.URL.Path == "/api/v1/articles" || strings.HasPrefix(r.URL.Path, "/api/v1/articles/")) {
 			config.public.ServeHTTP(w, r)
 			return
 		}

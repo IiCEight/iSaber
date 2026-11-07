@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Markdown from "../../../components/markdown";
@@ -24,6 +25,10 @@ export default async function ArticlePage({ params }: Props) {
       <div><dt>Published</dt><dd><time dateTime={article.published_at}>{date(article.published_at)}</time></dd></div>
       <div><dt>Updated</dt><dd><time dateTime={article.updated_at}>{date(article.updated_at)}</time></dd></div>
     </dl>
+    {(article.category || article.tags.length > 0) && <nav aria-label="Article categories and tags">
+      {article.category && <p>Category: <Link href={{ pathname: "/", query: { category: article.category.slug } }}>{article.category.name}</Link></p>}
+      {article.tags.length > 0 && <ul>{article.tags.map((tag) => <li key={tag.id}><Link href={{ pathname: "/", query: { tag: tag.slug } }}>{tag.name}</Link></li>)}</ul>}
+    </nav>}
     <Markdown content={article.markdown} />
   </article>;
 }

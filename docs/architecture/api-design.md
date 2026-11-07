@@ -2,7 +2,7 @@
 
 Status: Approved by the owner as the API design baseline. The machine-readable contract is [OpenAPI](../../contracts/openapi.yaml); this document explains conventions and end-to-end workflows. The [data model](data-model.md) defines persistence invariants.
 
-Implementation status: owner authentication and the first Markdown flow are merged; ZIPs and authorized image delivery are merged; the history branch adds published snapshot browsing/restoration; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
+Implementation status: owner authentication and the first Markdown flow are merged; ZIPs and authorized image delivery are merged; published snapshot browsing/restoration is merged; the content-discovery branch combines category/tag management, public browsing, and public search; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
 
 ## 1. Boundaries and naming
 
@@ -24,7 +24,7 @@ Use owner username/password login and opaque server-side sessions. The implement
 - Sign-out revokes the session and clears its cookie. Successful recovery revokes all owner sessions.
 - Same-origin routing keeps the public site, dashboard, and API on one origin. Local development uses HTTPS or a clearly isolated development cookie configuration that cannot be used in production.
 
-The owner approved these session and CSRF mechanisms; their implementation is in the authentication branch for review. Development uses a separate loopback-only HTTP cookie, while production requires HTTPS and a stable injected CSRF key. No reader accounts are introduced.
+The owner approved these session and CSRF mechanisms; their implementation is merged in PR #5. Development uses a separate loopback-only HTTP cookie, while production requires HTTPS and a stable injected CSRF key. No reader accounts are introduced.
 
 ## 3. Responses and errors
 
@@ -52,11 +52,11 @@ Draft issues are distinct from HTTP errors. An import can finish successfully wi
 Use opaque cursors and `limit` (default 20, maximum 100). A cursor encodes the ordering position and relevant query/filter context; reject reuse with different filters. Return `next_cursor: null` at the end. Lists are not a cross-request snapshot; concurrent publication can change results.
 
 - Public articles: `published_at DESC, id DESC`.
-- Search: title matches, then summary/tag matches, then body matches; ties use publication time and ID. `q` is required and must contain a non-whitespace character for `/articles/search`.
+- Search: all whitespace-separated terms must match in title, summary/tag names, or parsed Markdown body. Rank by the highest field level needed to satisfy all terms, then first publication time and ID descending. `q` is required, nonblank, and at most 200 Unicode characters. ASCII identifiers match whole words ignoring case; Chinese and punctuation terms match literal substrings. Empty queries return 400, while no matches return an empty ArticlePage. See [ADR 0009](decisions/0009-public-search.md) for matching, cursor, and execution details.
 - Owner articles: `modified_at DESC, id DESC`; `q` searches draft title or latest retained title, not private content through public endpoints.
 - Revision history: only previously published snapshots, newest first, with stable ID tie-breaker. Preview accesses the current draft separately.
 - Comments: public by creation time ascending; admin by creation time descending.
-- Labels: name and ID ordering, using a documented deterministic Unicode ordering in implementation.
+- Labels: case-sensitive Unicode code-point name order then ID (`COLLATE "C"`), with cursors bound to label kind and public/admin audience.
 
 Public filters are category slug, tag slug, and language (`en`, `zh`). Admin article filters add publication status and visibility. The backend enforces allowed filter combinations and parameter length limits. All public filtering operates after visibility authorization; counts and label lists cannot leak private material.
 

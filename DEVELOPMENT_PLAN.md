@@ -19,7 +19,7 @@ Requirements from `AGENTS.md`:
 
 Implementation begins after review of the scope and architecture. Visual implementation follows review of the design direction.
 
-The [implementation backlog](docs/product/backlog.md) tracks progress. React/Next.js, Go, PostgreSQL migrations, and database readiness are merged. Owner setup/recovery, sessions, sign-in/out, and the authenticated dashboard entry are implemented in the authentication branch for review. Article management, object-storage integration, publishing, and cloud deployment remain subsequent work.
+The [implementation backlog](docs/product/backlog.md) tracks progress. Foundation, authentication, Markdown/ZIP publishing, private local images, and published revision history are merged through PR #8. Category/tag management and public search are being delivered together on one branch and one PR. Production COS, comments, artistic design, and cloud deployment remain subsequent work.
 
 ## 2. Application separation
 
@@ -112,7 +112,7 @@ For Markdown import, define behavior for missing images, invalid files, duplicat
 
 Use OpenAPI as the shared API contract. Specify endpoints, schemas, authentication, pagination, errors, and examples before connecting the applications.
 
-Approved baselines are available in the [data model](docs/architecture/data-model.md), [API design](docs/architecture/api-design.md), and [OpenAPI contract](contracts/openapi.yaml). The [contract guide](contracts/README.md) includes validation instructions. The owner approved these documents and the API contract; no endpoints have been implemented. Physical schema and tooling decisions remain for the foundation milestone.
+Approved baselines are available in the [data model](docs/architecture/data-model.md), [API design](docs/architecture/api-design.md), and [OpenAPI contract](contracts/openapi.yaml). The [contract guide](contracts/README.md) includes validation instructions. The owner approved these documents and the API contract. Implemented endpoints and remaining work are recorded in the backlog and publishing guide; PostgreSQL schema version 4 is in use.
 
 - Generate a TypeScript API client and types from the contract.
 - Provide mock responses so frontend development can proceed independently.
@@ -194,7 +194,9 @@ Issue with acceptance criteria
   → production release
 ```
 
-- Keep pull requests focused and small enough to review effectively.
+- Group related features into one reviewable milestone PR, as requested by the owner. Continue implementation and validation on the same branch with focused local commits; do not require a push/create/review/merge cycle after each small feature.
+- The current content-discovery milestone combines category/tag management, public browsing, and English/Chinese search. Open or update one PR when the milestone is ready for owner review.
+- Keep each milestone coherent and reviewable; use the PR summary to describe the final behavior and combined validation evidence.
 - Include the problem, resulting behavior, validation, and relevant migration or operational details in each pull request.
 - Protect `main` with required checks.
 - Require independent approval when another reviewer is available. For solo work, use a documented review checklist without requiring an unavailable second reviewer.

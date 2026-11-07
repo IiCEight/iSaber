@@ -25,6 +25,7 @@ import (
 func (s *Service) AdminHandler() http.Handler {
 	mux := http.NewServeMux()
 	s.historyRoutes(mux)
+	s.adminLabelRoutes(mux)
 	mux.HandleFunc("GET /api/v1/admin/articles", s.listAdmin)
 	mux.HandleFunc("GET /api/v1/admin/articles/{article_id}", func(w http.ResponseWriter, r *http.Request) {
 		id, ok := pathID(w, r, "article_id")
@@ -127,11 +128,13 @@ func (s *Service) AdminHandler() http.Handler {
 
 func (s *Service) PublicHandler(assetHandlers ...http.Handler) http.Handler {
 	mux := http.NewServeMux()
+	s.publicLabelRoutes(mux)
 	assetHandler := s.AssetHandler()
 	if len(assetHandlers) > 0 {
 		assetHandler = assetHandlers[0]
 	}
 	mux.Handle("GET /api/v1/articles/{article_id}/assets/{asset_id}", assetHandler)
+	mux.HandleFunc("GET /api/v1/articles/search", s.searchPublic)
 	mux.HandleFunc("GET /api/v1/articles", s.listPublic)
 	mux.HandleFunc("GET /api/v1/articles/{slug}", func(w http.ResponseWriter, r *http.Request) {
 		value, err := s.publicArticle(r.Context(), r.PathValue("slug"))
@@ -429,25 +432,34 @@ func (s *Service) listAdmin(w http.ResponseWriter, r *http.Request) {
 	reply(w, map[string]any{"items": items, "next_cursor": next}, nil)
 }
 
+type publicArticleSummary struct {
+	ID          string    `json:"id"`
+	Slug        string    `json:"slug"`
+	Title       string    `json:"title"`
+	Summary     string    `json:"summary"`
+	Language    string    `json:"language"`
+	WrittenAt   string    `json:"written_at"`
+	PublishedAt time.Time `json:"published_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Category    *Label    `json:"category"`
+	Tags        []Label   `json:"tags"`
+}
+
 type publicArticle struct {
-	ID              string    `json:"id"`
-	Slug            string    `json:"slug"`
-	Title           string    `json:"title"`
-	Summary         string    `json:"summary"`
-	Language        string    `json:"language"`
-	WrittenAt       string    `json:"written_at"`
-	PublishedAt     time.Time `json:"published_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-	Category        *Label    `json:"category"`
-	Tags            []Label   `json:"tags"`
-	Markdown        string    `json:"markdown"`
-	CommentsEnabled bool      `json:"comments_enabled"`
+	publicArticleSummary
+	Markdown        string `json:"markdown"`
+	CommentsEnabled bool   `json:"comments_enabled"`
 }
 
 func (s *Service) publicArticle(ctx context.Context, slug string) (publicArticle, error) {
 	var value publicArticle
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
+	if err != nil {
+		return value, err
+	}
+	defer tx.Rollback()
 	var revisionID string
-	err := s.db.QueryRowContext(ctx, `SELECT id,slug,published_revision_id,published_at,updated_at,comments_enabled FROM articles
+	err = tx.QueryRowContext(ctx, `SELECT id,slug,published_revision_id,published_at,updated_at,comments_enabled FROM articles
         WHERE slug=$1 AND visibility='public' AND published_revision_id IS NOT NULL`, slug).Scan(&value.ID, &value.Slug, &revisionID, &value.PublishedAt, &value.UpdatedAt, &value.CommentsEnabled)
 	if errors.Is(err, sql.ErrNoRows) {
 		return value, fault(404, "not_found")
@@ -455,7 +467,7 @@ func (s *Service) publicArticle(ctx context.Context, slug string) (publicArticle
 	if err != nil {
 		return value, err
 	}
-	revision, err := loadRevision(ctx, s.db, revisionID)
+	revision, err := loadRevision(ctx, tx, revisionID)
 	if err != nil {
 		return value, err
 	}

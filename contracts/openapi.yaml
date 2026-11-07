@@ -160,7 +160,10 @@ paths:
       - $ref: '#/components/parameters/category'
       - $ref: '#/components/parameters/tag'
       description: Rank by title, then summary/tags, then body matches; ties by publication time and ID. Does not
-        search comments. No shared caching.
+        search comments. Require all whitespace-separated terms to match; rank by the highest field level needed to
+        satisfy them. ASCII identifiers use case-insensitive whole-word matching; Chinese and punctuation terms use
+        literal substring matching. Markdown text includes code but excludes hidden HTML and URL destinations.
+        No shared caching. Busy searches return 503 with Retry-After.
   /articles/{slug}:
     get:
       operationId: getPublicArticle
@@ -210,7 +213,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/limit'
       - $ref: '#/components/parameters/cursor'
-      description: Include only labels used by current public published revisions. Order by name then ID.
+      description: Include only labels used by current public published revisions. Order by case-sensitive Unicode code-point name then ID (PostgreSQL C collation).
   /admin/categories:
     get:
       operationId: listAdminCategories
@@ -300,7 +303,9 @@ paths:
             schema:
               $ref: '#/components/schemas/RenameLabel'
       description: Stable slug and associations; stale version returns 409. Update live metadata dates and article
-        versions for affected articles transactionally.
+        versions for current draft/published associations transactionally. Draft-only renames leave live dates unchanged;
+        historical-only associations do not change current article versions/dates. An unchanged name with a matching
+        version is a no-op.
   /tags:
     get:
       operationId: listPublicTags
@@ -325,7 +330,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/limit'
       - $ref: '#/components/parameters/cursor'
-      description: Include only labels used by current public published revisions. Order by name then ID.
+      description: Include only labels used by current public published revisions. Order by case-sensitive Unicode code-point name then ID (PostgreSQL C collation).
   /admin/tags:
     get:
       operationId: listAdminTags
@@ -415,7 +420,9 @@ paths:
             schema:
               $ref: '#/components/schemas/RenameLabel'
       description: Stable slug and associations; stale version returns 409. Update live metadata dates and article
-        versions for affected articles transactionally.
+        versions for current draft/published associations transactionally. Draft-only renames leave live dates unchanged;
+        historical-only associations do not change current article versions/dates. An unchanged name with a matching
+        version is a no-op.
   /articles/{article_id}/assets/{asset_id}:
     get:
       operationId: getArticleAsset
@@ -1076,7 +1083,8 @@ components:
         minLength: 1
         maxLength: 200
         pattern: .*\S.*
-      description: Nonempty search text. English case-insensitive word matching; Chinese literal substring matching.
+      description: Nonempty text, at most 200 Unicode characters. All whitespace-separated terms must match. ASCII
+        identifiers match whole words ignoring case; Chinese and punctuation terms match literal substrings.
     admin_q:
       name: q
       in: query
