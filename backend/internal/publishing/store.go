@@ -46,7 +46,23 @@ func loadRevision(ctx context.Context, q queryer, id string) (*Revision, error) 
 		}
 		r.Tags = append(r.Tags, label)
 	}
-	return r, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+	assets, err := q.QueryContext(ctx, `SELECT a.id,a.article_id,a.storage_key,a.media_type,a.byte_size,a.checksum,ra.original_path FROM assets a JOIN revision_assets ra ON ra.asset_id=a.id WHERE ra.revision_id=$1 ORDER BY a.id`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer assets.Close()
+	for assets.Next() {
+		var item asset
+		if err := assets.Scan(&item.ID, &item.ArticleID, &item.StorageKey, &item.MediaType, &item.Size, &item.Checksum, &item.OriginalPath); err != nil {
+			return nil, err
+		}
+		r.Assets = append(r.Assets, item)
+	}
+	return r, assets.Err()
 }
 
 func loadArticle(ctx context.Context, q queryer, id string) (*Article, error) {
@@ -102,6 +118,11 @@ func insertRevision(ctx context.Context, tx *sql.Tx, r *Revision) error {
 	}
 	for _, tag := range r.Tags {
 		if _, err := tx.ExecContext(ctx, `INSERT INTO revision_tags(revision_id,tag_id) VALUES($1,$2)`, r.ID, tag.ID); err != nil {
+			return err
+		}
+	}
+	for _, item := range r.Assets {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO revision_assets(article_id,revision_id,asset_id,original_path) VALUES($1,$2,$3,$4)`, r.ArticleID, r.ID, item.ID, item.OriginalPath); err != nil {
 			return err
 		}
 	}

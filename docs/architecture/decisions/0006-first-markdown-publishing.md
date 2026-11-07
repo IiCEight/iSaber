@@ -1,6 +1,6 @@
 # ADR 0006: Draft-first Markdown publishing
 
-Status: Implemented locally in the Markdown publishing branch; pending review and merge.
+Status: Accepted and merged in PR #6. Subsequent ZIP/image behavior is recorded in ADR 0007.
 
 ## Decision
 

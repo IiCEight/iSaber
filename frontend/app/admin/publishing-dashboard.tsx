@@ -14,8 +14,9 @@ const messages: Record<string, string> = {
   slug_locked: "The URL stays fixed after first publication.",
   invalid_slug: "Use lowercase letters, numbers, and hyphens for the URL. The name search is reserved.",
   publication_blocked: "Resolve the blocking issues and review the preview before publishing.",
-  markdown_only: "This step accepts .md files. ZIP and local image packaging will follow later.",
-  upload_too_large: "The Markdown file must be no larger than 5 MiB.",
+  markdown_or_zip_required: "Choose a Markdown file or a ZIP containing one article and its images.",
+  assets_unavailable: "An image file is unavailable. Re-upload the article ZIP before publishing.",
+  upload_too_large: "Use up to 5 MiB for Markdown or 50 MiB for a ZIP.",
   request_in_progress: "This request is still being processed. Retry it shortly.",
   idempotency_conflict: "This request key belongs to a different operation. Reload before starting again.",
 };
@@ -43,7 +44,7 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
       if (!key) { key = crypto.randomUUID(); keys.current.set(signature, key); }
       headers.set("Idempotency-Key", key);
     }
-    const response = await fetch(`/api/v1/admin${path}`, { ...init, headers, credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(30000) });
+    const response = await fetch(`/api/v1/admin${path}`, { ...init, headers, credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(60000) });
     if (!response.ok) {
       const problem = await response.json().catch(() => ({ code: "request_failed" }));
       if (response.status === 401) onExpired();
@@ -148,15 +149,16 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
     <h2>Articles</h2>
     {message && <p role="status">{message}</p>}
     <fieldset disabled={busy}>
-      <legend>Import Markdown</legend>
+      <legend>Import article</legend>
+      <p>ZIP images: PNG, JPEG, GIF, or WebP, up to 10 MiB and 16 million pixels each. Keep the article’s relative folders inside the ZIP.</p>
       <form onSubmit={upload}>
-        <label htmlFor="markdown-file">Markdown file, up to 5 MiB</label>
-        <input id="markdown-file" type="file" accept=".md,text/markdown" required={!pendingJob} disabled={!!pendingJob} onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+        <label htmlFor="markdown-file">Markdown (5 MiB) or article ZIP (50 MiB)</label>
+        <input id="markdown-file" type="file" accept=".md,.zip,text/markdown,application/zip" required={!pendingJob} disabled={!!pendingJob} onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
         <label htmlFor="upload-target">Import into</label>
         <select id="upload-target" value={uploadTarget} disabled={!!pendingJob} onChange={(event) => setUploadTarget(event.target.value as "new" | "selected")}>
           <option value="new">New private draft</option><option value="selected" disabled={!article}>Selected article, as a draft revision</option>
         </select>
-        <button type="submit" disabled={(!file && !pendingJob) || busy}>{pendingJob ? "Resume import" : "Upload Markdown"}</button>
+        <button type="submit" disabled={(!file && !pendingJob) || busy}>{pendingJob ? "Resume import" : "Upload article"}</button>
       </form>
     </fieldset>
     <fieldset className="article-filters" disabled={busy}>

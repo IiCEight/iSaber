@@ -2,7 +2,7 @@
 
 Status: Approved by the owner as the API design baseline. The machine-readable contract is [OpenAPI](../../contracts/openapi.yaml); this document explains conventions and end-to-end workflows. The [data model](data-model.md) defines persistence invariants.
 
-Implementation status: owner authentication is merged; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
+Implementation status: owner authentication and the first Markdown flow are merged; the image branch adds ZIPs and authorized image delivery; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
 
 ## 1. Boundaries and naming
 

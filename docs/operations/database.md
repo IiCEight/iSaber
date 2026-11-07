@@ -91,6 +91,6 @@ In staging/production, use a schema-owning migration role and a runtime role wit
 
 ## Image storage boundary
 
-The SQL schema stores private object keys and revision membership, not image bytes or public COS URLs. A subsequent image-import slice will implement the storage adapter and authorized Go delivery route described by the API contract. The first Markdown slice stages private files locally (see the [publishing guide](publishing.md)) and does not create buckets, fetch external images, or require Tencent/JD API credentials.
+The SQL schema stores private object keys and revision membership, not image bytes or public COS URLs. The image slice implements authorized Go delivery from local private storage; the private COS adapter remains a deployment step. The Markdown/image implementation stores private uploads and retained image bytes locally (see the [publishing guide](publishing.md)) and does not create buckets, fetch external images, or require Tencent/JD API credentials.
 
-Before enabling image uploads, select separate staging/production buckets, define cleanup for abandoned staged uploads, verify database-plus-object restoration, and test article visibility changes against every media access route. Storage readiness can be added when the running application actually depends on that adapter.
+Before enabling image uploads in staging/production, select separate private buckets, define cleanup for abandoned staged uploads, verify database-plus-object restoration, and test article visibility changes against every media access route. Storage readiness can be added when the running application actually depends on that adapter.

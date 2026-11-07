@@ -163,10 +163,12 @@ func revisionIssues(revision *Revision, slug *string) []Issue {
 			if !seen[destination] {
 				seen[destination] = true
 				parsed, err := url.Parse(destination)
-				if err == nil && parsed.Scheme == "https" && parsed.Host != "" && parsed.User == nil {
+				if hasManagedImage(revision, destination) {
+					// Revision-owned managed images are validated by import and publication.
+				} else if err == nil && parsed.Scheme == "https" && parsed.Host != "" && parsed.User == nil {
 					issues = append(issues, issue("warning", "external_image", destination, "This image loads from another host; the original URL is preserved."))
 				} else {
-					issues = append(issues, issue("blocking", "missing_local_image", destination, "This image is not managed by the blog. Local image packaging is not available in this slice."))
+					issues = append(issues, issue("blocking", "missing_local_image", destination, "This image is unavailable. Upload a ZIP containing the Markdown file and its relative image files."))
 				}
 			}
 		}

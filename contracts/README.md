@@ -1,6 +1,6 @@
 # API contract
 
-Status: Approved API contract baseline. Owner authentication is merged. The publishing branch implements `.md` import/status, owner article list/detail/preview/metadata/controls/publish/unpublish, and public list/detail. ZIP/assets, revision history/restore, search, taxonomy management, and comments remain subsequent work; see the [implementation guide](../docs/operations/publishing.md). Start with the [API design](../docs/architecture/api-design.md) and [data model](../docs/architecture/data-model.md).
+Status: Approved API contract baseline. Owner authentication is merged. Publishing and the image branch implement `.md`/ZIP import/status, authorized managed image delivery, owner article list/detail/preview/metadata/controls/publish/unpublish, and public list/detail. Private COS storage, revision history/restore, search, taxonomy management, and comments remain subsequent work; see the [implementation guide](../docs/operations/publishing.md). Start with the [API design](../docs/architecture/api-design.md) and [data model](../docs/architecture/data-model.md).
 
 - `openapi.yaml`: OpenAPI 3.1.1 contract for the public blog and owner dashboard.
 - `examples.json`: synthetic response/request fixtures for review and initial mocks. These do not represent real owner content or credentials.

@@ -127,6 +127,7 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 - External HTTPS image links remain external and are identified during preview; importing does not silently download remote content. Private articles show a notice that external images contact another host.
 - Failed or interrupted imports cannot create a partially published article. Retrying does not publish or overwrite an existing article automatically.
 - Reject unsafe archive paths, encrypted archives, unsupported file types, and excessive archive expansion. Limits: 5 MiB Markdown, 10 MiB per image, 50 MiB compressed ZIP, 100 MiB expanded ZIP, and 200 files.
+- Import implementation defaults also bound decoded images to 16 million pixels, archive entries including directories to 400, and entry paths to 1024 UTF-8 bytes. Standard single-part ZIPs are supported; ZIP64, special files, and duplicate case-folded names are rejected.
 - Initially accept PNG, JPEG, GIF, and WebP images. SVG uploads and general-purpose attachments are deferred pending a defined handling policy.
 
 ### PUB-02: Preview and publication
