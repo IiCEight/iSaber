@@ -32,17 +32,30 @@ func (l *loginLimiter) allow() bool {
 }
 
 type httpHandler struct {
-	service *Service
-	config  Config
-	limiter loginLimiter
-	slots   chan struct{}
+	service    *Service
+	config     Config
+	limiter    loginLimiter
+	slots      chan struct{}
+	management http.Handler
 }
 
-func NewHTTPHandler(service *Service, config Config) http.Handler {
-	return &httpHandler{service: service, config: config, slots: make(chan struct{}, 2)}
+func NewHTTPHandler(service *Service, config Config, management ...http.Handler) http.Handler {
+	handler := &httpHandler{service: service, config: config, slots: make(chan struct{}, 2)}
+	if len(management) > 0 {
+		handler.management = management[0]
+	}
+	return handler
+}
+
+type ownerContextKey struct{}
+
+func OwnerFromContext(ctx context.Context) (Owner, bool) {
+	owner, ok := ctx.Value(ownerContextKey{}).(Owner)
+	return owner, ok
 }
 
 func (h *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	original := r
 	w.Header().Set("Cache-Control", "no-store")
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
@@ -76,8 +89,7 @@ func (h *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.cookie(w, "", time.Unix(1, 0), -1)
 		w.WriteHeader(http.StatusNoContent)
 	default:
-		// Central authorization boundary for future management endpoints.
-		// The routes are still unimplemented; no fake dashboard data is returned.
+		// Every management endpoint passes this session/origin/CSRF boundary.
 		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions && !h.origin(w, r) {
 			return
 		}
@@ -86,6 +98,10 @@ func (h *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions && !csrf(w, r, session.CSRFToken) {
+			return
+		}
+		if h.management != nil {
+			h.management.ServeHTTP(w, original.WithContext(context.WithValue(original.Context(), ownerContextKey{}, session.Owner)))
 			return
 		}
 		authProblem(w, 404, "not_found")

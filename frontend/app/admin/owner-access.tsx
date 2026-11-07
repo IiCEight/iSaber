@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useState, type FormEvent } from "react";
+import PublishingDashboard from "./publishing-dashboard";
 
 export type OwnerSession = {
   owner: { id: string; username: string };
@@ -15,6 +16,7 @@ export default function OwnerAccess({ initialSession, unavailable }: {
   const [session, setSession] = useState(initialSession);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(unavailable ? "Sign-in is temporarily unavailable. Please try again." : "");
+  const expired = useCallback(() => { setSession(null); setMessage("Your session expired. Sign in again; saved drafts are kept."); }, []);
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,8 +81,8 @@ export default function OwnerAccess({ initialSession, unavailable }: {
       {session ? (
         <>
           <p>Signed in as <strong>{session.owner.username}</strong>.</p>
-          <p>Your publishing tools are on their way.</p>
           <button type="button" disabled={busy} onClick={signOut}>{busy ? "Signing out…" : "Sign out"}</button>
+          <PublishingDashboard csrf={session.csrf_token} onExpired={expired} />
         </>
       ) : (
         <form method="post" action="/api/v1/auth/login" onSubmit={signIn} aria-busy={busy}>

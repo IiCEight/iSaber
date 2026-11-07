@@ -14,6 +14,7 @@ import (
 	"github.com/IiCEight/iSaber/backend/internal/database"
 	"github.com/IiCEight/iSaber/backend/internal/httpapi"
 	"github.com/IiCEight/iSaber/backend/internal/migrations"
+	"github.com/IiCEight/iSaber/backend/internal/publishing"
 )
 
 func main() {
@@ -41,6 +42,11 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	articles, err := publishing.NewService(db, os.Getenv("UPLOAD_DIR"))
+	if err != nil {
+		return err
+	}
+	defer articles.Close()
 	addr := os.Getenv("HTTP_ADDR")
 	if addr == "" {
 		addr = "127.0.0.1:8080"
@@ -52,15 +58,18 @@ func run(logger *slog.Logger) error {
 		Addr: addr,
 		Handler: httpapi.NewHandler(func(ctx context.Context) error {
 			return migrations.CheckReady(ctx, db)
-		}, httpapi.WithAuthentication(auth.NewHTTPHandler(service, config))),
+		}, httpapi.WithAuthentication(auth.NewHTTPHandler(service, config, articles.AdminHandler())), httpapi.WithPublicArticles(articles.PublicHandler())),
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      30 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      60 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		MaxHeaderBytes:    1 << 20,
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	workerDone := make(chan struct{})
+	go func() { defer close(workerDone); articles.Run(ctx) }()
+	defer func() { stop(); <-workerDone }()
 	errorsCh := make(chan error, 1)
 	go func() {
 		logger.Info("API listening", "address", addr)

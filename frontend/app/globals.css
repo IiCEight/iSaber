@@ -15,3 +15,22 @@ p { max-width: 65ch; }
 .owner-access input, .owner-access button { font: inherit; padding: 0.65rem 0.85rem; border: 1px solid currentColor; border-radius: 0.25rem; }
 .owner-access button { cursor: pointer; margin-top: 0.75rem; width: fit-content; }
 .owner-access :disabled { opacity: 0.65; cursor: wait; }
+.owner-access:has(.publishing-dashboard) { max-width: none; }
+.publishing-dashboard { margin-top: 3rem; overflow-wrap: anywhere; }
+.publishing-dashboard input, .publishing-dashboard select, .publishing-dashboard textarea { max-width: 100%; min-width: 0; font: inherit; }
+.publishing-dashboard fieldset { margin-block: 1.5rem; padding: 1.25rem; }
+.publishing-dashboard form { max-width: 40rem; }
+.publishing-dashboard input[type="checkbox"] { width: auto; }
+.article-filters, .article-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; margin-block: 1rem; }
+.article-filters label { display: grid; gap: 0.5rem; }
+.article-preview { border-top: 1px solid; margin-top: 2rem; padding-top: 2rem; }
+.markdown { overflow-wrap: anywhere; line-height: 1.85; }
+.markdown img { max-width: 100%; height: auto; }
+.external-image, .external-image small { display: block; }
+.markdown pre, .markdown .katex-display { overflow-x: auto; max-width: 100%; }
+.markdown pre { background: #161b22; color: #e6edf3; padding: 1rem; border-radius: 0.25rem; }
+.markdown table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+.markdown th, .markdown td { border: 1px solid; padding: 0.5rem; }
+.image-warning { display: inline-block; border: 1px dashed; padding: 0.5rem; }
+.article-dates { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.9rem; }
+.article-dates dt { font-weight: 600; }.article-dates dd { margin: 0; }

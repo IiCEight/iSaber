@@ -58,6 +58,8 @@ The container image is pinned to major version 16 so compatible patch updates ca
 
 Foreign keys ensure that article pointers, restored revision references, and revision assets cannot cross article ownership. They do not replace reader authorization. Incomplete drafts are permitted; publication completeness is validated by the future publishing service.
 
+Migration `00004_revision_import_issues.sql` adds internal saved revision issues and the original import filename. The current API requires schema version 4. Apply it with `migrate up` before starting the new binary; it preserves existing rows.
+
 The Go pool allows five open connections and two idle connections initially. Both are modest development defaults; review aggregate pool sizes against the database limit before adding replicas or migration workers.
 
 ## Integration tests
@@ -72,7 +74,7 @@ go test -race -tags=integration ./internal/migrations -v
 
 Each test creates a uniquely named schema, sets its own search path, and drops only that schema afterward. Tests never apply migrations to the database's default schema. A missing test URL fails explicitly rather than skipping the integration checks. The CI backend job provisions its own PostgreSQL service and runs the same tests.
 
-Tests cover upgrade from the identity migration while preserving existing data, repeated migration runs, readiness before/after migration, cross-article revision and asset rejection, the single-owner constraint, private article defaults, and pending-comment/validation constraints. Authentication adds its own integration tests; run `go test -race -tags=integration ./internal/...` to include them. Publication is not implemented yet.
+Tests cover upgrade from the identity migration while preserving existing data, repeated migration runs, readiness before/after migration, cross-article revision and asset rejection, the single-owner constraint, private article defaults, and pending-comment/validation constraints. Authentication adds its own integration tests; run `go test -race -tags=integration ./internal/...` to include them. Publishing integration tests now cover draft/live isolation, version conflicts, retries, private access, and failed imports.
 
 ## Migration authoring and release policy
 
@@ -89,6 +91,6 @@ In staging/production, use a schema-owning migration role and a runtime role wit
 
 ## Image storage boundary
 
-The SQL schema stores private object keys and revision membership, not image bytes or public COS URLs. The import slice will implement the storage adapter and authorized Go delivery route described by the API contract. This branch does not create buckets, fetch external images, or require Tencent/JD API credentials.
+The SQL schema stores private object keys and revision membership, not image bytes or public COS URLs. A subsequent image-import slice will implement the storage adapter and authorized Go delivery route described by the API contract. The first Markdown slice stages private files locally (see the [publishing guide](publishing.md)) and does not create buckets, fetch external images, or require Tencent/JD API credentials.
 
 Before enabling image uploads, select separate staging/production buckets, define cleanup for abandoned staged uploads, verify database-plus-object restoration, and test article visibility changes against every media access route. Storage readiness can be added when the running application actually depends on that adapter.

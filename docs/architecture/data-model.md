@@ -1,6 +1,6 @@
 # Data model
 
-Status: Approved by the owner as the logical data model. PostgreSQL migrations and readiness are implemented in the persistence branch; business API handlers remain subsequent work. See the [database guide](../operations/database.md).
+Status: Approved by the owner as the logical data model. PostgreSQL migrations, readiness, and authentication are implemented. The publishing branch implements the first Markdown workflow; see the [publishing guide](../operations/publishing.md) for its subset and internal schema additions. See the [database guide](../operations/database.md).
 
 Source: [approved PRD](../product/requirements.md). Contract: [OpenAPI](../../contracts/openapi.yaml). Behavior and HTTP conventions: [API design](api-design.md).
 

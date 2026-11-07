@@ -2,6 +2,8 @@
 
 Status: Approved by the owner as the API design baseline. The machine-readable contract is [OpenAPI](../../contracts/openapi.yaml); this document explains conventions and end-to-end workflows. The [data model](data-model.md) defines persistence invariants.
 
+Implementation status: owner authentication is merged; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
+
 ## 1. Boundaries and naming
 
 Use REST-style JSON endpoints under `/api/v1`. Public routes are under `/articles`, `/categories`, and `/tags`. Owner routes are under `/admin`. Session routes are under `/auth`. These are API paths; the React dashboard remains `/admin`.

@@ -1,6 +1,6 @@
 # ADR 0005: Owner credentials, sessions, and local development
 
-Status: Selected for implementation in the owner-authentication branch; pending review and merge.
+Status: Accepted and merged in PR #5.
 
 ## Decision
 
