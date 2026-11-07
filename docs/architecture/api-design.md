@@ -2,7 +2,7 @@
 
 Status: Approved by the owner as the API design baseline. The machine-readable contract is [OpenAPI](../../contracts/openapi.yaml); this document explains conventions and end-to-end workflows. The [data model](data-model.md) defines persistence invariants.
 
-Implementation status: owner authentication and the first Markdown flow are merged; the image branch adds ZIPs and authorized image delivery; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
+Implementation status: owner authentication and the first Markdown flow are merged; ZIPs and authorized image delivery are merged; the history branch adds published snapshot browsing/restoration; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
 
 ## 1. Boundaries and naming
 
@@ -72,7 +72,7 @@ Public filters are category slug, tag slug, and language (`en`, `zh`). Admin art
 8. `POST /admin/articles/{article_id}/publish` with the current `expected_version` and an idempotency key. Validation failures return `422`; stale versions return `409`.
 9. Fetch the public article by slug if public, or the admin detail if private. No publication operation returns a bypass link for private content.
 
-History is listed under `/revisions`; individual snapshots are owner-readable. `POST .../restore` copies a previously published revision into the draft. `POST .../unpublish` withdraws live content immediately. All of these mutation operations check versions. If a response is lost, retry with the same idempotency key before fetching current state; do not silently resubmit a conflicting edit.
+History is listed under `/revisions`; individual snapshots are owner-readable. `POST .../restore` copies a previously published revision into the draft. `POST .../unpublish` withdraws live content immediately. Restoring replaces an existing draft pointer with a new snapshot, copying its body/metadata/assets and recording the historical source. It does not change article publication/update dates, access/comment controls, or live pointers. Draft-only snapshots are excluded from history. All of these mutation operations check versions. If a response is lost, retry with the same idempotency key before fetching current state; do not silently resubmit a conflicting edit.
 
 ### Front matter mapping
 

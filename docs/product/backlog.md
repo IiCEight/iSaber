@@ -47,7 +47,7 @@ Visual design discovery can run alongside backend development after the owner pr
 - [x] Merge publishing in PR #6 and observe successful checks on the PR and main.
 - [ ] Perform interactive browser, keyboard, and visual acceptance.
 
-See the [publishing guide](../operations/publishing.md). The image branch implements local image/ZIP imports and authorized delivery. Next come history/metadata tools; production private COS setup remains a separate guided deployment step. Final public design still requires the owner's references and approval.
+See the [publishing guide](../operations/publishing.md). Local image/ZIP imports and authorized delivery are merged. The history branch adds published version browsing/restoration; production private COS setup remains a separate guided deployment step. Final public design still requires the owner's references and approval.
 
 
 ## Typora image import progress
@@ -56,5 +56,17 @@ See the [publishing guide](../operations/publishing.md). The image branch implem
 - [x] Rewrite inline/reference Markdown image destinations and attach article-owned image records atomically.
 - [x] Preserve image memberships through metadata edits and enforce current public versus owner-retained access.
 - [x] Verify Go/PostgreSQL privacy tests, production builds, and real Next.js/Go ZIP/image HTTP acceptance.
-- [ ] Review the image branch, observe GitHub checks, and perform interactive browser acceptance.
+- [x] Merge images in PR #7 and observe successful checks on both the PR and main.
+- [ ] Perform interactive browser acceptance for image imports and reading.
 - [ ] Configure and verify private COS, storage retention/quotas, and coordinated backup/restore before cloud deployment.
+
+
+## Published revision history progress
+
+- [x] Implement owner-only published snapshot pagination/detail, excluding draft-only and cross-article access.
+- [x] Restore historical Markdown/metadata/image memberships into a new draft with source provenance and version checks.
+- [x] Preserve live content, controls, URLs, and article publication/update dates; require explicit publication.
+- [x] Connect dashboard version reading/restoration and verify Go/PostgreSQL privacy, pagination ties, retry safety, and the real Next.js/Go proxy flow.
+- [ ] Review the history branch, observe GitHub checks, and perform interactive browser acceptance.
+
+Next: category/tag management and public browsing/search can proceed while the owner gathers artistic design references. Production COS and CI/CD deployment remain guided release work.

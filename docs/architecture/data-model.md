@@ -1,6 +1,6 @@
 # Data model
 
-Status: Approved by the owner as the logical data model. PostgreSQL migrations, readiness, and authentication are implemented. The first Markdown workflow is merged; the image branch adds ZIP imports and authorized image delivery using existing Asset/RevisionAsset tables; see the [publishing guide](../operations/publishing.md) for its subset and internal schema additions. See the [database guide](../operations/database.md).
+Status: Approved by the owner as the logical data model. PostgreSQL migrations, readiness, and authentication are implemented. The first Markdown workflow is merged; ZIP imports and authorized image delivery use existing Asset/RevisionAsset tables; the history branch adds previously published snapshot browsing/restoration; see the [publishing guide](../operations/publishing.md) for its subset and internal schema additions. See the [database guide](../operations/database.md).
 
 Source: [approved PRD](../product/requirements.md). Contract: [OpenAPI](../../contracts/openapi.yaml). Behavior and HTTP conventions: [API design](api-design.md).
 

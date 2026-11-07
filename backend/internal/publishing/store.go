@@ -111,8 +111,8 @@ func insertRevision(ctx context.Context, tx *sql.Tx, r *Revision) error {
 	if r.Category != nil {
 		category = &r.Category.ID
 	}
-	err = tx.QueryRowContext(ctx, `INSERT INTO revisions(id,article_id,title,summary,language,written_at,category_id,markdown,source_issues)
-        VALUES(gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,created_at`, r.ArticleID, r.Title, r.Summary, r.Language, r.WrittenAt, category, r.Markdown, source).Scan(&r.ID, &r.CreatedAt)
+	err = tx.QueryRowContext(ctx, `INSERT INTO revisions(id,article_id,title,summary,language,written_at,category_id,markdown,source_issues,restored_from_revision_id)
+        VALUES(gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id,created_at`, r.ArticleID, r.Title, r.Summary, r.Language, r.WrittenAt, category, r.Markdown, source, r.RestoredFromRevision).Scan(&r.ID, &r.CreatedAt)
 	if err != nil {
 		return err
 	}

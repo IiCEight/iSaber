@@ -4,7 +4,7 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 ## Current state
 
-The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. This branch adds Typora ZIP imports with managed images, validation, and private/public image authorization. See the [publishing guide](docs/operations/publishing.md). History tools, search, comments, private COS/cloud delivery, and the final artistic design remain subsequent work.
+The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. This branch adds owner-only published revision history and restoration into a new draft. See the [publishing guide](docs/operations/publishing.md). Search, label management, comments, private COS/cloud delivery, and the final artistic design remain subsequent work.
 
 ## Local development
 
@@ -43,7 +43,7 @@ Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file or a
 | Endpoint | Current behavior |
 | --- | --- |
 | Frontend `/` | Public published article list; final visual design is pending |
-| Frontend `/admin` | Owner sign-in/out, imports, metadata, preview, publishing, and private reading |
+| Frontend `/admin` | Owner sign-in/out, imports, metadata, preview, publishing, history/restoration, and private reading |
 | Frontend `/articles/{slug}` | Published public Markdown, code, math, and dates; private/missing articles return 404 |
 | Frontend `/healthz` | Frontend process liveness |
 | Go `/healthz` | Go process liveness |

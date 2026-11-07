@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Markdown from "../../components/markdown";
+import RevisionHistory from "./revision-history";
 import type { Article, ArticleSummary, ImportJob, Page, Revision } from "../../lib/articles";
 
 class APIError extends Error {
@@ -198,7 +199,15 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
         <button type="button" disabled={busy || !article.publishable || !preview || preview.id !== article.draft?.id} onClick={() => publication("publish")}>Publish draft</button>
         <button type="button" disabled={busy || !article.published} onClick={() => publication("unpublish")}>Unpublish</button>
       </div>
-      {preview && <section className="article-preview" aria-label={preview.id === article.published?.id ? "Published article" : "Draft preview"}><h2>{preview.title}</h2><p>Written: {preview.written_at ?? "Not set"}{article.updated_at ? ` · Updated: ${new Date(article.updated_at).toLocaleString("en", { timeZone: "Asia/Shanghai" })}` : ""}</p><Markdown content={preview.markdown} /></section>}
+      <RevisionHistory key={`${article.id}:${article.published?.id ?? "unpublished"}`} article={article} busy={busy} request={request} run={run} onRead={setPreview} onRestored={async (restored) => {
+        setPreview(null);
+        try { await selectArticle(restored.id); }
+        catch { setMessage("The version was restored. Reload the article to review its latest draft."); return; }
+        try { await loadList(); }
+        catch { setMessage("The version was restored. Review its draft, then reload the article list."); return; }
+        setMessage("Version restored as a draft. Review its metadata and preview before publishing.");
+      }} />
+      {preview && <section className="article-preview" aria-label={preview.id === article.draft?.id ? "Draft preview" : preview.id === article.published?.id ? "Published article" : "Historical version"}><p><strong>{preview.id === article.draft?.id ? "Draft preview" : preview.id === article.published?.id ? "Published article" : "Historical version"}</strong></p><h2>{preview.title}</h2><p>Written: {preview.written_at ?? "Not set"}{preview.first_published_at ? ` · Version published: ${new Date(preview.first_published_at).toLocaleString("en", { timeZone: "Asia/Shanghai" })}` : ""}{preview.id === article.published?.id && article.updated_at ? ` · Updated: ${new Date(article.updated_at).toLocaleString("en", { timeZone: "Asia/Shanghai" })}` : ""}</p><Markdown content={preview.markdown} /></section>}
     </section>}
   </div>;
 }

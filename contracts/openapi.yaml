@@ -825,7 +825,9 @@ paths:
             schema:
               $ref: '#/components/schemas/VersionCommand'
       description: Only a previously published revision of this article. Does not publish, change visibility, or
-        change the stable slug. Stale article version returns 409.
+        change the stable slug. Replace an existing draft with a new snapshot, preserving historical metadata and image
+        memberships. Article publication/update dates and controls remain unchanged. Draft-only or cross-article sources
+        return 404; stale article version returns 409. Retry with the same key/body to replay the original result.
   /admin/imports:
     post:
       operationId: createImport
