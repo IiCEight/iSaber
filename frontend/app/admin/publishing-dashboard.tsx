@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import Markdown from "../../components/markdown";
 import RevisionHistory from "./revision-history";
 import LabelManager from "./label-manager";
+import CommentModeration from "./comment-moderation";
 import type { AdminLabel, Label, Article, ArticleSummary, ImportJob, Page, Revision } from "../../lib/articles";
 
 class APIError extends Error {
@@ -11,7 +12,7 @@ class APIError extends Error {
 }
 
 const messages: Record<string, string> = {
-  version_conflict: "This article or label changed. Reload it before saving again.",
+  version_conflict: "This article, label, or comment changed. Reload it before saving again.",
   invalid_label_name: "Enter a nonblank label name of at most 120 characters.",
   invalid_label: "Check the label name and URL name, then try again.",
   slug_conflict: "That URL name is already used. Choose another one.",
@@ -173,6 +174,14 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
     });
   }
 
+  async function toggleComments() {
+    if (!article) return;
+    await run(async () => {
+      if (!confirm(`${article.comments_enabled ? "Disable" : "Enable"} new comments on “${article.title ?? "Untitled"}”? Existing approved comments stay readable while the article is public.`)) return;
+      const saved = await request<Article>(`/articles/${article.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expected_version: article.version, comments_enabled: !article.comments_enabled }) });
+      setArticle(saved); await loadList(); setMessage(`New comments ${saved.comments_enabled ? "enabled" : "disabled"}.`);
+    });
+  }
   async function labelsChanged() {
     try { await loadLabels(); if (article) await selectArticle(article.id); await loadList(); }
     catch { setMessage("The label was saved. Refresh labels and reload the article before editing further."); return; }
@@ -186,7 +195,7 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
   }
 
   return <div className="publishing-dashboard">
-    <nav aria-label="Dashboard sections"><a href="#articles">Articles</a> · <a href="#labels">Categories and tags</a></nav>
+    <nav aria-label="Dashboard sections"><a href="#articles">Articles</a> · <a href="#labels">Categories and tags</a> · <a href="#comments">Comments</a></nav>
     <h2 id="articles">Articles</h2>
     {message && <p role="status">{message}</p>}
     <fieldset disabled={busy}>
@@ -218,6 +227,7 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
       <div className="article-actions">
         <button type="button" disabled={busy} onClick={() => run(async () => { await selectArticle(article.id); })}>Reload article</button>
         <button type="button" disabled={busy} onClick={() => controls(article.visibility === "private" ? "public" : "private")}>Make {article.visibility === "private" ? "public" : "private"}</button>
+        <button type="button" disabled={busy} onClick={toggleComments}>{article.comments_enabled ? "Disable" : "Enable"} new comments</button>
         {article.published && article.visibility === "public" && <a href={`/articles/${article.slug}`} target="_blank" rel="noreferrer">Read published article</a>}
       </div>
       {article.issues.length > 0 && <ul>{article.issues.map((item) => <li key={`${item.code}-${item.path}-${item.message}`}><strong>{item.severity === "blocking" ? "Required" : "Note"}:</strong> {item.message}{item.path ? ` (${item.path})` : ""}</li>)}</ul>}
@@ -254,5 +264,6 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
       {preview && <section className="article-preview" aria-label={preview.id === article.draft?.id ? "Draft preview" : preview.id === article.published?.id ? "Published article" : "Historical version"}><p><strong>{preview.id === article.draft?.id ? "Draft preview" : preview.id === article.published?.id ? "Published article" : "Historical version"}</strong></p><h2>{preview.title}</h2><p>Written: {preview.written_at ?? "Not set"}{preview.first_published_at ? ` · Version published: ${new Date(preview.first_published_at).toLocaleString("en", { timeZone: "Asia/Shanghai" })}` : ""}{preview.id === article.published?.id && article.updated_at ? ` · Updated: ${new Date(article.updated_at).toLocaleString("en", { timeZone: "Asia/Shanghai" })}` : ""}</p><Markdown content={preview.markdown} /></section>}
     </section>}
     <LabelManager labels={labels} busy={busy} request={request} run={run} onChanged={labelsChanged} refresh={loadLabels} />
+    <CommentModeration article={article} busy={busy} request={request} run={run} onOpenArticle={async (id) => { await selectArticle(id); requestAnimationFrame(() => document.getElementById("selected-article")?.scrollIntoView()); }} />
   </div>;
 }

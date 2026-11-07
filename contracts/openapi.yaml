@@ -524,7 +524,9 @@ paths:
               $ref: '#/components/schemas/SubmitComment'
       description: 'No reader account. Require a currently public published article with comments enabled. Return
         only pending status, never moderation details or comment text. Nonpublic article: 404; comments disabled:
-        409; invalid text: 422; rate limit: 429.'
+        409; invalid text: 422; rate limit: 429 with Retry-After. Recheck current article eligibility before receipt
+        replay. Limits: 32 KiB JSON; five accepted comments per article and twenty globally per sliding minute.
+        Replays consume no new quota. Busy admission: 503 with Retry-After.'
   /admin/articles:
     get:
       operationId: listAdminArticles
@@ -989,7 +991,8 @@ paths:
             schema:
               $ref: '#/components/schemas/ModerateComment'
       description: Stale version returns 409. Removing is a logical moderation state, not physical deletion. Approved
-        comments are public only while the article is public and published.
+        comments are public only while the article is public and published. Text is immutable; an unchanged status with
+        a matching version is a no-op.
 components:
   securitySchemes:
     ownerSession:

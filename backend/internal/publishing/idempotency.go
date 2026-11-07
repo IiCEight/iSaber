@@ -19,12 +19,18 @@ type response struct {
 
 // Only committed operations consume a key. Validation/transaction failures may
 // be retried; an uncertain commit must be resolved by retrying the same key.
-func (s *Service) idempotent(ctx context.Context, scope, key string, payload []byte, action func(*sql.Tx) (int, any, error)) (response, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+// Guards run before acceptance and replay, and can hold eligibility row locks.
+func (s *Service) idempotent(ctx context.Context, scope, key string, payload []byte, action func(*sql.Tx) (int, any, error), guards ...func(*sql.Tx) error) (response, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return response{}, err
 	}
 	defer tx.Rollback()
+	for _, guard := range guards {
+		if err := guard(tx); err != nil {
+			return response{}, err
+		}
+	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM idempotency_records WHERE scope=$1 AND key=$2 AND expires_at<=clock_timestamp()`, scope, key); err != nil {
 		return response{}, err
 	}

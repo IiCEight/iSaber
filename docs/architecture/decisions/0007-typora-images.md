@@ -1,6 +1,6 @@
 # ADR 0007: Typora ZIP imports and private image delivery
 
-Status: Implemented locally in `feat/typora-image-imports`; pending review and merge.
+Status: Accepted and merged in PR #7.
 
 ## Decision
 

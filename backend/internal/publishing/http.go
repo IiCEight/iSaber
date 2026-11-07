@@ -26,6 +26,7 @@ func (s *Service) AdminHandler() http.Handler {
 	mux := http.NewServeMux()
 	s.historyRoutes(mux)
 	s.adminLabelRoutes(mux)
+	s.adminCommentRoutes(mux)
 	mux.HandleFunc("GET /api/v1/admin/articles", s.listAdmin)
 	mux.HandleFunc("GET /api/v1/admin/articles/{article_id}", func(w http.ResponseWriter, r *http.Request) {
 		id, ok := pathID(w, r, "article_id")
@@ -129,6 +130,7 @@ func (s *Service) AdminHandler() http.Handler {
 func (s *Service) PublicHandler(assetHandlers ...http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	s.publicLabelRoutes(mux)
+	s.publicCommentRoutes(mux)
 	assetHandler := s.AssetHandler()
 	if len(assetHandlers) > 0 {
 		assetHandler = assetHandlers[0]
@@ -277,18 +279,30 @@ func requestKey(w http.ResponseWriter, r *http.Request) (string, bool) {
 	}
 	return key, true
 }
-func readFields(w http.ResponseWriter, r *http.Request) (map[string]json.RawMessage, error) {
+func readFields(w http.ResponseWriter, r *http.Request, limits ...int64) (map[string]json.RawMessage, error) {
 	mediaType, _, mediaErr := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if mediaErr != nil || mediaType != "application/json" {
 		return nil, fault(415, "unsupported_media_type")
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, 128*1024)
+	maximum := int64(128 * 1024)
+	if len(limits) > 0 {
+		maximum = limits[0]
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maximum)
 	decoder := json.NewDecoder(r.Body)
 	var fields map[string]json.RawMessage
 	if err := decoder.Decode(&fields); err != nil || fields == nil {
+		var large *http.MaxBytesError
+		if errors.As(err, &large) {
+			return nil, fault(413, "request_too_large")
+		}
 		return nil, fault(400, "invalid_json")
 	}
 	if err := decoder.Decode(new(any)); err != io.EOF {
+		var large *http.MaxBytesError
+		if errors.As(err, &large) {
+			return nil, fault(413, "request_too_large")
+		}
 		return nil, fault(400, "invalid_json")
 	}
 	return fields, nil

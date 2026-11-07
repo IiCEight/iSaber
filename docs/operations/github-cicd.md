@@ -1,6 +1,6 @@
 # GitHub CI/CD: guided setup
 
-Status: API contract, Frontend, and Backend checks are merged and have passed through PR #8 and its main run. Deployment remains a plan, not a configured pipeline. Related features now share one milestone PR rather than requiring a merge after each small feature.
+Status: API contract, Frontend, and Backend checks are merged and have passed through PR #9 and its main run. Deployment remains a plan, not a configured pipeline. Related features now share one milestone PR rather than requiring a merge after each small feature.
 
 Repository: `IiCEight/iSaber`, public, with `main` as the working base. The bootstrap instructions below describe the initial setup; do not repeat them over the existing repository history.
 

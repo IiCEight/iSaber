@@ -4,7 +4,7 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 ## Current state
 
-The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. This branch combines category/tag management, public browsing filters, and English/Chinese search in one milestone PR. See the [publishing guide](docs/operations/publishing.md). Comments, private COS/cloud delivery, and the final artistic design remain subsequent work.
+The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. Category/tag management, public browsing, and English/Chinese search are merged in PR #9. This branch adds guest comments, owner moderation, and article comment controls in one milestone PR. See the [publishing guide](docs/operations/publishing.md). Private COS/cloud delivery and the final artistic design remain subsequent work.
 
 ## Local development
 
@@ -28,6 +28,8 @@ go run ./cmd/owner setup --username owner
 go run ./cmd/api
 ```
 
+The comments API requires migration **00005**. Existing checkouts must run `go run ./cmd/migrate up` before starting this branch. It adds a rate-check index and preserves existing data.
+
 Owner setup is a first-time step and refuses to replace an existing account. It prompts for a password without echoing it. See the [owner guide](docs/operations/owner-account.md) for recovery and production configuration.
 
 Start React in another:
@@ -43,7 +45,7 @@ Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file or a
 | Endpoint | Current behavior |
 | --- | --- |
 | Frontend `/` | Public articles with English/Chinese search and category/tag/language filters; final visual design is pending |
-| Frontend `/admin` | Owner sign-in/out, imports, metadata, preview, publishing, history/restoration, category/tag management, and private reading |
+| Frontend `/admin` | Owner sign-in/out, imports, metadata, preview, publishing, history/restoration, category/tag management, comment moderation/controls, and private reading |
 | Frontend `/articles/{slug}` | Published public Markdown, code, math, and dates; private/missing articles return 404 |
 | Frontend `/healthz` | Frontend process liveness |
 | Go `/healthz` | Go process liveness |
@@ -54,6 +56,8 @@ Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file or a
 | `/api/v1/articles/{article_id}/assets/{asset_id}` | Current public revision images for visitors; retained images for authenticated owner; uncached private delivery |
 | `/api/v1/categories`, `/api/v1/tags` | Labels used by current public published revisions only |
 | `/api/v1/articles/search` | Ranked public-only title, summary, tag, and article-text search |
+| `/api/v1/articles/{article_id}/comments` | Approved public comments and moderated guest submission; private/unpublished articles return 404 |
+| `/api/v1/admin/comments*` | Owner-only moderation and filtered queue |
 | Other `/api/v1/*` routes | Problem-format `404` until implemented |
 
 Configure Go's bind address with `HTTP_ADDR`. Configure the frontend's proxy target with `BACKEND_ORIGIN` (see `frontend/.env.example`). Next.js evaluates the proxy target at build/dev startup; rebuild production after changing it. Do not put credentials into this URL or browser-visible environment variables.
@@ -71,7 +75,7 @@ npm run build
 npm run test:smoke
 ```
 
-The smoke test requires a successful production build and temporarily uses port 4317. It verifies server-rendered pages, uncached responses, the visitor sign-in page, liveness, and missing-page behavior without requiring Go. It is not browser-based visual or accessibility verification.
+The smoke test requires a successful production build and temporarily uses port 4317. It verifies server-rendered pages, uncached responses, the visitor sign-in page, liveness, and missing-page behavior using a small synthetic older-API fixture rather than requiring Go. It also verifies that missing comment routes do not hide an existing article. It is not browser-based visual or accessibility verification.
 
 Run from `backend/`:
 
@@ -104,4 +108,5 @@ GitHub Actions runs **API contract**, **Frontend**, and **Backend** independentl
 - [Typora image import decision](docs/architecture/decisions/0007-typora-images.md)
 - [Category/tag rename coordination](docs/architecture/decisions/0008-label-renames.md)
 - [English/Chinese public search](docs/architecture/decisions/0009-public-search.md)
+- [Guest comments and moderation](docs/architecture/decisions/0010-guest-comments.md)
 - [Guided GitHub CI/CD setup](docs/operations/github-cicd.md)

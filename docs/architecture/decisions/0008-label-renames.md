@@ -1,6 +1,6 @@
 # ADR 0008: Category/tag management and coordinated renames
 
-Status: Implemented locally in `feat/article-labels`; pending review and merge.
+Status: Accepted and merged in PR #9.
 
 ## Decision
 
