@@ -107,7 +107,7 @@ func TestUpgradePreservesDataAndRepeatedUpIsSafe(t *testing.T) {
 		t.Fatal("partially migrated database must not be ready")
 	}
 	results, err := provider.Up(ctx)
-	if err != nil || len(results) != 2 {
+	if err != nil || len(results) != int(RequiredVersion-1) {
 		t.Fatalf("upgrade: applied %d migrations, error %v", len(results), err)
 	}
 	if err := CheckReady(ctx, db); err != nil {

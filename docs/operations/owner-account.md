@@ -1,6 +1,6 @@
 # Owner setup, sign-in, and recovery
 
-Status: Implemented in the owner-authentication branch for review. No real owner has been created for you and no cloud server has been changed. Verification uses synthetic accounts in disposable local schemas.
+Status: Authentication merged in PR #5. No real owner has been created for you and no cloud server has been changed. Verification uses synthetic accounts in disposable local schemas.
 
 ## Local development
 
@@ -31,7 +31,7 @@ In another terminal, start the frontend from `frontend/`:
 npm run dev
 ```
 
-Visit `http://127.0.0.1:3000/admin`. Use that exact origin with the example configuration; `localhost` is a different origin and would need a matching `SITE_ORIGIN`. The dashboard currently shows your signed-in identity and sign-out; article-management tools follow in the publishing slice.
+Visit `http://127.0.0.1:3000/admin`. Use that exact origin with the example configuration; `localhost` is a different origin and would need a matching `SITE_ORIGIN`. The publishing branch adds article-management tools; see the [publishing walkthrough](publishing.md).
 
 Five validated login attempts are allowed per minute per API process. If you see a rate-limit message, wait a minute before retrying. Repeated incorrect attempts and successful logins both count. Invalid cross-origin or malformed requests do not consume the password-check budget.
 

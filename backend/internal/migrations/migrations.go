@@ -14,7 +14,7 @@ import (
 // RequiredVersion is the minimum compatible schema for this application release.
 // Increase it when adding a migration that a new binary requires. Future additive
 // migrations must keep older binaries compatible during rolling deployments.
-const RequiredVersion int64 = 3
+const RequiredVersion int64 = 4
 
 //go:embed *.sql
 var files embed.FS

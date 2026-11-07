@@ -19,11 +19,17 @@ type problem struct {
 	RequestID string `json:"request_id"`
 }
 
-type options struct{ authentication http.Handler }
+type options struct {
+	authentication http.Handler
+	public         http.Handler
+}
 type Option func(*options)
 
 func WithAuthentication(handler http.Handler) Option {
 	return func(config *options) { config.authentication = handler }
+}
+func WithPublicArticles(handler http.Handler) Option {
+	return func(config *options) { config.public = handler }
 }
 
 // NewHandler exposes probes and configured authentication. Unimplemented business
@@ -41,6 +47,10 @@ func NewHandler(checkReady func(context.Context) error, opts ...Option) http.Han
 		if config.authentication != nil && (strings.HasPrefix(r.URL.Path, "/api/v1/auth/") ||
 			r.URL.Path == "/api/v1/admin" || strings.HasPrefix(r.URL.Path, "/api/v1/admin/")) {
 			config.authentication.ServeHTTP(w, r)
+			return
+		}
+		if config.public != nil && (r.URL.Path == "/api/v1/articles" || strings.HasPrefix(r.URL.Path, "/api/v1/articles/")) {
+			config.public.ServeHTTP(w, r)
 			return
 		}
 

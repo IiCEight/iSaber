@@ -3,8 +3,11 @@ module github.com/IiCEight/iSaber/backend
 go 1.27.3
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.12.0
 	github.com/pressly/goose/v3 v3.29.0
+	github.com/yuin/goldmark/v2 v2.1.15
+	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/crypto v0.58.0
 	golang.org/x/term v0.47.0
 )

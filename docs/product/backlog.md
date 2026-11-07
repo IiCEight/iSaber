@@ -36,6 +36,15 @@ Visual design discovery can run alongside backend development after the owner pr
 - [x] Connect the `/admin` sign-in page and sign-out to the real Go API; return owner identity only after a session check.
 - [x] Verify unit/race tests and PostgreSQL integration coverage for sessions, recovery, expiry, cookies, and rate limits.
 - [x] Verify the full local Next.js/Go proxy, setup/recovery CLI, cookie forwarding, protected SSR, and live OpenAPI response schemas.
-- [ ] Review the authentication branch and observe its real GitHub checks before merging.
+- [x] Merge authentication in PR #5 and observe its successful GitHub checks.
 
-The next implementation slice is the first Markdown import, preview, and publishing flow. Article management and private content must reuse the owner authorization boundary and receive their own access tests.
+## First publishing progress
+
+- [x] Implement `.md` acceptance, private durable staging, queued imports, and metadata correction.
+- [x] Implement immutable drafts, explicit publication/unpublication, stable URLs/dates, optimistic versions, and retry keys.
+- [x] Connect owner upload/preview/management and public reading using a shared Markdown/code/math renderer.
+- [x] Verify PostgreSQL integration/privacy tests and the actual Next.js/Go upload → preview → publish → read flow against OpenAPI.
+- [ ] Push the publishing branch, review its PR, and observe successful GitHub checks.
+- [ ] Perform interactive browser, keyboard, and visual acceptance.
+
+See the [publishing guide](../operations/publishing.md). The next implementation slice covers managed local images/ZIP imports and private COS delivery, then history/metadata tools. Final public design still requires the owner's references and approval.

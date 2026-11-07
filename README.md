@@ -4,7 +4,7 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 ## Current state
 
-The PRD and logical API/data model are approved. React/Next.js, the Go service, PostgreSQL migrations, and CI are merged. The owner-authentication branch adds real owner setup/recovery, sign-in/out, sessions, and an authenticated `/admin` entry page. Markdown import, article management, object storage, publishing, and the final visual design remain subsequent work. No cloud deployment is configured.
+The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. The publishing branch adds Markdown upload → private draft → preview → publish → public reading, with safe revision updates and code/math rendering. See the [publishing guide](docs/operations/publishing.md). Managed images/ZIP, history tools, search, comments, cloud delivery, and the final artistic design remain subsequent work.
 
 ## Local development
 
@@ -38,17 +38,19 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`, then `/admin` to sign in. Article content is not implemented yet. Go listens on `127.0.0.1:8080` by default. Next.js forwards `/api/*` requests to Go, keeping browser requests on one origin.
+Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file and follow the [publishing walkthrough](docs/operations/publishing.md). Go listens on `127.0.0.1:8080` by default. Next.js forwards `/api/*` requests to Go, keeping browser requests on one origin.
 
 | Endpoint | Current behavior |
 | --- | --- |
-| Frontend `/` | Neutral public shell; final visual design is pending |
-| Frontend `/admin` | Owner sign-in, authenticated identity, and sign-out; article tools are not implemented yet |
+| Frontend `/` | Public published article list; final visual design is pending |
+| Frontend `/admin` | Owner sign-in/out, imports, metadata, preview, publishing, and private reading |
+| Frontend `/articles/{slug}` | Published public Markdown, code, math, and dates; private/missing articles return 404 |
 | Frontend `/healthz` | Frontend process liveness |
 | Go `/healthz` | Go process liveness |
 | Go `/readyz` | Database connectivity and required schema readiness; returns `503` when unavailable or unmigrated |
 | `/api/v1/auth/*` | Owner login, session, and logout |
-| `/api/v1/admin/*` | Requires an owner session and CSRF/origin checks on mutations, then returns `404` for unimplemented tools |
+| `/api/v1/admin/*` | Owner-protected article/import tools; origin/CSRF checks on mutations |
+| `/api/v1/articles*` | Public-only list and article detail; search is deferred |
 | Other `/api/v1/*` routes | Problem-format `404` until implemented |
 
 Configure Go's bind address with `HTTP_ADDR`. Configure the frontend's proxy target with `BACKEND_ORIGIN` (see `frontend/.env.example`). Next.js evaluates the proxy target at build/dev startup; rebuild production after changing it. Do not put credentials into this URL or browser-visible environment variables.
@@ -94,4 +96,6 @@ GitHub Actions runs **API contract**, **Frontend**, and **Backend** independentl
 - [PostgreSQL and private storage decision](docs/architecture/decisions/0004-postgresql-and-private-storage.md)
 - [Database setup and migrations](docs/operations/database.md)
 - [Owner setup, sign-in, and recovery](docs/operations/owner-account.md)
+- [Markdown publishing and recovery](docs/operations/publishing.md)
+- [Publishing architecture decision](docs/architecture/decisions/0006-first-markdown-publishing.md)
 - [Guided GitHub CI/CD setup](docs/operations/github-cicd.md)
