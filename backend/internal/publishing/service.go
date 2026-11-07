@@ -14,8 +14,9 @@ import (
 )
 
 type Service struct {
-	db   *sql.DB
-	root *os.Root
+	db          *sql.DB
+	root        *os.Root
+	searchSlots chan struct{}
 }
 
 func NewService(db *sql.DB, directory string) (*Service, error) {
@@ -33,7 +34,7 @@ func NewService(db *sql.DB, directory string) (*Service, error) {
 	if err != nil {
 		return nil, errors.New("cannot open private upload directory")
 	}
-	return &Service{db: db, root: root}, nil
+	return &Service{db: db, root: root, searchSlots: make(chan struct{}, 2)}, nil
 }
 func (s *Service) Close() error { return s.root.Close() }
 

@@ -4,7 +4,7 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 ## Current state
 
-The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. This branch adds category/tag creation, renaming, draft assignment, and public browsing filters. See the [publishing guide](docs/operations/publishing.md). Search, comments, private COS/cloud delivery, and the final artistic design remain subsequent work.
+The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. This branch combines category/tag management, public browsing filters, and English/Chinese search in one milestone PR. See the [publishing guide](docs/operations/publishing.md). Comments, private COS/cloud delivery, and the final artistic design remain subsequent work.
 
 ## Local development
 
@@ -42,7 +42,7 @@ Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file or a
 
 | Endpoint | Current behavior |
 | --- | --- |
-| Frontend `/` | Public published articles with category/tag/language filters; final visual design is pending |
+| Frontend `/` | Public articles with English/Chinese search and category/tag/language filters; final visual design is pending |
 | Frontend `/admin` | Owner sign-in/out, imports, metadata, preview, publishing, history/restoration, category/tag management, and private reading |
 | Frontend `/articles/{slug}` | Published public Markdown, code, math, and dates; private/missing articles return 404 |
 | Frontend `/healthz` | Frontend process liveness |
@@ -53,6 +53,7 @@ Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file or a
 | `/api/v1/articles*` | Public-only list and article detail; search is deferred |
 | `/api/v1/articles/{article_id}/assets/{asset_id}` | Current public revision images for visitors; retained images for authenticated owner; uncached private delivery |
 | `/api/v1/categories`, `/api/v1/tags` | Labels used by current public published revisions only |
+| `/api/v1/articles/search` | Ranked public-only title, summary, tag, and article-text search |
 | Other `/api/v1/*` routes | Problem-format `404` until implemented |
 
 Configure Go's bind address with `HTTP_ADDR`. Configure the frontend's proxy target with `BACKEND_ORIGIN` (see `frontend/.env.example`). Next.js evaluates the proxy target at build/dev startup; rebuild production after changing it. Do not put credentials into this URL or browser-visible environment variables.
@@ -102,4 +103,5 @@ GitHub Actions runs **API contract**, **Frontend**, and **Backend** independentl
 - [Publishing architecture decision](docs/architecture/decisions/0006-first-markdown-publishing.md)
 - [Typora image import decision](docs/architecture/decisions/0007-typora-images.md)
 - [Category/tag rename coordination](docs/architecture/decisions/0008-label-renames.md)
+- [English/Chinese public search](docs/architecture/decisions/0009-public-search.md)
 - [Guided GitHub CI/CD setup](docs/operations/github-cicd.md)

@@ -160,7 +160,10 @@ paths:
       - $ref: '#/components/parameters/category'
       - $ref: '#/components/parameters/tag'
       description: Rank by title, then summary/tags, then body matches; ties by publication time and ID. Does not
-        search comments. No shared caching.
+        search comments. Require all whitespace-separated terms to match; rank by the highest field level needed to
+        satisfy them. ASCII identifiers use case-insensitive whole-word matching; Chinese and punctuation terms use
+        literal substring matching. Markdown text includes code but excludes hidden HTML and URL destinations.
+        No shared caching. Busy searches return 503 with Retry-After.
   /articles/{slug}:
     get:
       operationId: getPublicArticle
@@ -1080,7 +1083,8 @@ components:
         minLength: 1
         maxLength: 200
         pattern: .*\S.*
-      description: Nonempty search text. English case-insensitive word matching; Chinese literal substring matching.
+      description: Nonempty text, at most 200 Unicode characters. All whitespace-separated terms must match. ASCII
+        identifiers match whole words ignoring case; Chinese and punctuation terms match literal substrings.
     admin_q:
       name: q
       in: query

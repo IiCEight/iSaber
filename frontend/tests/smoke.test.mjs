@@ -59,6 +59,16 @@ test("production frontend serves its shell without a running backend", async (t)
     assert.match(html, /method="post"/);
     assert.doesNotMatch(html, /Signed in as/);
   });
+  await t.test("empty search prompts for input", async () => {
+    const response = await fetch(`${origin}/?q=`);
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /Enter a word or phrase to search public articles/);
+  });
+  await t.test("repeated search text has an invalid-input state", async () => {
+    const response = await fetch(`${origin}/?q=go&q=database`);
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /Use a single search query/);
+  });
   await t.test("liveness is explicitly uncached", async () => {
     const response = await fetch(`${origin}/healthz`);
     assert.equal(response.status, 200);

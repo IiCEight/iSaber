@@ -134,6 +134,7 @@ func (s *Service) PublicHandler(assetHandlers ...http.Handler) http.Handler {
 		assetHandler = assetHandlers[0]
 	}
 	mux.Handle("GET /api/v1/articles/{article_id}/assets/{asset_id}", assetHandler)
+	mux.HandleFunc("GET /api/v1/articles/search", s.searchPublic)
 	mux.HandleFunc("GET /api/v1/articles", s.listPublic)
 	mux.HandleFunc("GET /api/v1/articles/{slug}", func(w http.ResponseWriter, r *http.Request) {
 		value, err := s.publicArticle(r.Context(), r.PathValue("slug"))
@@ -431,19 +432,23 @@ func (s *Service) listAdmin(w http.ResponseWriter, r *http.Request) {
 	reply(w, map[string]any{"items": items, "next_cursor": next}, nil)
 }
 
+type publicArticleSummary struct {
+	ID          string    `json:"id"`
+	Slug        string    `json:"slug"`
+	Title       string    `json:"title"`
+	Summary     string    `json:"summary"`
+	Language    string    `json:"language"`
+	WrittenAt   string    `json:"written_at"`
+	PublishedAt time.Time `json:"published_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Category    *Label    `json:"category"`
+	Tags        []Label   `json:"tags"`
+}
+
 type publicArticle struct {
-	ID              string    `json:"id"`
-	Slug            string    `json:"slug"`
-	Title           string    `json:"title"`
-	Summary         string    `json:"summary"`
-	Language        string    `json:"language"`
-	WrittenAt       string    `json:"written_at"`
-	PublishedAt     time.Time `json:"published_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-	Category        *Label    `json:"category"`
-	Tags            []Label   `json:"tags"`
-	Markdown        string    `json:"markdown"`
-	CommentsEnabled bool      `json:"comments_enabled"`
+	publicArticleSummary
+	Markdown        string `json:"markdown"`
+	CommentsEnabled bool   `json:"comments_enabled"`
 }
 
 func (s *Service) publicArticle(ctx context.Context, slug string) (publicArticle, error) {

@@ -1,12 +1,12 @@
 # GitHub CI/CD: guided setup
 
-Status: Initial contract CI has passed on GitHub and was merged. The foundation branch adds independent frontend and backend checks, pending its first remote run. Deployment is a plan, not a configured pipeline.
+Status: API contract, Frontend, and Backend checks are merged and have passed through PR #8 and its main run. Deployment remains a plan, not a configured pipeline. Related features now share one milestone PR rather than requiring a merge after each small feature.
 
-Repository: `IiCEight/iSaber`. The repository is public. GitHub reported no default branch during the initial inspection. Recheck branch state before executing the bootstrap steps if the repository has since changed.
+Repository: `IiCEight/iSaber`, public, with `main` as the working base. The bootstrap instructions below describe the initial setup; do not repeat them over the existing repository history.
 
 ## 1. What we are learning
 
-**Continuous integration (CI)** automatically checks a proposed code change. In this project it starts with contract validation, then grows to frontend/backend checks as those applications are implemented.
+**Continuous integration (CI)** automatically checks a proposed code change. In this project it validates the API contract and runs frontend/backend checks.
 
 **Continuous delivery (CD)** produces tested, deployable artifacts and promotes them to environments. Our proposed workflow deploys to staging automatically and uses a deliberate production release step. Production is not deployed on every feature push.
 
@@ -24,7 +24,7 @@ flowchart TD
     Release --> Production[Tencent Cloud production]
 ```
 
-Contract CI exists on main; the foundation branch adds frontend and backend source checks and builds. Image builds, staging, production deployment, and rollback remain to be implemented after application and infrastructure readiness are verified.
+Contract validation, frontend checks/builds/HTTP smoke tests, and backend race/PostgreSQL integration checks/builds run on main and PRs. Image builds, staging, production deployment, and rollback remain to be implemented after application and infrastructure readiness are verified.
 
 ## 2. Proposed server roles
 

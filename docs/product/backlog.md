@@ -70,7 +70,7 @@ See the [publishing guide](../operations/publishing.md). Local image/ZIP imports
 - [x] Merge history in PR #8 and observe successful checks on both the PR and main.
 - [ ] Perform interactive browser acceptance for history reading/restoration.
 
-Category/tag management and public browsing are implemented in the labels branch; public search comes next while the owner gathers artistic design references. Production COS and CI/CD deployment remain guided release work.
+Category/tag management, public browsing, and public search are grouped on the current branch for one milestone review while the owner gathers artistic design references. Production COS and CI/CD deployment remain guided release work.
 
 
 ## Category and tag progress
@@ -80,6 +80,17 @@ Category/tag management and public browsing are implemented in the labels branch
 - [x] Coordinate renames with article writes, preserving identities/associations and transactionally updating affected versions/dates.
 - [x] Add complete dashboard selectors/management, public filters, and article label links.
 - [x] Verify backend privacy/concurrency tests, frontend builds, and the actual Next.js/Go label/browsing flow against OpenAPI.
-- [ ] Review the labels branch, observe GitHub checks, and perform interactive browser acceptance.
+- [ ] Review the combined content-discovery PR, observe GitHub checks, and perform interactive browser acceptance.
 
-Next: English/Chinese public search. Final design still requires owner references; private COS and cloud deployment remain guided release work.
+Search is included in the same milestone; comments follow after this combined review. Final design still requires owner references; private COS and cloud deployment remain guided release work.
+
+
+## Content-discovery milestone review
+
+Owner preference: continue related implementation on one branch with focused commits, then open/update and merge one milestone PR. Categories/tags, public browsing, and English/Chinese search are bundled in `feat/article-labels`; do not open a second search PR.
+
+- [x] Implement public-only title/summary/tag/body search with word/literal matching and ranked query-bound cursors.
+- [x] Add readable snippets, search/filter continuation, and distinct empty/no-result/error states.
+- [x] Test matching, ranking ties, live changes, private/draft/history exclusions, and bounded search concurrency.
+- [x] Verify the combined local Next.js/Go search/organization flow and OpenAPI payloads.
+- [ ] Review and merge one combined PR after GitHub checks and owner acceptance.
