@@ -130,6 +130,9 @@ func insertRevision(ctx context.Context, tx *sql.Tx, r *Revision) error {
 }
 
 func lockArticle(ctx context.Context, tx *sql.Tx, id string, version int64) (*Article, error) {
+	if err := lockLabels(ctx, tx, false); err != nil {
+		return nil, err
+	}
 	var found string
 	if err := tx.QueryRowContext(ctx, `SELECT id FROM articles WHERE id=$1 FOR UPDATE`, id).Scan(&found); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

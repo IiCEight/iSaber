@@ -47,7 +47,7 @@ Visual design discovery can run alongside backend development after the owner pr
 - [x] Merge publishing in PR #6 and observe successful checks on the PR and main.
 - [ ] Perform interactive browser, keyboard, and visual acceptance.
 
-See the [publishing guide](../operations/publishing.md). Local image/ZIP imports and authorized delivery are merged. The history branch adds published version browsing/restoration; production private COS setup remains a separate guided deployment step. Final public design still requires the owner's references and approval.
+See the [publishing guide](../operations/publishing.md). Local image/ZIP imports and authorized delivery are merged. Published version browsing/restoration is merged; production private COS setup remains a separate guided deployment step. Final public design still requires the owner's references and approval.
 
 
 ## Typora image import progress
@@ -67,6 +67,19 @@ See the [publishing guide](../operations/publishing.md). Local image/ZIP imports
 - [x] Restore historical Markdown/metadata/image memberships into a new draft with source provenance and version checks.
 - [x] Preserve live content, controls, URLs, and article publication/update dates; require explicit publication.
 - [x] Connect dashboard version reading/restoration and verify Go/PostgreSQL privacy, pagination ties, retry safety, and the real Next.js/Go proxy flow.
-- [ ] Review the history branch, observe GitHub checks, and perform interactive browser acceptance.
+- [x] Merge history in PR #8 and observe successful checks on both the PR and main.
+- [ ] Perform interactive browser acceptance for history reading/restoration.
 
-Next: category/tag management and public browsing/search can proceed while the owner gathers artistic design references. Production COS and CI/CD deployment remain guided release work.
+Category/tag management and public browsing are implemented in the labels branch; public search comes next while the owner gathers artistic design references. Production COS and CI/CD deployment remain guided release work.
+
+
+## Category and tag progress
+
+- [x] Add owner-only label creation/rename/list operations and public lists restricted to current public published memberships.
+- [x] Add deterministic name/ID cursors scoped by label kind and public/admin audience.
+- [x] Coordinate renames with article writes, preserving identities/associations and transactionally updating affected versions/dates.
+- [x] Add complete dashboard selectors/management, public filters, and article label links.
+- [x] Verify backend privacy/concurrency tests, frontend builds, and the actual Next.js/Go label/browsing flow against OpenAPI.
+- [ ] Review the labels branch, observe GitHub checks, and perform interactive browser acceptance.
+
+Next: English/Chinese public search. Final design still requires owner references; private COS and cloud deployment remain guided release work.

@@ -3,15 +3,18 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Markdown from "../../components/markdown";
 import RevisionHistory from "./revision-history";
-import type { Article, ArticleSummary, ImportJob, Page, Revision } from "../../lib/articles";
+import LabelManager from "./label-manager";
+import type { AdminLabel, Label, Article, ArticleSummary, ImportJob, Page, Revision } from "../../lib/articles";
 
 class APIError extends Error {
   constructor(public code: string, public status: number) { super(code); }
 }
 
 const messages: Record<string, string> = {
-  version_conflict: "This article changed. Reload it before saving or publishing again.",
-  slug_conflict: "That URL is already used. Choose another one.",
+  version_conflict: "This article or label changed. Reload it before saving again.",
+  invalid_label_name: "Enter a nonblank label name of at most 120 characters.",
+  invalid_label: "Check the label name and URL name, then try again.",
+  slug_conflict: "That URL name is already used. Choose another one.",
   slug_locked: "The URL stays fixed after first publication.",
   invalid_slug: "Use lowercase letters, numbers, and hyphens for the URL. The name search is reserved.",
   publication_blocked: "Resolve the blocking issues and review the preview before publishing.",
@@ -26,6 +29,7 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
   const [items, setItems] = useState<ArticleSummary[]>([]);
   const [next, setNext] = useState<string | null>(null);
   const [article, setArticle] = useState<Article | null>(null);
+  const [labels, setLabels] = useState<{ categories: AdminLabel[]; tags: AdminLabel[] } | null>(null);
   const [preview, setPreview] = useState<Revision | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -36,6 +40,7 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
   const [pendingJob, setPendingJob] = useState<ImportJob | null>(null);
   const keys = useRef(new Map<string, string>());
   const listSequence = useRef(0);
+  const labelSequence = useRef(0);
 
   const request = useCallback(async <T,>(path: string, init?: RequestInit, signature?: string): Promise<T> => {
     const headers = new Headers(init?.headers);
@@ -56,6 +61,28 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
     if (signature) keys.current.delete(signature);
     return value;
   }, [csrf, onExpired]);
+
+  const fetchLabels = useCallback(async () => {
+    const sequence = ++labelSequence.current;
+    async function all(kind: "categories" | "tags") {
+      const found = new Map<string, AdminLabel>(); let cursor: string | null = null;
+      do {
+        const query = new URLSearchParams({ limit: "100" }); if (cursor) query.set("cursor", cursor);
+        const page: Page<AdminLabel> = await request(`/${kind}?${query}`);
+        for (const label of page.items) found.set(label.id, label);
+        cursor = page.next_cursor;
+      } while (cursor);
+      return [...found.values()];
+    }
+    const [categories, tags] = await Promise.all([all("categories"), all("tags")]);
+    return { sequence, value: { categories, tags } };
+  }, [request]);
+  const loadLabels = useCallback(async () => { const result = await fetchLabels(); if (result.sequence === labelSequence.current) setLabels(result.value); }, [fetchLabels]);
+  useEffect(() => {
+    let active = true;
+    fetchLabels().then((result) => { if (active && result.sequence === labelSequence.current) setLabels(result.value); }).catch(() => { if (active) setMessage("Labels could not be loaded. Use Refresh labels to try again."); });
+    return () => { active = false; };
+  }, [fetchLabels]);
 
   const loadList = useCallback(async (cursor?: string) => {
     const sequence = ++listSequence.current;
@@ -122,7 +149,7 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
     await run(async () => {
       const payload: Record<string, unknown> = { expected_version: article.version, title: fields.get("title"), summary: fields.get("summary") || null, language: fields.get("language"), written_at: fields.get("written_at") || null };
       if (!article.published_at) payload.slug = fields.get("slug");
-      if (fields.get("clear_labels")) { payload.category_id = null; payload.tag_ids = []; }
+      payload.category_id = fields.get("category_id") || null; payload.tag_ids = fields.getAll("tag_ids");
       const saved = await request<Article>(`/articles/${article.id}/draft`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       setArticle(saved); setPreview(null); await loadList(); setMessage("Draft metadata saved.");
     });
@@ -146,8 +173,21 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
     });
   }
 
+  async function labelsChanged() {
+    try { await loadLabels(); if (article) await selectArticle(article.id); await loadList(); }
+    catch { setMessage("The label was saved. Refresh labels and reload the article before editing further."); return; }
+    setMessage("Label saved. Article associations and URL names are preserved.");
+  }
+  function choices(kind: "categories" | "tags"): Label[] {
+    const current = kind === "categories" ? (article?.draft?.category ? [article.draft.category] : []) : (article?.draft?.tags ?? []);
+    const found = new Map<string, Label>((labels?.[kind] ?? []).map((label) => [label.id, label]));
+    for (const label of current) if (!found.has(label.id)) found.set(label.id, label);
+    return [...found.values()];
+  }
+
   return <div className="publishing-dashboard">
-    <h2>Articles</h2>
+    <nav aria-label="Dashboard sections"><a href="#articles">Articles</a> · <a href="#labels">Categories and tags</a></nav>
+    <h2 id="articles">Articles</h2>
     {message && <p role="status">{message}</p>}
     <fieldset disabled={busy}>
       <legend>Import article</legend>
@@ -181,7 +221,7 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
         {article.published && article.visibility === "public" && <a href={`/articles/${article.slug}`} target="_blank" rel="noreferrer">Read published article</a>}
       </div>
       {article.issues.length > 0 && <ul>{article.issues.map((item) => <li key={`${item.code}-${item.path}-${item.message}`}><strong>{item.severity === "blocking" ? "Required" : "Note"}:</strong> {item.message}{item.path ? ` (${item.path})` : ""}</li>)}</ul>}
-      {article.draft && <fieldset disabled={busy} key={article.draft.id}>
+      {article.draft && <fieldset disabled={busy || !labels} key={article.draft.id}>
         <legend>Draft metadata</legend>
         <form onSubmit={saveMetadata}>
           <label htmlFor="article-title">Title</label><input id="article-title" name="title" defaultValue={article.draft.title ?? ""} required />
@@ -189,7 +229,11 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
           <label htmlFor="article-summary">Summary (optional)</label><textarea id="article-summary" name="summary" defaultValue={article.draft.summary ?? ""} />
           <label htmlFor="article-language">Language</label><select id="article-language" name="language" defaultValue={article.draft.language ?? "en"}><option value="en">English</option><option value="zh">中文</option></select>
           <label htmlFor="article-written">Writing date</label><input id="article-written" name="written_at" type="date" defaultValue={article.draft.written_at ?? ""} required />
-          <label><input type="checkbox" name="clear_labels" /> Clear imported category and tags</label>
+          <label htmlFor="article-category">Category</label><select id="article-category" name="category_id" defaultValue={article.draft.category?.id ?? ""}>
+            <option value="">None</option>{choices("categories").map((label) => <option key={label.id} value={label.id}>{label.name}</option>)}
+          </select>
+          <fieldset><legend>Tags</legend>{choices("tags").length === 0 ? <p>Create tags in Categories and tags below.</p> : choices("tags").map((label) => <label key={label.id}><input type="checkbox" name="tag_ids" value={label.id} defaultChecked={article.draft?.tags.some((tag) => tag.id === label.id)} /> {label.name}</label>)}</fieldset>
+          {!labels && <p>Load labels before editing metadata so saved associations are preserved.</p>}
           <button type="submit">Save metadata</button>
         </form>
       </fieldset>}
@@ -209,5 +253,6 @@ export default function PublishingDashboard({ csrf, onExpired }: { csrf: string;
       }} />
       {preview && <section className="article-preview" aria-label={preview.id === article.draft?.id ? "Draft preview" : preview.id === article.published?.id ? "Published article" : "Historical version"}><p><strong>{preview.id === article.draft?.id ? "Draft preview" : preview.id === article.published?.id ? "Published article" : "Historical version"}</strong></p><h2>{preview.title}</h2><p>Written: {preview.written_at ?? "Not set"}{preview.first_published_at ? ` · Version published: ${new Date(preview.first_published_at).toLocaleString("en", { timeZone: "Asia/Shanghai" })}` : ""}{preview.id === article.published?.id && article.updated_at ? ` · Updated: ${new Date(article.updated_at).toLocaleString("en", { timeZone: "Asia/Shanghai" })}` : ""}</p><Markdown content={preview.markdown} /></section>}
     </section>}
+    <LabelManager labels={labels} busy={busy} request={request} run={run} onChanged={labelsChanged} refresh={loadLabels} />
   </div>;
 }

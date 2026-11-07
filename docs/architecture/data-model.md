@@ -1,6 +1,6 @@
 # Data model
 
-Status: Approved by the owner as the logical data model. PostgreSQL migrations, readiness, and authentication are implemented. The first Markdown workflow is merged; ZIP imports and authorized image delivery use existing Asset/RevisionAsset tables; the history branch adds previously published snapshot browsing/restoration; see the [publishing guide](../operations/publishing.md) for its subset and internal schema additions. See the [database guide](../operations/database.md).
+Status: Approved by the owner as the logical data model. PostgreSQL migrations, readiness, and authentication are implemented. The first Markdown workflow is merged; ZIP imports and authorized image delivery use existing Asset/RevisionAsset tables; published history/restoration is merged; the labels branch adds category/tag management and coordinated renames; see the [publishing guide](../operations/publishing.md) for its subset and internal schema additions. See the [database guide](../operations/database.md).
 
 Source: [approved PRD](../product/requirements.md). Contract: [OpenAPI](../../contracts/openapi.yaml). Behavior and HTTP conventions: [API design](api-design.md).
 
@@ -79,7 +79,7 @@ Staged objects are not public. Retry failed jobs safely; abandon unfinished work
 
 Owner mutations include `expected_version` for the target article, label, or comment. A stale value produces `409 version_conflict` with no changes. Creation does not require a prior version. Imports check versions again when they commit, not only when the job is accepted.
 
-Renaming a label also increments versions of affected live articles when their metadata dates change, so an in-progress owner edit cannot silently overlook that change.
+Renaming a label also increments versions of affected live articles when their metadata dates change, so an in-progress owner edit cannot silently overlook that change. Current draft-only associations also increment article versions/administrative modified times without changing live dates. Shared/exclusive transaction coordination and public snapshot reads are described in [ADR 0008](decisions/0008-label-renames.md).
 
 Publish/unpublish, revision restoration, imports, and guest comment submission require `Idempotency-Key`. For the approved 24-hour retention period, the same key and semantic payload replay the original result, even if its expected version has since changed. A different payload using that key returns `409 idempotency_conflict`. An in-progress duplicate returns `409 request_in_progress` with `Retry-After`. Re-authenticate and authorize before replaying owner responses.
 

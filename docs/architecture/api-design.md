@@ -2,7 +2,7 @@
 
 Status: Approved by the owner as the API design baseline. The machine-readable contract is [OpenAPI](../../contracts/openapi.yaml); this document explains conventions and end-to-end workflows. The [data model](data-model.md) defines persistence invariants.
 
-Implementation status: owner authentication and the first Markdown flow are merged; ZIPs and authorized image delivery are merged; the history branch adds published snapshot browsing/restoration; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
+Implementation status: owner authentication and the first Markdown flow are merged; ZIPs and authorized image delivery are merged; published snapshot browsing/restoration is merged; the labels branch adds category/tag management and public browsing; the [first publishing guide](../operations/publishing.md) lists currently implemented routes and limits. This document and OpenAPI describe the full approved target, including deferred features.
 
 ## 1. Boundaries and naming
 
@@ -24,7 +24,7 @@ Use owner username/password login and opaque server-side sessions. The implement
 - Sign-out revokes the session and clears its cookie. Successful recovery revokes all owner sessions.
 - Same-origin routing keeps the public site, dashboard, and API on one origin. Local development uses HTTPS or a clearly isolated development cookie configuration that cannot be used in production.
 
-The owner approved these session and CSRF mechanisms; their implementation is in the authentication branch for review. Development uses a separate loopback-only HTTP cookie, while production requires HTTPS and a stable injected CSRF key. No reader accounts are introduced.
+The owner approved these session and CSRF mechanisms; their implementation is merged in PR #5. Development uses a separate loopback-only HTTP cookie, while production requires HTTPS and a stable injected CSRF key. No reader accounts are introduced.
 
 ## 3. Responses and errors
 
@@ -56,7 +56,7 @@ Use opaque cursors and `limit` (default 20, maximum 100). A cursor encodes the o
 - Owner articles: `modified_at DESC, id DESC`; `q` searches draft title or latest retained title, not private content through public endpoints.
 - Revision history: only previously published snapshots, newest first, with stable ID tie-breaker. Preview accesses the current draft separately.
 - Comments: public by creation time ascending; admin by creation time descending.
-- Labels: name and ID ordering, using a documented deterministic Unicode ordering in implementation.
+- Labels: case-sensitive Unicode code-point name order then ID (`COLLATE "C"`), with cursors bound to label kind and public/admin audience.
 
 Public filters are category slug, tag slug, and language (`en`, `zh`). Admin article filters add publication status and visibility. The backend enforces allowed filter combinations and parameter length limits. All public filtering operates after visibility authorization; counts and label lists cannot leak private material.
 

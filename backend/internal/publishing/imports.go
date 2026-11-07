@@ -224,6 +224,9 @@ func (s *Service) commitImport(ctx context.Context, jobID string, article *strin
 	}
 	var a *Article
 	if article == nil {
+		if err := lockLabels(ctx, tx, false); err != nil {
+			return err
+		}
 		var id string
 		if err := tx.QueryRowContext(ctx, `INSERT INTO articles(id) VALUES(gen_random_uuid()) RETURNING id`).Scan(&id); err != nil {
 			return err

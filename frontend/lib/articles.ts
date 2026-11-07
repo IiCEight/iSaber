@@ -1,5 +1,6 @@
 export type Issue = { severity: "warning" | "blocking"; code: string; path: string | null; message: string };
 export type Label = { id: string; name: string; slug: string };
+export type AdminLabel = Label & { version: number };
 export type Revision = {
   id: string; article_id: string; title: string | null; summary: string | null;
   language: "en" | "zh" | null; written_at: string | null; category: Label | null;
