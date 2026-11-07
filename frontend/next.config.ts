@@ -7,6 +7,9 @@ if (!['http:', 'https:'].includes(backend.protocol) || backend.username || backe
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Allow the 50 MiB archive plus multipart overhead through the API rewrite.
+  // Go independently enforces per-file and expanded archive limits.
+  experimental: { proxyClientMaxBodySize: "51mb", proxyTimeout: 60000 },
   // Keep the public site and Go API on the same browser origin. Business logic
   // and authorization remain in Go, not in Next.js route handlers.
   async rewrites() {

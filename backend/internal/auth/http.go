@@ -241,3 +241,31 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
+
+// OptionalOwner authorizes retained media without requiring authentication for
+// public media. Invalid/missing/ambiguous credentials remain anonymous; database
+// failures fail closed and never grant owner context.
+func OptionalOwner(service *Service, config Config, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var token string
+		count := 0
+		for _, cookie := range r.Cookies() {
+			if cookie.Name == config.CookieName {
+				token = cookie.Value
+				count++
+			}
+		}
+		if count == 1 && token != "" && len(token) <= 128 {
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+			session, err := service.Authenticate(ctx, token)
+			cancel()
+			if err == nil {
+				r = r.WithContext(context.WithValue(r.Context(), ownerContextKey{}, session.Owner))
+			} else if !errors.Is(err, ErrUnauthorized) {
+				authProblem(w, 503, "authentication_unavailable")
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}

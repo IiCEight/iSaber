@@ -4,7 +4,7 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 ## Current state
 
-The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. The publishing branch adds Markdown upload → private draft → preview → publish → public reading, with safe revision updates and code/math rendering. See the [publishing guide](docs/operations/publishing.md). Managed images/ZIP, history tools, search, comments, cloud delivery, and the final artistic design remain subsequent work.
+The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. This branch adds Typora ZIP imports with managed images, validation, and private/public image authorization. See the [publishing guide](docs/operations/publishing.md). History tools, search, comments, private COS/cloud delivery, and the final artistic design remain subsequent work.
 
 ## Local development
 
@@ -38,7 +38,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file and follow the [publishing walkthrough](docs/operations/publishing.md). Go listens on `127.0.0.1:8080` by default. Next.js forwards `/api/*` requests to Go, keeping browser requests on one origin.
+Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file or article/image ZIP and follow the [publishing walkthrough](docs/operations/publishing.md). Go listens on `127.0.0.1:8080` by default. Next.js forwards `/api/*` requests to Go, keeping browser requests on one origin.
 
 | Endpoint | Current behavior |
 | --- | --- |
@@ -51,6 +51,7 @@ Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file and 
 | `/api/v1/auth/*` | Owner login, session, and logout |
 | `/api/v1/admin/*` | Owner-protected article/import tools; origin/CSRF checks on mutations |
 | `/api/v1/articles*` | Public-only list and article detail; search is deferred |
+| `/api/v1/articles/{article_id}/assets/{asset_id}` | Current public revision images for visitors; retained images for authenticated owner; uncached private delivery |
 | Other `/api/v1/*` routes | Problem-format `404` until implemented |
 
 Configure Go's bind address with `HTTP_ADDR`. Configure the frontend's proxy target with `BACKEND_ORIGIN` (see `frontend/.env.example`). Next.js evaluates the proxy target at build/dev startup; rebuild production after changing it. Do not put credentials into this URL or browser-visible environment variables.
@@ -98,4 +99,5 @@ GitHub Actions runs **API contract**, **Frontend**, and **Backend** independentl
 - [Owner setup, sign-in, and recovery](docs/operations/owner-account.md)
 - [Markdown publishing and recovery](docs/operations/publishing.md)
 - [Publishing architecture decision](docs/architecture/decisions/0006-first-markdown-publishing.md)
+- [Typora image import decision](docs/architecture/decisions/0007-typora-images.md)
 - [Guided GitHub CI/CD setup](docs/operations/github-cicd.md)

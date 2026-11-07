@@ -858,7 +858,9 @@ paths:
       - $ref: '#/components/parameters/IdempotencyKey'
       description: 'One UTF-8 .md or ZIP with exactly one article and images. New import: omit article_id and expected_version.
         Replacement: require both. 5 MiB Markdown; 10 MiB per image; 50 MiB compressed ZIP; 100 MiB expanded ZIP;
-        200 files. 413 for request size, 415 for unsupported file kind, 422 for invalid request fields. Structural
+        200 files (400 total file/directory entries). Images are limited to 16 million pixels and must decode as
+        PNG, JPEG, GIF, or WebP matching their extension. Reject encrypted, split, ZIP64, unsafe-path and special-file
+        archives. 413 for request size, 415 for unsupported file kind, 422 for invalid request fields. Structural
         processing errors appear in a failed job. Missing editorial metadata/assets can produce a successful but
         non-publishable draft. Existing state changes only after complete processing and a second version check.
         Jobs and staged files are durable; restart failures must be explicit. Replayed requests return the original

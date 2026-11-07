@@ -113,7 +113,7 @@ func (s *Service) AdminHandler() http.Handler {
 		reply(w, job, err)
 	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 		defer cancel()
 		r = r.WithContext(ctx)
 		if _, ok := auth.OwnerFromContext(r.Context()); !ok {
@@ -124,8 +124,13 @@ func (s *Service) AdminHandler() http.Handler {
 	})
 }
 
-func (s *Service) PublicHandler() http.Handler {
+func (s *Service) PublicHandler(assetHandlers ...http.Handler) http.Handler {
 	mux := http.NewServeMux()
+	assetHandler := s.AssetHandler()
+	if len(assetHandlers) > 0 {
+		assetHandler = assetHandlers[0]
+	}
+	mux.Handle("GET /api/v1/articles/{article_id}/assets/{asset_id}", assetHandler)
 	mux.HandleFunc("GET /api/v1/articles", s.listPublic)
 	mux.HandleFunc("GET /api/v1/articles/{slug}", func(w http.ResponseWriter, r *http.Request) {
 		value, err := s.publicArticle(r.Context(), r.PathValue("slug"))
@@ -165,7 +170,7 @@ func (s *Service) importFile(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, MaxMarkdown+128*1024)
+	r.Body = http.MaxBytesReader(w, r.Body, MaxArchive+128*1024)
 	if err := r.ParseMultipartForm(1024 * 1024); err != nil {
 		var large *http.MaxBytesError
 		if errors.As(err, &large) {
@@ -188,11 +193,15 @@ func (s *Service) importFile(w http.ResponseWriter, r *http.Request) {
 	}
 	header := r.MultipartForm.File["file"][0]
 	filename := path.Base(strings.ReplaceAll(header.Filename, "\\", "/"))
-	if !utf8.ValidString(filename) || len(filename) > 255 || strings.ToLower(path.Ext(filename)) != ".md" {
-		reply(w, nil, fault(415, "markdown_only"))
+	if !utf8.ValidString(filename) || len(filename) > 255 || (strings.ToLower(path.Ext(filename)) != ".md" && strings.ToLower(path.Ext(filename)) != ".zip") {
+		reply(w, nil, fault(415, "markdown_or_zip_required"))
 		return
 	}
-	if header.Size > MaxMarkdown {
+	maximum := int64(MaxMarkdown)
+	if strings.EqualFold(path.Ext(filename), ".zip") {
+		maximum = MaxArchive
+	}
+	if header.Size > maximum {
 		reply(w, nil, fault(413, "upload_too_large"))
 		return
 	}
@@ -221,12 +230,12 @@ func (s *Service) importFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-	data, err := io.ReadAll(io.LimitReader(file, MaxMarkdown+1))
+	data, err := io.ReadAll(io.LimitReader(file, maximum+1))
 	if err != nil {
 		reply(w, nil, err)
 		return
 	}
-	if len(data) > MaxMarkdown {
+	if int64(len(data)) > maximum {
 		reply(w, nil, fault(413, "upload_too_large"))
 		return
 	}

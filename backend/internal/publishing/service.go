@@ -259,6 +259,9 @@ func (s *Service) Publish(ctx context.Context, owner, id, key string, fields map
 			if !a.Publishable {
 				return 0, nil, fault(422, "publication_blocked")
 			}
+			if err := s.checkAssets(a.Draft); err != nil {
+				return 0, nil, fault(422, "assets_unavailable")
+			}
 			if _, err = tx.ExecContext(ctx, `UPDATE revisions SET first_published_at=COALESCE(first_published_at,clock_timestamp()) WHERE id=$1`, a.Draft.ID); err == nil {
 				_, err = tx.ExecContext(ctx, `UPDATE articles SET published_revision_id=draft_revision_id,draft_revision_id=NULL,
                     published_at=COALESCE(published_at,clock_timestamp()),updated_at=clock_timestamp(),modified_at=clock_timestamp(),version=version+1 WHERE id=$1`, id)

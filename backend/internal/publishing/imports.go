@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"os"
 	"path"
 	"strings"
 	"time"
@@ -24,35 +23,9 @@ func (s *Service) AcceptImport(ctx context.Context, owner, key, filename string,
 	if err != nil {
 		return response{}, err
 	}
-	storage := id.String() + ".md"
-	file, err := s.root.OpenFile(storage, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
-	if err != nil {
+	storage := id.String() + ".upload"
+	if err := s.writePrivate(storage, data); err != nil {
 		return response{}, err
-	}
-	_, writeErr := file.Write(data)
-	if writeErr == nil {
-		writeErr = file.Sync()
-	}
-	closeErr := file.Close()
-	if writeErr != nil {
-		return response{}, writeErr
-	}
-	if closeErr != nil {
-		return response{}, closeErr
-	}
-	// Persist the new directory entry as well as the staged file bytes before
-	// committing acceptance. An unreferenced file is safer than a missing stage.
-	directory, err := s.root.Open(".")
-	if err != nil {
-		return response{}, err
-	}
-	syncErr := directory.Sync()
-	closeErr = directory.Close()
-	if syncErr != nil {
-		return response{}, syncErr
-	}
-	if closeErr != nil {
-		return response{}, closeErr
 	}
 	hash := sha256.Sum256(data)
 	payload, _ := json.Marshal(map[string]any{"filename": filename, "sha256": hex.EncodeToString(hash[:]), "article_id": article, "expected_version": version})
@@ -187,15 +160,19 @@ func (s *Service) ProcessNext(ctx context.Context) (bool, error) {
 	if err = tx.Commit(); err != nil {
 		return false, err
 	}
-	data, err := s.readStage(storage, MaxMarkdown+1)
+	data, err := s.readStage(storage, MaxArchive+1)
 	if err != nil {
 		return true, s.failJob(ctx, id, "staged_upload_unavailable")
 	}
-	parsed, err := parseMarkdown(data, filename)
+	pkg, err := readPackage(data, filename)
 	if err != nil {
 		return true, s.failJob(ctx, id, err.Error())
 	}
-	if err := s.commitImport(ctx, id, article, version, filename, parsed); err != nil {
+	parsed, err := parseMarkdown(pkg.Markdown, pkg.Filename)
+	if err != nil {
+		return true, s.failJob(ctx, id, err.Error())
+	}
+	if err := s.commitImport(ctx, id, article, version, path.Base(pkg.Filename), parsed, pkg); err != nil {
 		var known *Fault
 		if errors.As(err, &known) {
 			return true, s.failJob(ctx, id, known.Code)
@@ -214,12 +191,25 @@ func (s *Service) readStage(key string, maximum int64) ([]byte, error) {
 	return io.ReadAll(io.LimitReader(file, maximum))
 }
 func (s *Service) failJob(ctx context.Context, id, code string) error {
-	issues, _ := json.Marshal([]Issue{{Severity: "blocking", Code: code, Message: "The import could not complete. Check the Markdown/front matter, reload the article if it changed, and upload again."}})
+	message := map[string]string{
+		"invalid_archive":            "The ZIP could not be read. Use a standard, single-part ZIP with one Markdown file and its images.",
+		"unsafe_archive_entry":       "The ZIP contains unsafe or ambiguous paths, encrypted entries, or links. Repackage ordinary files with relative paths.",
+		"unsupported_archive_file":   "The ZIP may contain only one Markdown file and PNG, JPEG, GIF, or WebP images.",
+		"one_markdown_file_required": "Include exactly one Markdown file in the ZIP.",
+		"archive_file_limit":         "The ZIP must contain no more than 200 files.",
+		"archive_expansion_limit":    "The ZIP exceeds the expanded-size limit: 100 MiB total, 5 MiB Markdown, or 10 MiB per image.",
+		"invalid_image":              "An image is damaged, has the wrong file extension, or exceeds 16 million pixels. Export it again and re-upload the ZIP.",
+		"version_conflict":           "The article changed while this import was queued. Reload it and upload again.",
+	}[code]
+	if message == "" {
+		message = "The import could not complete. Check the Markdown/front matter, reload the article if it changed, and upload again."
+	}
+	issues, _ := json.Marshal([]Issue{{Severity: "blocking", Code: code, Message: message}})
 	_, err := s.db.ExecContext(ctx, `UPDATE import_jobs SET status='failed',issues=$1,finished_at=clock_timestamp() WHERE id=$2 AND status='processing'`, issues, id)
 	return err
 }
 
-func (s *Service) commitImport(ctx context.Context, jobID string, article *string, version *int64, filename string, parsed imported) error {
+func (s *Service) commitImport(ctx context.Context, jobID string, article *string, version *int64, filename string, parsed imported, pkg articlePackage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -341,6 +331,9 @@ func (s *Service) commitImport(ctx context.Context, jobID string, article *strin
 		}
 	} else if parsed.Slug != nil && (a.Slug == nil || *parsed.Slug != *a.Slug) {
 		r.SourceIssues = append(r.SourceIssues, issue("warning", "slug_ignored", "slug", "An update keeps the existing article URL."))
+	}
+	if err := s.attachImages(ctx, tx, &r, pkg); err != nil {
+		return err
 	}
 	if err := insertRevision(ctx, tx, &r); err != nil {
 		return err

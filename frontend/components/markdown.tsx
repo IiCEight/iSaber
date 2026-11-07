@@ -17,6 +17,9 @@ export default function Markdown({ content }: { content: string }) {
         ]}
         components={{
           img({ src, alt }) {
+            if (typeof src === "string" && /^\/api\/v1\/articles\/[0-9a-f-]{36}\/assets\/[0-9a-f-]{36}$/.test(src)) {
+              return <img src={src} alt={alt ?? ""} loading="lazy" referrerPolicy="no-referrer" />;
+            }
             let remote: URL | null = null;
             try { if (typeof src === "string") remote = new URL(src); } catch { /* Show unavailable images without executing a URL. */ }
             if (!remote || remote.protocol !== "https:" || !remote.hostname || remote.username || remote.password) {

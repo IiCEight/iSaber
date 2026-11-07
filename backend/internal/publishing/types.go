@@ -34,6 +34,7 @@ type Revision struct {
 	FirstPublishedAt     *time.Time `json:"first_published_at"`
 	RestoredFromRevision *string    `json:"restored_from_revision_id"`
 	SourceIssues         []Issue    `json:"-"`
+	Assets               []asset    `json:"-"`
 }
 
 type ArticleSummary struct {

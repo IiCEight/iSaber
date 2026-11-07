@@ -58,7 +58,7 @@ func run(logger *slog.Logger) error {
 		Addr: addr,
 		Handler: httpapi.NewHandler(func(ctx context.Context) error {
 			return migrations.CheckReady(ctx, db)
-		}, httpapi.WithAuthentication(auth.NewHTTPHandler(service, config, articles.AdminHandler())), httpapi.WithPublicArticles(articles.PublicHandler())),
+		}, httpapi.WithAuthentication(auth.NewHTTPHandler(service, config, articles.AdminHandler())), httpapi.WithPublicArticles(articles.PublicHandler(auth.OptionalOwner(service, config, articles.AssetHandler())))),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       60 * time.Second,
 		WriteTimeout:      60 * time.Second,
