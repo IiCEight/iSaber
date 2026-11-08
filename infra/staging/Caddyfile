@@ -1,0 +1,11 @@
+{
+    admin off
+    auto_https disable_redirects
+    skip_install_trust
+}
+
+https://localhost:8443 {
+    tls internal
+    header X-Robots-Tag "noindex, nofollow, noarchive"
+    reverse_proxy frontend:3000
+}
