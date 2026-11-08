@@ -75,7 +75,7 @@ python3 /opt/isaber-staging/config/staging.py init
 python3 /opt/isaber-staging/config/staging.py deploy --release /opt/isaber-staging/candidate-release.json
 ```
 
-These commands run **on JD**, not the workstation. `init` preserves existing secrets and refuses to regenerate them over an existing database volume. `deploy` validates the release, pulls exact images, explicitly migrates, grants runtime permissions, starts the stack, verifies its CA/HTTPS routes, and records `current-release.json` only after success. Initial failure stops the application/proxy while retaining data/secrets for diagnosis. The initial deployer refuses to update an existing successful staging instance; coordinated backup and reviewed promotion/rollback are required first.
+These commands run **on JD**, not the workstation. `init` preserves existing secrets and refuses to regenerate them over an existing database volume. `deploy` validates the release, pulls exact images, explicitly migrates, grants runtime permissions, starts the stack, verifies its CA/HTTPS routes, and records `current-release.json` only after success. Initial failure stops the application/proxy while retaining data/secrets for diagnosis. The initial deployer refuses to update an existing successful staging instance; subsequent releases use the [guarded promotion and rollback commands](staging-releases.md).
 
 ## Operator checks and stopping
 
@@ -104,4 +104,4 @@ The initial cloud acceptance used a random temporary owner/password held in proc
 
 Local tests cover manifest boundaries, private secret generation/idempotency, refusal to replace credentials over an existing database, and refusal to redeploy a data-bearing instance. Real container/migration checks remain in CI. Interactive browser acceptance is the next owner exercise.
 
-Coordinated database/media backup and disposable restore verification, schema-aware promotion/rollback, a restricted deployment identity, and unattended GitHub delivery remain the next operational milestone. Until recovery is verified, use synthetic staging content only. Private COS and public production hosting remain separate work.
+Coordinated [snapshots and disposable restore](staging-backups.md) are implemented and verified with nonempty probes. Guarded [application promotion and rollback](staging-releases.md) preserve the same reviewed schema/API/database baseline. A restricted deployment identity, unattended GitHub delivery, offsite recovery, and separately reviewed schema evolution remain subsequent work. Continue using synthetic staging content; local recovery does not provide offsite disaster protection. Private COS and public production hosting remain separate work.

@@ -3,6 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+from contextlib import nullcontext
 import unittest
 from unittest.mock import patch, Mock
 
@@ -60,3 +61,93 @@ class StagingTests(unittest.TestCase):
                     staging.deploy(root, root / "candidate.json")
             command.assert_not_called()
             self.assertFalse((root / "release.env").exists())
+
+
+class PromotionTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.current = StagingTests().release()
+        self.candidate = {**self.current, "source_commit": "f" * 40}
+        self.environment = "CADDY_IMAGE=sha256:" + "e" * 64 + "\n"
+        (self.root / "current-release.json").write_text(json.dumps(self.current))
+        (self.root / "candidate.json").write_text(json.dumps(self.candidate))
+        (self.root / "release.env").write_text(self.environment)
+        import backup
+        for target, value in [("lock", nullcontext()), ("snapshot", self.root / "backups/fixture"), ("restore_check", None)]:
+            mock = patch.object(backup, target, return_value=value)
+            setattr(self, target, mock.start())
+            self.addCleanup(mock.stop)
+        for target, value in [("sql", b"5"), ("run", b""), ("image_config_id", "sha256:" + "d" * 64), ("verify_https", None)]:
+            mock = patch.object(staging, target, return_value=value)
+            setattr(self, target, mock.start())
+            self.addCleanup(mock.stop)
+        mock = patch.object(staging, "compose", side_effect=lambda root, *arguments: b"1 applied\n2 applied\n3 applied\n4 applied\n5 applied\n" if arguments[0] == "run" else b"")
+        self.compose = mock.start()
+        self.addCleanup(mock.stop)
+
+    def test_promotion_requires_a_verified_snapshot_then_records_previous_release(self):
+        staging.promote(self.root, self.root / "candidate.json")
+        self.snapshot.assert_called_once_with(self.root)
+        self.restore_check.assert_called_once_with(self.root, self.root / "backups/fixture")
+        self.assertEqual(json.loads((self.root / "current-release.json").read_text()), self.candidate)
+        self.assertEqual(json.loads((self.root / "previous-release.json").read_text()), self.current)
+        self.assertFalse((self.root / "pending-promotion.json").exists())
+        self.assertTrue(all("up" not in call.args[1:] for call in self.compose.call_args_list if call.args[1] == "run"))
+
+    def test_failed_candidate_restores_previous_images_and_metadata(self):
+        self.verify_https.side_effect = [RuntimeError("fixture failed health gate"), None]
+        with self.assertRaisesRegex(RuntimeError, "previous release recovered"):
+            staging.promote(self.root, self.root / "candidate.json")
+        self.assertEqual((self.root / "release.env").read_text(), self.environment)
+        self.assertEqual(json.loads((self.root / "current-release.json").read_text()), self.current)
+        self.assertEqual(json.loads((self.root / "last-promotion.json").read_text())["outcome"], "recovered_previous")
+        self.assertFalse((self.root / "pending-promotion.json").exists())
+
+    def test_failed_restore_check_prevents_any_candidate_environment_or_service_change(self):
+        self.restore_check.side_effect = RuntimeError("fixture recovery failure")
+        with self.assertRaises(RuntimeError):
+            staging.promote(self.root, self.root / "candidate.json")
+        self.compose.assert_not_called()
+        self.assertEqual((self.root / "release.env").read_text(), self.environment)
+        self.assertFalse((self.root / "pending-promotion.json").exists())
+
+    def test_contract_database_and_live_schema_changes_are_rejected(self):
+        for field in ("contract", "database", "schema"):
+            candidate = json.loads(json.dumps(self.candidate))
+            if field == "contract": candidate["contract_sha256"] = "a" * 64
+            if field == "database": candidate["images"]["postgres"]["reference"] = "ccr.ccs.tencentyun.com/isaber/postgres@sha256:" + "b" * 64
+            if field == "schema": self.sql.return_value = b"6"
+            (self.root / "candidate.json").write_text(json.dumps(candidate))
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                staging.promote(self.root, self.root / "candidate.json")
+        self.snapshot.assert_not_called()
+        self.compose.assert_not_called()
+
+    def test_pending_journal_blocks_another_promotion(self):
+        (self.root / "pending-promotion.json").write_text("{}")
+        with self.assertRaisesRegex(ValueError, "Recover"):
+            staging.promote(self.root, self.root / "candidate.json")
+        self.run.assert_not_called()
+        self.snapshot.assert_not_called()
+
+    def test_an_unready_candidate_migration_is_never_applied(self):
+        self.compose.side_effect = lambda root, *arguments: b"1 applied\n2 applied\n3 applied\n4 applied\n5 applied\n6 pending\n" if arguments[0] == "run" else b""
+        with self.assertRaises(RuntimeError):
+            staging.promote(self.root, self.root / "candidate.json")
+        self.assertEqual(json.loads((self.root / "current-release.json").read_text()), self.current)
+        self.assertTrue(all("up" not in call.args[1:] for call in self.compose.call_args_list if call.args[1] == "run"))
+
+    def test_interrupted_promotion_restores_release_and_earlier_history(self):
+        history = {**self.current, "source_commit": "1" * 40}
+        journal = {"previous_release": self.current, "candidate_release": self.candidate, "previous_release_history": history,
+                   "previous_image_environment": self.environment, "snapshot": str(self.root / "backups/fixture")}
+        (self.root / "pending-promotion.json").write_text(json.dumps(journal))
+        (self.root / "current-release.json").write_text(json.dumps(self.candidate))
+        (self.root / "previous-release.json").write_text(json.dumps(self.current))
+        staging.recover_promotion(self.root)
+        self.assertEqual(json.loads((self.root / "current-release.json").read_text()), self.current)
+        self.assertEqual(json.loads((self.root / "previous-release.json").read_text()), history)
+        self.assertEqual((self.root / "release.env").read_text(), self.environment)
+        self.assertFalse((self.root / "pending-promotion.json").exists())
