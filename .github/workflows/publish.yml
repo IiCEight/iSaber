@@ -1,0 +1,77 @@
+# Registry delivery only. This workflow does not SSH to or deploy either server.
+name: Publish images
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: publish-images
+  cancel-in-progress: false
+jobs:
+  publish:
+    # Never publish from PR checks (including forks), failed CI, or manual CI runs.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+      VERIFIED_CI_RUN_ID: ${{ github.event.workflow_run.id }}
+      COMPOSE_FILE: infra/compose.rehearsal.yml
+      COMPOSE_PROJECT_NAME: isaber-release-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Check out the exact commit whose main CI passed
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Check registry credentials are configured
+        env:
+          TCR_USERNAME: ${{ secrets.TCR_USERNAME }}
+          TCR_PASSWORD: ${{ secrets.TCR_PASSWORD }}
+        run: |
+          test -n "$TCR_USERNAME" || { echo 'Configure the TCR_USERNAME Actions secret'; exit 1; }
+          test -n "$TCR_PASSWORD" || { echo 'Configure the TCR_PASSWORD Actions secret'; exit 1; }
+      - name: Check publisher safeguards
+        run: python3 -m unittest discover -s infra/tests -p 'test_publish_images.py'
+      - name: Build release images on GitHub
+        run: docker compose build
+      - name: Pull the official PostgreSQL baseline
+        run: docker pull --platform linux/amd64 postgres:16
+      - name: Test these exact application and database images before publishing
+        run: |
+          docker compose up -d --wait postgres
+          docker compose run --rm --no-deps migrate up
+          docker compose up -d --wait api frontend
+          docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
+          docker compose stop postgres
+          docker compose exec -T frontend node -e "fetch('http://api:8080/readyz',{signal:AbortSignal.timeout(10000)}).then(r=>process.exit(r.status===503?0:1)).catch(()=>process.exit(1))"
+          docker compose restart postgres api frontend
+          docker compose up -d --wait api frontend
+          test "$(docker compose run --rm --no-deps -T migrate up)" = "Applied 0 migrations"
+          docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
+      - name: Publish tested images and record immutable references
+        env:
+          TCR_USERNAME: ${{ secrets.TCR_USERNAME }}
+          TCR_PASSWORD: ${{ secrets.TCR_PASSWORD }}
+        # Credentials exist only for this step and an ephemeral Docker config.
+        run: python3 infra/publish_images.py "$RUNNER_TEMP/isaber-release/release.json"
+      - name: Retain the completed release manifest
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-${{ github.event.workflow_run.head_sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/isaber-release/release.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Show synthetic rehearsal logs on failure
+        if: failure()
+        run: docker compose logs --tail 100
+      - name: Remove this runner's disposable stack and volumes
+        if: always()
+        run: docker compose down --volumes --remove-orphans

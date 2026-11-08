@@ -172,6 +172,8 @@ jobs:
         with:
           persist-credentials: false
       # Build on the runner. No registry publishing or cloud credentials are used.
+      - name: Test release manifest and credential safeguards
+        run: python3 -m unittest discover -s infra/tests -p 'test_publish_images.py'
       - name: Build separate application images
         run: docker compose build
       - name: Start disposable database
