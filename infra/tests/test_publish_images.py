@@ -1,10 +1,13 @@
 import contextlib
 import importlib.util
 import io
+import hashlib
 import json
 from pathlib import Path
 import tempfile
+import tarfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("publish_images", Path(__file__).resolve().parents[1] / "publish_images.py")
 publisher = importlib.util.module_from_spec(spec)
@@ -22,6 +25,7 @@ class PublisherTests(unittest.TestCase):
         self.fail_push = False
         self.wrong_repository = False
         self.changed_identity = False
+        self.manifest_index = False
 
     def invoke(self, arguments, *, environment, password=None):
         self.calls.append((arguments, dict(environment), password))
@@ -33,11 +37,21 @@ class PublisherTests(unittest.TestCase):
             self.assertEqual(password, "fixture-secret")
         else:
             self.assertIsNone(password)
+        if arguments[:2] == ["image", "save"]:
+            self.assertIn("--platform", arguments)
+            self.assertEqual(arguments[arguments.index("--platform") + 1], "linux/amd64")
+            config = b'{"architecture":"amd64","rootfs":{"type":"layers","diff_ids":[]}}'
+            if self.changed_identity and arguments[2].startswith("ccr."):
+                config = b'{"architecture":"amd64","config":{"Cmd":["changed"]}}'
+            config_path = "blobs/sha256/fixture" if arguments[2].startswith("ccr.") else "config.json"
+            manifest = json.dumps([{"Config": config_path}]).encode()
+            with tarfile.open(arguments[arguments.index("--output") + 1], "w") as archive:
+                for name, body in [("manifest.json", manifest), (config_path, config)]:
+                    member = tarfile.TarInfo(name)
+                    member.size = len(body)
+                    archive.addfile(member, io.BytesIO(body))
+            return ""
         if arguments[:2] == ["image", "inspect"]:
-            if arguments[-1] == "{{.Id}}":
-                if self.changed_identity and arguments[2].startswith("ccr."):
-                    return "sha256:" + "e" * 64
-                return "sha256:" + "c" * 64
             image = arguments[2]
             if image == "postgres:16":
                 return json.dumps([self.upstream])
@@ -45,8 +59,17 @@ class PublisherTests(unittest.TestCase):
             if self.wrong_repository:
                 repository = "unrelated.example/other/image"
             return json.dumps([repository + "@sha256:" + "d" * 64])
+        if arguments[:2] == ["manifest", "inspect"]:
+            if self.manifest_index and arguments[2].endswith("d" * 64):
+                return json.dumps({"manifests": [{"digest": "sha256:" + "f" * 64, "platform": {"os": "linux", "architecture": "amd64"}}, {"digest": "sha256:" + "e" * 64, "platform": {"os": "unknown", "architecture": "unknown"}}]})
+            config = b'{"architecture":"amd64","rootfs":{"type":"layers","diff_ids":[]}}'
+            identity = "sha256:" + ("e" * 64 if self.changed_identity else hashlib.sha256(config).hexdigest())
+            return json.dumps({"config": {"digest": identity}})
         if arguments[0] == "push" and self.fail_push:
             raise RuntimeError("Docker push failed")
+        if arguments[0] == "push":
+            tag = "unrelated-tag" if self.wrong_repository else arguments[1].rsplit(":", 1)[1]
+            return tag + ": digest: sha256:" + "d" * 64 + " size: 1234\n"
         return ""
 
     def publish(self):
@@ -80,11 +103,17 @@ class PublisherTests(unittest.TestCase):
         self.assertFalse(self.output.exists())
         self.assertFalse(Path(self.calls[0][1]["DOCKER_CONFIG"]).exists())
 
-    def test_unrelated_registry_digest_cannot_enter_manifest(self):
+    def test_unrelated_push_receipt_cannot_enter_manifest(self):
         self.wrong_repository = True
         with self.assertRaises(ValueError):
             self.publish()
         self.assertFalse(self.output.exists())
+
+    def test_index_resolves_tested_platform_and_records_root_digest(self):
+        self.manifest_index = True
+        result = self.publish()
+        self.assertTrue(result["images"]["frontend"]["reference"].endswith("d" * 64))
+        self.assertTrue(any(call[0][:2] == ["manifest", "inspect"] and call[0][2].endswith("f" * 64) for call in self.calls))
 
     def test_unverified_postgres_source_is_rejected_before_login(self):
         self.upstream = "unrelated.example/postgres@sha256:" + "b" * 64
@@ -98,6 +127,22 @@ class PublisherTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.publish()
         self.assertFalse(self.output.exists())
+
+    def test_timeout_does_not_expose_partial_subprocess_output(self):
+        error = publisher.subprocess.TimeoutExpired(["docker", "push"], 1200, output="fixture-secret", stderr="fixture-secret")
+        with patch.object(publisher.subprocess, "run", side_effect=error) as command:
+            with self.assertRaisesRegex(RuntimeError, "exceeded 1200s") as result:
+                publisher.docker(["push", "fixture-image"], environment={})
+        self.assertNotIn("fixture-secret", str(result.exception))
+        self.assertEqual(command.call_args.kwargs["timeout"], 1200)
+
+    def test_safe_error_classification_does_not_echo_credentials(self):
+        failure = publisher.subprocess.CompletedProcess([], 1, stdout="", stderr="unauthorized: fixture-secret")
+        with patch.object(publisher.subprocess, "run", return_value=failure) as command:
+            with self.assertRaisesRegex(RuntimeError, "authorization rejected") as result:
+                publisher.docker(["login", "fixture-registry"], environment={}, password="fixture-secret")
+        self.assertNotIn("fixture-secret", str(result.exception))
+        self.assertEqual(command.call_args.kwargs["timeout"], 60)
 
 
 if __name__ == "__main__":
