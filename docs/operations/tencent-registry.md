@@ -44,36 +44,17 @@ The following network-policy requirements apply to **Enterprise**, not as a prer
 These checks are pending. JD's successful GHCR fixture test proves Docker works; it does not validate this proposed TCR instance or its performance.
 
 
-## GitHub publishing setup
+## Current release preparation and publication
 
-Before merging this milestone, confirm **private** repositories `isaber/frontend`, `isaber/backend`, and `isaber/postgres` in the Personal registry. The workflow must not be used to auto-create repositories with unreviewed default visibility.
+The direct GitHub-to-TCR data path failed in both live attempts despite successful registry authentication. The default workflow is now **Prepare release images**: GitHub retains a verified bundle and the existing workspace relays it to JD for digest-preserving publication. See the [image relay runbook](image-relay.md) for the exact operator command and acceptance steps.
 
-Open [repository Actions secrets](https://github.com/IiCEight/iSaber/settings/secrets/actions) and add:
+The operator command requires a successful trusted main preparation run and matching successful source CI. It uses the workspace's existing GitHub login and SSH alias and JD's existing registry credential file. It does not copy credential values between machines, install a server runner, or deploy the blog. A green preparation run means a bundle is ready; completed publication is represented only by the relay's verified `release.json`.
 
-| Secret | Value |
-| --- | --- |
-| `TCR_USERNAME` | Username from the successful console-provided Docker login command |
-| `TCR_PASSWORD` | Registry login password; not a Tencent cloud API SecretKey |
+Keep the Personal repositories `isaber/frontend`, `isaber/backend`, and `isaber/postgres` private. Repository secrets `TCR_USERNAME` and `TCR_PASSWORD` are still configured for optional direct-route tests, but are not needed by the default operator relay. Do not reset working credentials to address this upload timeout. The registry login file on JD is root-owned with mode 0600 under a 0700 directory; that restricts access but does not encrypt the file.
 
-Enter these directly in GitHub. Do not paste them into chat or a committed environment file. Docker login on JD does not configure these secrets. Its existing root-only credential file remains unencrypted; permissions restrict access, but do not provide encryption.
+Direct mode can be explicitly enabled with repository variable `TCR_PUBLISH_TRANSPORT=direct`; it is not the default. Its publishing diagnostics have flushed phases, bounded commands, and safe error categories. Actual direct-route recovery is unverified.
 
-The prepared workflow runs after successful **push-to-main CI**, using the exact commit from that run. PR/fork checks and failed/manual CI runs do not publish. It builds frontend/backend images on GitHub, pulls the official PostgreSQL 16 image, and tests that exact set through the isolated migration/readiness/SSR/proxy/restart rehearsal before publishing. Registry credentials are exposed only to validation/publishing steps, not the build or test steps, and publishing uses an ephemeral Docker configuration removed on exit.
-
-Each image receives a `sha-COMMIT` tag under `ccr.ccs.tencentyun.com/isaber/`. The publisher verifies the local image identities and repository-bound push digests before writing `release.json`. The manifest records the source commit, prior successful CI run, contract hash, migration version, application/database image IDs and registry digests, and PostgreSQL's resolved official upstream reference. Use manifest digests for deployment: tags may change on a rebuild/retry.
-
-After merging the combined milestone PR:
-
-1. Observe the normal main CI run, then **Publish images** in Actions.
-2. Open its steps to check the release rehearsal and publishing outcome.
-3. Download its `release-COMMIT-ATTEMPT` artifact and inspect `release.json`.
-4. Verify the actual published images from both servers before preparing deployment.
-
-A failed push may leave some images in the registry, but it does not produce a completed manifest or trigger deployment. Rerun the publishing workflow's jobs after fixing the cause. No server deploys automatically in this milestone. Artifacts are retained for 30 days; durable production release/rollback manifest retention remains deployment work.
-
-Local validation covers nine publisher safeguards (credentials, source validation, digest/identity binding, and failure handling) plus workflow lint. Actual GitHub publishing, private repository settings, and cross-cloud pulls are pending owner secret setup and the merged workflow run.
-
-Publisher diagnostics report the registry authentication phase, each image upload start, and completion time without printing passwords or raw command errors. Push commands are limited to 1,200 seconds; other Docker commands to 60 seconds, within the workflow's existing 30-minute job limit. Failures distinguish authorization, network, and manifest-format categories using fixed messages. Timeout/error tests verify subprocess output containing credentials is not echoed. These diagnostics were added after the first publishing run exposed an otherwise opaque long-running step; they do not establish that the network path is fast enough.
-
+Local acceptance now includes twenty-one safeguards, real image export, strict SSH transfer/full verification, and Skopeo digest-preserving registry copy. The first actual GitHub bundle-to-registry application release remains pending the merged workflow and operator command. Fully unattended delivery and deployment remain subsequent work.
 
 ## First live-run findings and follow-up
 

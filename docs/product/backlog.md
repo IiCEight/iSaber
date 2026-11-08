@@ -139,3 +139,12 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Confirm Personal endpoint and `isaber` namespace; verify both servers' HTTPS reachability and JD credential-file permissions.
 - [x] Prepare trusted-main publishing, exact-image rehearsal, PostgreSQL mirroring, and digest release manifests with local safeguard tests.
 - [ ] Confirm private repositories, configure GitHub secrets, and observe actual image publishing and cross-cloud digest pulls.
+
+
+## Recover registry delivery
+
+- [x] Confirm direct GitHub-to-TCR upload exceeded 1,200 seconds after successful authentication.
+- [x] Prepare tested image bundles and an operator relay using existing workspace GitHub/SSH access and JD's existing registry login.
+- [x] Validate twenty-one safeguards, real cached image export, a 284 MiB SSH transfer/full verification, and digest-preserving fixture copy.
+- [ ] Merge the bundle workflow, observe its real export artifact, then complete actual three-image publication and digest pulls.
+- [ ] Design unattended delivery after the verified transfer path is accepted; the operator recovery path is not an automatic server deployment pipeline.

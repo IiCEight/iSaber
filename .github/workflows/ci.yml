@@ -173,7 +173,7 @@ jobs:
           persist-credentials: false
       # Build on the runner. No registry publishing or cloud credentials are used.
       - name: Test release manifest and credential safeguards
-        run: python3 -m unittest discover -s infra/tests -p 'test_publish_images.py'
+        run: python3 -m unittest discover -s infra/tests -p 'test_*.py'
       - name: Build separate application images
         run: docker compose build
       - name: Start disposable database
@@ -197,6 +197,14 @@ jobs:
           docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
       - name: Verify platform image identities with the real Docker engine
         run: python3 infra/publish_images.py --check-images
+      - name: Verify real image bundle export without registry credentials
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          VERIFIED_CI_RUN_ID: ${{ github.run_id }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends skopeo
+          python3 infra/release_bundle.py export "$RUNNER_TEMP/isaber-validation-bundle"
       - name: Show service logs on failure
         if: failure()
         run: docker compose logs --tail 100

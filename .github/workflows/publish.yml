@@ -1,5 +1,6 @@
-# Registry delivery only. This workflow does not SSH to or deploy either server.
-name: Publish images
+# Prepare a tested bundle. The operator relay uses existing local SSH credentials;
+# no server login or persistent runner is exposed to GitHub workflows.
+name: Prepare release images
 on:
   workflow_run:
     workflows: [CI]
@@ -12,6 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
+    name: Prepare tested image bundle
     # Never publish from PR checks (including forks), failed CI, or manual CI runs.
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
@@ -32,6 +34,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
       - name: Check registry credentials are configured
+        if: vars.TCR_PUBLISH_TRANSPORT == 'direct'
         env:
           TCR_USERNAME: ${{ secrets.TCR_USERNAME }}
           TCR_PASSWORD: ${{ secrets.TCR_PASSWORD }}
@@ -39,8 +42,9 @@ jobs:
           test -n "$TCR_USERNAME" || { echo 'Configure the TCR_USERNAME Actions secret'; exit 1; }
           test -n "$TCR_PASSWORD" || { echo 'Configure the TCR_PASSWORD Actions secret'; exit 1; }
       - name: Check publisher safeguards
-        run: python3 -m unittest discover -s infra/tests -p 'test_publish_images.py'
+        run: python3 -m unittest discover -s infra/tests -p 'test_*.py'
       - name: Check the runner can reach TCR over HTTPS
+        if: vars.TCR_PUBLISH_TRANSPORT == 'direct'
         # A 401 without credentials is the expected registry challenge.
         run: |
           status=$(curl --silent --show-error --output /dev/null --connect-timeout 10 --max-time 20 --write-out '%{http_code}' https://ccr.ccs.tencentyun.com/v2/)
@@ -48,6 +52,10 @@ jobs:
           test "$status" = 401 || test "$status" = 200
       - name: Build release images on GitHub
         run: docker compose build
+      - name: Install image bundle tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends skopeo
       - name: Pull the official PostgreSQL baseline
         run: docker pull --platform linux/amd64 postgres:16
       - name: Test these exact application and database images before publishing
@@ -62,19 +70,36 @@ jobs:
           docker compose up -d --wait api frontend
           test "$(docker compose run --rm --no-deps -T migrate up)" = "Applied 0 migrations"
           docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
+      - name: Export and verify the tested image bundle
+        run: python3 infra/release_bundle.py export "$RUNNER_TEMP/isaber-bundle"
+      - name: Retain the verified bundle before attempting registry delivery
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bundle-${{ github.event.workflow_run.head_sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/isaber-bundle/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 1
       - name: Publish tested images and record immutable references
+        if: vars.TCR_PUBLISH_TRANSPORT == 'direct'
         env:
           TCR_USERNAME: ${{ secrets.TCR_USERNAME }}
           TCR_PASSWORD: ${{ secrets.TCR_PASSWORD }}
         # Credentials exist only for this step and an ephemeral Docker config.
         run: python3 infra/publish_images.py "$RUNNER_TEMP/isaber-release/release.json"
       - name: Retain the completed release manifest
+        if: vars.TCR_PUBLISH_TRANSPORT == 'direct'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-${{ github.event.workflow_run.head_sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/isaber-release/release.json
           if-no-files-found: error
           retention-days: 30
+      - name: Explain the pending relay step
+        if: vars.TCR_PUBLISH_TRANSPORT != 'direct'
+        run: |
+          echo 'Tested bundle retained. Registry publication is pending the operator relay.' >> "$GITHUB_STEP_SUMMARY"
+          echo "Run locally: python3 infra/relay_release.py $GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
       - name: Show synthetic rehearsal logs on failure
         if: failure()
         run: docker compose logs --tail 100

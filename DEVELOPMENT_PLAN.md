@@ -19,7 +19,7 @@ Requirements from `AGENTS.md`:
 
 Implementation begins after review of the scope and architecture. Visual implementation follows review of the design direction.
 
-The [implementation backlog](docs/product/backlog.md) tracks progress. Foundation, authentication, Markdown/ZIP publishing, private local images, and published revision history are merged through PR #8. Category/tag management and search are merged together in PR #9. Guest comments, public reading, moderation, and comment controls are merged in PR #10. Separate application images and a container rehearsal are merged in PR #11. Guided staging preparation is the next workstream. Production COS, artistic design, and cloud deployment remain subsequent work.
+The [implementation backlog](docs/product/backlog.md) tracks progress. Foundation, authentication, Markdown/ZIP publishing, private local images, and published revision history are merged through PR #8. Category/tag management and search are merged together in PR #9. Guest comments, public reading, moderation, and comment controls are merged in PR #10. Separate application images and a container rehearsal are merged in PR #11. Guided staging preparation is in progress. After direct cross-border registry upload failed, a [verified image bundle relay](docs/operations/image-relay.md) is prepared for review; actual application publication is not yet accepted. Production COS, artistic design, and cloud deployment remain subsequent work.
 
 ## 2. Application separation
 
