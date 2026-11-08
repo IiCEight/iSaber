@@ -134,3 +134,6 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 
 - [x] Confirm Tencent production region (`ap-beijing`) and prepare the [TCR setup proposal](../operations/tencent-registry.md).
 - [ ] Locate or provision the reviewed registry through an authenticated cloud-account session; obtain its non-secret endpoint and agree the CI network path.
+
+- [x] Review free registry alternatives and revise the default to TCR Personal; owner reports obtaining a registry.
+- [ ] Confirm its edition/hostname/region/namespace before implementing and testing publishing.
