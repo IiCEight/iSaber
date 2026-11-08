@@ -127,7 +127,7 @@ See the [container guide](../operations/containers.md). This is application pack
 - [x] Record port conflicts, package/network constraints, and concrete owner exercise commands in the [staging preparation guide](../operations/staging-preparation.md).
 - [x] Owner delegated execution: refresh JD package metadata, review the zero-removal plan, install Docker/Compose, and recheck existing SSH/relay services.
 - [x] Verify a full GHCR fixture pull and digest-pinned non-root container execution on JD; record poor transfer speed.
-- [ ] Agree staging HTTPS access and verify application/database image delivery before implementing deployment.
+- [x] Owner selected private HTTPS through SSH; verified application/database image delivery and the first dedicated JD deployment.
 - [ ] Benchmark an owner-controlled mainland registry from both servers and CI, following the owner's China-hosting clarification.
 
 Continue related setup work on one milestone branch; no per-exercise PR cycle is needed.
@@ -146,7 +146,7 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Confirm direct GitHub-to-TCR upload exceeded 1,200 seconds after successful authentication.
 - [x] Prepare tested image bundles and an operator relay using existing workspace GitHub/SSH access and JD's existing registry login.
 - [x] Validate twenty-one safeguards, real cached image export, a 284 MiB SSH transfer/full verification, and digest-preserving fixture copy.
-- [ ] Merge the bundle workflow, observe its real export artifact, then complete actual three-image publication and digest pulls.
+- [x] Merge PR #14, observe its real export artifact, and complete three-image publication and digest pulls.
 - [ ] Design unattended delivery after the verified transfer path is accepted; the operator recovery path is not an automatic server deployment pipeline.
 
 
@@ -155,6 +155,16 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Publish the first real frontend/backend/PostgreSQL release after PR #14 and verify exact-digest pulls/configurations on JD.
 - [x] Implement PostgreSQL baseline reuse, configuration-drift guards, and a reduced application bundle.
 - [x] Add optional direct JD artifact receipt with short-lived URLs and archive integrity checks; retain the faster measured workspace route as default.
-- [ ] Merge the delivery optimization PR and measure its real release.
+- [x] Merge PR #15 and verify its real release: 124.3 MiB transferred in 75.8 seconds with database reuse.
 - [ ] Reuse the main-CI tested images across preparation instead of rebuilding.
 - [ ] Automate delivery after selecting a reliable network path and restricted server identity.
+
+
+## Private JD staging
+
+- [x] Deploy verified application/database images with dedicated secrets, runtime/operator DB roles, persistent storage, private HTTPS, resource limits, and bounded logs.
+- [x] Verify CA/HTTPS, production cookies, owner SSR, origin/CSRF rejection, restart/session/database/CA persistence, logout, and temporary-account removal.
+- [x] Prepare an access/owner-setup runbook and block data-bearing redeployment until recovery/promotion are reviewed.
+- [ ] Merge the private staging milestone PR and complete owner browser acceptance.
+- [ ] Verify coordinated database/media backup and disposable restore.
+- [ ] Implement schema-aware promotion/rollback and unattended delivery with a restricted identity.

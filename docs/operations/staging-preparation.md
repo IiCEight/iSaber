@@ -1,6 +1,6 @@
 # Guided staging preparation
 
-Status: Server inventory, package review, and JD Docker/Compose installation completed on 2026-11-08 under the owner's instruction to execute directly. Container packaging is merged in PR #11; all four GitHub checks passed on the PR and main. The owner confirmed both hosts are in mainland China; use domestic package delivery and plan a mainland image registry. Blog deployment has not started. Keep this preparation on one milestone branch while working through the exercises.
+Status: Server inventory, package review, and JD Docker/Compose installation completed on 2026-11-08 under the owner's instruction to execute directly. Container packaging is merged in PR #11; all four GitHub checks passed on the PR and main. The owner confirmed both hosts are in mainland China; use domestic package delivery and plan a mainland image registry. The first private HTTPS staging deployment is now running on JD; see the [current runbook](private-staging.md). The inventory below records the original preparation state. Keep this preparation on one milestone branch while working through the exercises.
 
 ## 1. Observed constraints
 
@@ -23,7 +23,7 @@ Existing workloads must remain in place. Do not replace the relay on JD ports 80
 
 ## 2. Staging access proposal
 
-Start with private access through the existing SSH connection, keeping the blog's host port on loopback. This is the recommended direction, pending the owner's access preference. A public subdomain needs a separately agreed routing/TLS arrangement because JD's web ports are occupied.
+Start with private access through the existing SSH connection, keeping the blog's host port on loopback. The owner selected this direction, and private HTTPS on loopback port 3443 is implemented in the [staging runbook](private-staging.md). A public subdomain needs a separately agreed routing/TLS arrangement because JD's web ports are occupied.
 
 The existing [container rehearsal](containers.md) can first verify packaging and connectivity on an unused loopback port. It remains an HTTP rehearsal with synthetic configuration; it does not support browser owner sign-in. Before owner publishing acceptance, configure a reviewed HTTPS endpoint and matching `SITE_ORIGIN`, retaining secure cookies and exact-Origin/CSRF checks. An SSH tunnel alone does not turn HTTP into an HTTPS browser origin. Do not weaken authentication to accommodate container networking.
 

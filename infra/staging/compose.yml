@@ -1,0 +1,109 @@
+# Private, synthetic-content staging. Images come from a verified release.
+name: isaber-staging
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 5m
+    max-file: "3"
+x-runtime: &runtime
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  logging: *logging
+services:
+  postgres:
+    <<: *runtime
+    image: ${POSTGRES_IMAGE:?release required}
+    platform: linux/amd64
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
+    environment:
+      POSTGRES_USER: isaber_operator
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?initialize staging first}
+      POSTGRES_DB: isaber_staging
+    command: [postgres, -c, shared_buffers=64MB, -c, max_connections=20]
+    volumes: [database:/var/lib/postgresql/data]
+    tmpfs: [/tmp, /var/run/postgresql]
+    networks: [database]
+    mem_limit: 384m
+    cpus: 0.5
+    healthcheck:
+      test: [CMD, pg_isready, -U, isaber_operator, -d, isaber_staging]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    <<: *runtime
+    image: ${BACKEND_IMAGE:?release required}
+    platform: linux/amd64
+    environment:
+      APP_ENV: production
+      SITE_ORIGIN: https://localhost:3443
+      DATABASE_URL: ${DATABASE_URL:?initialize staging first}
+      CSRF_SECRET: ${CSRF_SECRET:?initialize staging first}
+    volumes: [uploads:/data/uploads]
+    networks: [database, application]
+    mem_limit: 256m
+    cpus: 0.5
+    stop_grace_period: 20s
+    depends_on:
+      postgres: {condition: service_healthy}
+  frontend:
+    <<: *runtime
+    image: ${FRONTEND_IMAGE:?release required}
+    platform: linux/amd64
+    tmpfs: [/tmp]
+    networks: [application, web]
+    mem_limit: 512m
+    cpus: 0.75
+    depends_on:
+      api: {condition: service_healthy}
+  edge:
+    <<: *runtime
+    # Offline-loaded, config-digest-verified official image; no mutable tag pull.
+    image: ${CADDY_IMAGE:?verified proxy image required}
+    pull_policy: never
+    ports: ["127.0.0.1:3443:8443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - certificates:/data
+      - proxy_config:/config
+    networks: [web]
+    mem_limit: 128m
+    cpus: 0.25
+    depends_on:
+      frontend: {condition: service_healthy}
+  migrate:
+    <<: *runtime
+    restart: "no"
+    profiles: [tools]
+    image: ${BACKEND_IMAGE:?release required}
+    platform: linux/amd64
+    entrypoint: [/app/isaber-migrate]
+    command: [up]
+    environment:
+      MIGRATION_DATABASE_URL: ${OPERATOR_DATABASE_URL:?initialize staging first}
+    networks: [database]
+    mem_limit: 256m
+    cpus: 0.5
+  owner:
+    <<: *runtime
+    restart: "no"
+    profiles: [tools]
+    image: ${BACKEND_IMAGE:?release required}
+    platform: linux/amd64
+    entrypoint: [/app/isaber-owner]
+    environment:
+      OWNER_DATABASE_URL: ${OPERATOR_DATABASE_URL:?initialize staging first}
+    networks: [database]
+    mem_limit: 256m
+    cpus: 0.5
+networks:
+  database: {internal: true}
+  application: {internal: true}
+  web: {}
+volumes:
+  database:
+  uploads:
+  certificates:
+  proxy_config:

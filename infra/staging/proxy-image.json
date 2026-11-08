@@ -1,0 +1,5 @@
+{
+  "upstream_reference": "docker.io/library/caddy@sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424",
+  "image_id": "sha256:5813f7eb9b94fac4970f9f576695fe1ed1d53d41586fd3eaa350caf7c4627d9c",
+  "version": "2.11.9-alpine"
+}
