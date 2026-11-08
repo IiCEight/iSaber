@@ -115,7 +115,17 @@ Publishing, organization, search, and moderated feedback are implemented locally
 - [x] Prepare separate non-root application images, explicit operator tools, and private persistent-volume wiring.
 - [x] Add an isolated container CI rehearsal for migrations, readiness, SSR/static assets, proxy authorization, and restart.
 - [x] Validate separate image builds and full Compose acceptance locally through Podman's Docker-compatible API, including database outage/restart and retained migration state.
-- [ ] Review the milestone PR and observe the Containers job on GitHub's Docker engine.
+- [x] Merge the container milestone in PR #11 and observe successful PR/main checks, including Containers on GitHub's Docker engine.
 - [ ] Select registry/connectivity and prepare cloud TLS, deployment identities, backups, and private storage with owner guidance.
 
 See the [container guide](../operations/containers.md). This is application packaging; no cloud deployment pipeline is active.
+
+
+## Guided staging preparation
+
+- [x] Inspect both shared servers and registry connectivity without modifying their configuration.
+- [x] Record port conflicts, package/network constraints, and concrete owner exercise commands in the [staging preparation guide](../operations/staging-preparation.md).
+- [ ] Owner refreshes JD package metadata; review Docker/Compose installation simulation.
+- [ ] Agree staging HTTPS access and verify a full image pull before implementing deployment.
+
+Continue related setup work on one milestone branch; no per-exercise PR cycle is needed.

@@ -1,6 +1,6 @@
 # GitHub CI/CD: guided setup
 
-Status: API contract, Frontend, and Backend checks are merged and have passed through PR #10 and its main run. This branch adds a Containers check for isolated packaging and restart verification. Deployment remains a plan, not a configured pipeline. Related features now share one milestone PR rather than requiring a merge after each small feature.
+Status: API contract, Frontend, Backend, and Containers checks are merged and passed on PR #11 and its main run. Read-only cloud inventory and the next guided exercise are recorded in [staging preparation](staging-preparation.md). Deployment remains a plan, not a configured pipeline. Related features now share one milestone PR rather than requiring a merge after each small feature.
 
 Repository: `IiCEight/iSaber`, public, with `main` as the working base. The bootstrap instructions below describe the initial setup; do not repeat them over the existing repository history.
 
@@ -33,7 +33,7 @@ Contract validation, frontend checks/builds/HTTP smoke tests, and backend race/P
 | Production | Tencent Cloud, SSH alias `tencent` | Owner reports 4 CPU cores / 4 GB RAM | Ubuntu 24.04.4 LTS, x86_64; Docker command present |
 | Staging | JD Cloud, SSH alias `jdcloud` | Owner reports 2 CPU cores / 2 GB RAM | Ubuntu 24.04.2 LTS, x86_64; Docker command not found |
 
-These roles are recommendations pending confirmation of existing workloads. The inspection did not establish available resources, Docker daemon health, firewall policy, DNS, TLS, or registry connectivity. No server configuration was changed.
+The refreshed [2026-11-08 inventory](staging-preparation.md) found existing workloads on both hosts, JD public web ports occupied by a relay, and reachable GHCR image metadata/layer samples. Direct Docker Hub probes timed out on both hosts. Tencent Docker works through existing sudo but lacks Compose; JD lacks Docker/Compose. DNS, TLS, cloud firewall rules, full image pulls, and deployment connectivity still need verification. No server configuration was changed.
 
 Use GitHub-hosted runners for CI and image builds. The servers run the application containers rather than building them. Keep staging and production databases, storage, credentials, and application settings separate. Staging uses synthetic content, not production journals. Resource sizing will be revisited before choosing local versus managed database hosting.
 
@@ -161,7 +161,8 @@ Before the first live deployment:
 - [x] Owner pushes the baseline and feature branch, opens the first PR, and observes a real Actions run.
 - [ ] Configure branch protection and merge after checks pass.
 - [x] Prepare application CI in the foundation branch; observe its first remote run before requiring the new checks.
-- [ ] Confirm server roles and existing workloads.
+- [x] Inspect current workloads/resources and registry metadata/layer connectivity on both servers.
+- [ ] Finalize server roles, staging access/TLS, and resource allocation with the owner.
 - [ ] Select registry and deployment connectivity after server/network checks.
 - [ ] Prepare staging through guided commands.
 - [ ] Build images and verify staging deployment.

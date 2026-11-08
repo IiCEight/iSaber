@@ -19,7 +19,7 @@ Requirements from `AGENTS.md`:
 
 Implementation begins after review of the scope and architecture. Visual implementation follows review of the design direction.
 
-The [implementation backlog](docs/product/backlog.md) tracks progress. Foundation, authentication, Markdown/ZIP publishing, private local images, and published revision history are merged through PR #8. Category/tag management and search are merged together in PR #9. Guest comments, public reading, moderation, and comment controls are merged in PR #10. Separate application images and a container rehearsal form the next milestone PR. Production COS, artistic design, and cloud deployment remain subsequent work.
+The [implementation backlog](docs/product/backlog.md) tracks progress. Foundation, authentication, Markdown/ZIP publishing, private local images, and published revision history are merged through PR #8. Category/tag management and search are merged together in PR #9. Guest comments, public reading, moderation, and comment controls are merged in PR #10. Separate application images and a container rehearsal are merged in PR #11. Guided staging preparation is the next workstream. Production COS, artistic design, and cloud deployment remain subsequent work.
 
 ## 2. Application separation
 
@@ -219,7 +219,7 @@ Tests should verify behavior and meaningful failure cases. Prioritize authorizat
 
 ## 10. Environments and releases
 
-The [GitHub CI/CD guided setup](docs/operations/github-cicd.md) records the initial contract workflow, owner exercises, and the proposed use of JD Cloud for staging and Tencent Cloud for production. Server roles require confirmation of existing workloads. The owner will participate in GitHub and server setup with guidance; no cloud deployment pipeline is active yet.
+The [GitHub CI/CD guided setup](docs/operations/github-cicd.md) records the initial contract workflow, owner exercises, and the proposed use of JD Cloud for staging and Tencent Cloud for production. Server roles require confirmation of existing workloads. The owner will participate in GitHub and server setup with guidance; no cloud deployment pipeline is active yet. The refreshed [staging preparation guide](docs/operations/staging-preparation.md) records shared-host workloads, occupied web ports, registry probes, and the first package-review exercise.
 
 Maintain local, staging, and production environments with separate configuration, secrets, databases, and storage. Staging should resemble production and use non-sensitive test content.
 

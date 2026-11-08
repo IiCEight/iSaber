@@ -4,7 +4,7 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 ## Current state
 
-The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. Category/tag management, public browsing, and English/Chinese search are merged in PR #9. Guest comments, owner moderation, and article comment controls are merged in PR #10. This branch prepares separate application images and a container CI rehearsal. See the [publishing guide](docs/operations/publishing.md). Private COS/cloud delivery and the final artistic design remain subsequent work.
+The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. Category/tag management, public browsing, and English/Chinese search are merged in PR #9. Guest comments, owner moderation, and article comment controls are merged in PR #10. Separate application images and the container CI rehearsal are merged in PR #11. Guided staging setup is now in preparation. See the [publishing guide](docs/operations/publishing.md). Private COS/cloud delivery and the final artistic design remain subsequent work.
 
 ## Local development
 
@@ -66,7 +66,7 @@ Both development servers bind to loopback. Development authentication uses an is
 
 ## Container rehearsal
 
-Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). Cloud deployment remains pending.
+Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). Cloud deployment remains pending. The next owner exercise is in the [staging preparation guide](docs/operations/staging-preparation.md).
 
 ## Checks
 
