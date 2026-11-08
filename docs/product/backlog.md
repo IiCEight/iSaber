@@ -136,4 +136,6 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [ ] Locate or provision the reviewed registry through an authenticated cloud-account session; obtain its non-secret endpoint and agree the CI network path.
 
 - [x] Review free registry alternatives and revise the default to TCR Personal; owner reports obtaining a registry.
-- [ ] Confirm its edition/hostname/region/namespace before implementing and testing publishing.
+- [x] Confirm Personal endpoint and `isaber` namespace; verify both servers' HTTPS reachability and JD credential-file permissions.
+- [x] Prepare trusted-main publishing, exact-image rehearsal, PostgreSQL mirroring, and digest release manifests with local safeguard tests.
+- [ ] Confirm private repositories, configure GitHub secrets, and observe actual image publishing and cross-cloud digest pulls.

@@ -1,6 +1,6 @@
 # Tencent registry setup
 
-Status: The owner reports obtaining a registry; its edition, hostname, region, and namespace are awaiting confirmation. TCR Personal is the recommended starting option after reviewing the free tier. The earlier Beijing Enterprise proposal is superseded as the default; no paid instance was created by the agent. Production remains in Beijing (`ap-beijing`).
+Status: TCR Personal hostname `ccr.ccs.tencentyun.com` and namespace `isaber` confirmed by the owner's login command and namespace reply. JD login succeeded; the credential directory/file are root-owned with modes 0700/0600. Both servers reach the registry over HTTPS and receive the expected unauthenticated 401. Repository visibility, authenticated image pushes/pulls, and GitHub secrets still need verification. The earlier paid Beijing Enterprise proposal is superseded; no paid TCR instance was created by the agent.
 
 ## Proposed configuration
 
@@ -9,7 +9,7 @@ Status: The owner reports obtaining a registry; its edition, hostname, region, a
 | Region | Personal mainland service is Guangzhou; verify the actual console selection |
 | Service | TCR Personal, free within quotas, subject to account availability and console limits |
 | Registry hostname | Copy from console; the documented Personal hostname is `ccr.ccs.tencentyun.com` |
-| Namespace | Owner-selected globally available namespace, such as `isaber-iiceight`; create private repositories |
+| Namespace | `isaber`, supplied by the owner; use private repositories |
 | Application repositories | `frontend`, `backend` |
 | Runtime dependency repository | `postgres`, for a verified copy of the approved PostgreSQL image |
 | Image references | Deploy digests; record source commits and migration version in a release manifest |
@@ -23,7 +23,7 @@ In the [TCR console](https://console.cloud.tencent.com/tcr), use the registry al
 
 For an interactive host login, run `ssh jdcloud`, then use the console's `docker login` command and enter the registry password at its hidden prompt. Use the registry login credential, not a cloud API SecretKey. This logs Docker into the registry; it does not deploy the blog. Do not paste a command containing a literal password into a shell. CI will use `--password-stdin` with a GitHub Actions secret once the publishing workflow is prepared.
 
-Passwords, cloud API keys, and registry tokens belong in the appropriate secret store, not chat or Git. The next implementation needs the non-secret registry details first; no publishing workflow is enabled yet.
+Passwords, cloud API keys, and registry tokens belong in the appropriate secret store, not chat or Git. The publishing workflow is now prepared locally at `.github/workflows/publish.yml`; it becomes active only after merge to the default branch. JD login credentials are not copied to GitHub by this work.
 
 Current tooling has SSH access to the servers; an authenticated Tencent account/API session has not been established. Account provisioning therefore remains an owner console step until an appropriate access mechanism is configured.
 
@@ -42,3 +42,32 @@ The following network-policy requirements apply to **Enterprise**, not as a prer
 5. Add publishing after successful main CI, capture application digests in a release manifest, and prepare staging delivery separately.
 
 These checks are pending. JD's successful GHCR fixture test proves Docker works; it does not validate this proposed TCR instance or its performance.
+
+
+## GitHub publishing setup
+
+Before merging this milestone, confirm **private** repositories `isaber/frontend`, `isaber/backend`, and `isaber/postgres` in the Personal registry. The workflow must not be used to auto-create repositories with unreviewed default visibility.
+
+Open [repository Actions secrets](https://github.com/IiCEight/iSaber/settings/secrets/actions) and add:
+
+| Secret | Value |
+| --- | --- |
+| `TCR_USERNAME` | Username from the successful console-provided Docker login command |
+| `TCR_PASSWORD` | Registry login password; not a Tencent cloud API SecretKey |
+
+Enter these directly in GitHub. Do not paste them into chat or a committed environment file. Docker login on JD does not configure these secrets. Its existing root-only credential file remains unencrypted; permissions restrict access, but do not provide encryption.
+
+The prepared workflow runs after successful **push-to-main CI**, using the exact commit from that run. PR/fork checks and failed/manual CI runs do not publish. It builds frontend/backend images on GitHub, pulls the official PostgreSQL 16 image, and tests that exact set through the isolated migration/readiness/SSR/proxy/restart rehearsal before publishing. Registry credentials are exposed only to validation/publishing steps, not the build or test steps, and publishing uses an ephemeral Docker configuration removed on exit.
+
+Each image receives a `sha-COMMIT` tag under `ccr.ccs.tencentyun.com/isaber/`. The publisher verifies the local image identities and repository-bound push digests before writing `release.json`. The manifest records the source commit, prior successful CI run, contract hash, migration version, application/database image IDs and registry digests, and PostgreSQL's resolved official upstream reference. Use manifest digests for deployment: tags may change on a rebuild/retry.
+
+After merging the combined milestone PR:
+
+1. Observe the normal main CI run, then **Publish images** in Actions.
+2. Open its steps to check the release rehearsal and publishing outcome.
+3. Download its `release-COMMIT-ATTEMPT` artifact and inspect `release.json`.
+4. Verify the actual published images from both servers before preparing deployment.
+
+A failed push may leave some images in the registry, but it does not produce a completed manifest or trigger deployment. Rerun the publishing workflow's jobs after fixing the cause. No server deploys automatically in this milestone. Artifacts are retained for 30 days; durable production release/rollback manifest retention remains deployment work.
+
+Local validation covers six publisher safeguards (credentials, source validation, digest/identity binding, and failure handling) plus workflow lint. Actual GitHub publishing, private repository settings, and cross-cloud pulls are pending owner secret setup and the merged workflow run.
