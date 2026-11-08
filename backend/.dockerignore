@@ -1,0 +1,8 @@
+# Allow only application build inputs; never send local secrets or upload data.
+*
+!go.mod
+!go.sum
+!cmd/
+!cmd/**
+!internal/
+!internal/**

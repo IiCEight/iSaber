@@ -1,0 +1,61 @@
+# Disposable local/CI rehearsal only. No cloud deployment or public TLS endpoint.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: rehearsal
+      POSTGRES_PASSWORD: synthetic_rehearsal_only
+      POSTGRES_DB: rehearsal
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "rehearsal", "-d", "rehearsal"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    image: isaber-api:rehearsal
+    build: ../backend
+    environment:
+      DATABASE_URL: postgres://rehearsal:synthetic_rehearsal_only@postgres:5432/rehearsal?sslmode=disable
+      SITE_ORIGIN: https://localhost
+      # Synthetic 32-byte key; this file must never configure a real environment.
+      CSRF_SECRET: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - uploads:/data/uploads
+    stop_grace_period: 20s
+  frontend:
+    image: isaber-frontend:rehearsal
+    build: ../frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3300:3000"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  migrate:
+    image: isaber-api:rehearsal
+    profiles: [tools]
+    entrypoint: [/app/isaber-migrate]
+    command: [up]
+    environment:
+      MIGRATION_DATABASE_URL: postgres://rehearsal:synthetic_rehearsal_only@postgres:5432/rehearsal?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+volumes:
+  database:
+  uploads:

@@ -1,6 +1,6 @@
 # GitHub CI/CD: guided setup
 
-Status: API contract, Frontend, and Backend checks are merged and have passed through PR #9 and its main run. Deployment remains a plan, not a configured pipeline. Related features now share one milestone PR rather than requiring a merge after each small feature.
+Status: API contract, Frontend, and Backend checks are merged and have passed through PR #10 and its main run. This branch adds a Containers check for isolated packaging and restart verification. Deployment remains a plan, not a configured pipeline. Related features now share one milestone PR rather than requiring a merge after each small feature.
 
 Repository: `IiCEight/iSaber`, public, with `main` as the working base. The bootstrap instructions below describe the initial setup; do not repeat them over the existing repository history.
 
@@ -24,7 +24,7 @@ flowchart TD
     Release --> Production[Tencent Cloud production]
 ```
 
-Contract validation, frontend checks/builds/HTTP smoke tests, and backend race/PostgreSQL integration checks/builds run on main and PRs. Image builds, staging, production deployment, and rollback remain to be implemented after application and infrastructure readiness are verified.
+Contract validation, frontend checks/builds/HTTP smoke tests, and backend race/PostgreSQL integration checks/builds run on main and PRs. Local/CI image builds and an isolated Compose rehearsal are prepared in the [container guide](containers.md). Registry publishing, staging, production deployment, and rollback remain to be implemented after infrastructure readiness is verified.
 
 ## 2. Proposed server roles
 

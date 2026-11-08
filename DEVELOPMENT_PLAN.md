@@ -19,7 +19,7 @@ Requirements from `AGENTS.md`:
 
 Implementation begins after review of the scope and architecture. Visual implementation follows review of the design direction.
 
-The [implementation backlog](docs/product/backlog.md) tracks progress. Foundation, authentication, Markdown/ZIP publishing, private local images, and published revision history are merged through PR #8. Category/tag management and search are merged together in PR #9. Guest comments, public reading, moderation, and comment controls form the next single milestone PR. Production COS, artistic design, and cloud deployment remain subsequent work.
+The [implementation backlog](docs/product/backlog.md) tracks progress. Foundation, authentication, Markdown/ZIP publishing, private local images, and published revision history are merged through PR #8. Category/tag management and search are merged together in PR #9. Guest comments, public reading, moderation, and comment controls are merged in PR #10. Separate application images and a container rehearsal form the next milestone PR. Production COS, artistic design, and cloud deployment remain subsequent work.
 
 ## 2. Application separation
 
@@ -112,7 +112,7 @@ For Markdown import, define behavior for missing images, invalid files, duplicat
 
 Use OpenAPI as the shared API contract. Specify endpoints, schemas, authentication, pagination, errors, and examples before connecting the applications.
 
-Approved baselines are available in the [data model](docs/architecture/data-model.md), [API design](docs/architecture/api-design.md), and [OpenAPI contract](contracts/openapi.yaml). The [contract guide](contracts/README.md) includes validation instructions. The owner approved these documents and the API contract. Implemented endpoints and remaining work are recorded in the backlog and publishing guide; The comments branch requires PostgreSQL schema version 5.
+Approved baselines are available in the [data model](docs/architecture/data-model.md), [API design](docs/architecture/api-design.md), and [OpenAPI contract](contracts/openapi.yaml). The [contract guide](contracts/README.md) includes validation instructions. The owner approved these documents and the API contract. Implemented endpoints and remaining work are recorded in the backlog and publishing guide; The API requires PostgreSQL schema version 5.
 
 - Generate a TypeScript API client and types from the contract.
 - Provide mock responses so frontend development can proceed independently.
@@ -195,7 +195,7 @@ Issue with acceptance criteria
 ```
 
 - Group related features into one reviewable milestone PR, as requested by the owner. Continue implementation and validation on the same branch with focused local commits; do not require a push/create/review/merge cycle after each small feature.
-- The content-discovery milestone combined category/tag management, public browsing, and English/Chinese search in PR #9. The current comments milestone combines guest submission, approved reading, owner moderation, and article controls. Open or update one PR when the milestone is ready for owner review.
+- The content-discovery milestone combined category/tag management, public browsing, and English/Chinese search in PR #9. The comments milestone combined guest submission, approved reading, owner moderation, and article controls in PR #10. The next milestone combines application packaging and isolated container CI. Open or update one PR when the milestone is ready for owner review.
 - Keep each milestone coherent and reviewable; use the PR summary to describe the final behavior and combined validation evidence.
 - Include the problem, resulting behavior, validation, and relevant migration or operational details in each pull request.
 - Protect `main` with required checks.
