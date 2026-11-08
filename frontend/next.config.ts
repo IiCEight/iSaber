@@ -6,6 +6,7 @@ if (!['http:', 'https:'].includes(backend.protocol) || backend.username || backe
 }
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   poweredByHeader: false,
   // Allow the 50 MiB archive plus multipart overhead through the API rewrite.
   // Go independently enforces per-file and expanded archive limits.

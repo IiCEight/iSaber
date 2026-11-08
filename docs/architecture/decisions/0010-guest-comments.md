@@ -1,6 +1,6 @@
 # ADR 0010: Guest comments and owner moderation
 
-Status: Implemented locally in `feat/guest-comments`; guest submission, public reading, owner moderation, and article comment controls share one milestone PR.
+Status: Accepted; guest submission, public reading, owner moderation, and article comment controls merged together in PR #10.
 
 ## Decision
 

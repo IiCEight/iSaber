@@ -4,7 +4,7 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 ## Current state
 
-The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. Category/tag management, public browsing, and English/Chinese search are merged in PR #9. This branch adds guest comments, owner moderation, and article comment controls in one milestone PR. See the [publishing guide](docs/operations/publishing.md). Private COS/cloud delivery and the final artistic design remain subsequent work.
+The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. Category/tag management, public browsing, and English/Chinese search are merged in PR #9. Guest comments, owner moderation, and article comment controls are merged in PR #10. This branch prepares separate application images and a container CI rehearsal. See the [publishing guide](docs/operations/publishing.md). Private COS/cloud delivery and the final artistic design remain subsequent work.
 
 ## Local development
 
@@ -28,7 +28,7 @@ go run ./cmd/owner setup --username owner
 go run ./cmd/api
 ```
 
-The comments API requires migration **00005**. Existing checkouts must run `go run ./cmd/migrate up` before starting this branch. It adds a rate-check index and preserves existing data.
+The comments API requires migration **00005**. Existing checkouts must run `go run ./cmd/migrate up` before starting the API. It adds a rate-check index and preserves existing data.
 
 Owner setup is a first-time step and refuses to replace an existing account. It prompts for a password without echoing it. See the [owner guide](docs/operations/owner-account.md) for recovery and production configuration.
 
@@ -52,7 +52,7 @@ Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file or a
 | Go `/readyz` | Database connectivity and required schema readiness; returns `503` when unavailable or unmigrated |
 | `/api/v1/auth/*` | Owner login, session, and logout |
 | `/api/v1/admin/*` | Owner-protected article/import tools; origin/CSRF checks on mutations |
-| `/api/v1/articles*` | Public-only list and article detail; search is deferred |
+| `/api/v1/articles*` | Public-only list and article detail |
 | `/api/v1/articles/{article_id}/assets/{asset_id}` | Current public revision images for visitors; retained images for authenticated owner; uncached private delivery |
 | `/api/v1/categories`, `/api/v1/tags` | Labels used by current public published revisions only |
 | `/api/v1/articles/search` | Ranked public-only title, summary, tag, and article-text search |
@@ -63,6 +63,10 @@ Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file or a
 Configure Go's bind address with `HTTP_ADDR`. Configure the frontend's proxy target with `BACKEND_ORIGIN` (see `frontend/.env.example`). Next.js evaluates the proxy target at build/dev startup; rebuild production after changing it. Do not put credentials into this URL or browser-visible environment variables.
 
 Both development servers bind to loopback. Development authentication uses an isolated local HTTP cookie. Production authentication requires an HTTPS site origin, secure cookies, and an injected CSRF key; TLS hosting and cloud deployment are not configured by these local commands.
+
+## Container rehearsal
+
+Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). Cloud deployment remains pending.
 
 ## Checks
 

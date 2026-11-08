@@ -83,7 +83,7 @@ Category/tag management, public browsing, and public search are merged together 
 - [x] Merge content discovery in PR #9 and observe successful PR/main checks.
 - [ ] Perform interactive browser acceptance for content discovery.
 
-The comments milestone is now in progress on one branch. Final design still requires owner references; private COS and cloud deployment remain guided release work.
+The comments milestone is merged in PR #10. Final design still requires owner references; private COS and cloud deployment remain guided release work.
 
 
 ## Content-discovery milestone review
@@ -104,6 +104,18 @@ Owner preference: continue related implementation on one branch with focused com
 - [x] Persist sliding accepted-submission quotas across instances and add migration 00005's creation-time index.
 - [x] Connect server-rendered approvals, retry-preserving visitor forms, and owner moderation UI.
 - [x] Verify PostgreSQL privacy/quota/concurrency tests, builds, and the full local proxy flow with OpenAPI payloads.
-- [ ] Review one comments PR, observe GitHub checks, and perform interactive browser/keyboard acceptance.
+- [x] Merge the combined comments PR (#10) and observe successful PR/main GitHub checks.
+- [ ] Perform interactive browser/keyboard acceptance for comments.
 
 Publishing, organization, search, and moderated feedback are implemented locally after this milestone. Portfolio content and final artistic design still need owner input and approval; private COS, CI/CD deployment, operational backups/restore, and release acceptance remain separate work.
+
+
+## Container preparation milestone
+
+- [x] Prepare separate non-root application images, explicit operator tools, and private persistent-volume wiring.
+- [x] Add an isolated container CI rehearsal for migrations, readiness, SSR/static assets, proxy authorization, and restart.
+- [x] Validate separate image builds and full Compose acceptance locally through Podman's Docker-compatible API, including database outage/restart and retained migration state.
+- [ ] Review the milestone PR and observe the Containers job on GitHub's Docker engine.
+- [ ] Select registry/connectivity and prepare cloud TLS, deployment identities, backups, and private storage with owner guidance.
+
+See the [container guide](../operations/containers.md). This is application packaging; no cloud deployment pipeline is active.
