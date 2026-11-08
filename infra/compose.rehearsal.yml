@@ -1,7 +1,8 @@
 # Disposable local/CI rehearsal only. No cloud deployment or public TLS endpoint.
 services:
   postgres:
-    image: postgres:16
+    # Upgrade together with postgres-baseline.json after mirroring and verifying.
+    image: postgres:16@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
     environment:
       POSTGRES_USER: rehearsal
       POSTGRES_PASSWORD: synthetic_rehearsal_only

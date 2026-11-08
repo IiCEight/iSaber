@@ -148,3 +148,13 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Validate twenty-one safeguards, real cached image export, a 284 MiB SSH transfer/full verification, and digest-preserving fixture copy.
 - [ ] Merge the bundle workflow, observe its real export artifact, then complete actual three-image publication and digest pulls.
 - [ ] Design unattended delivery after the verified transfer path is accepted; the operator recovery path is not an automatic server deployment pipeline.
+
+
+## Image delivery performance
+
+- [x] Publish the first real frontend/backend/PostgreSQL release after PR #14 and verify exact-digest pulls/configurations on JD.
+- [x] Implement PostgreSQL baseline reuse, configuration-drift guards, and a reduced application bundle.
+- [x] Add optional direct JD artifact receipt with short-lived URLs and archive integrity checks; retain the faster measured workspace route as default.
+- [ ] Merge the delivery optimization PR and measure its real release.
+- [ ] Reuse the main-CI tested images across preparation instead of rebuilding.
+- [ ] Automate delivery after selecting a reliable network path and restricted server identity.
