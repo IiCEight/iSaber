@@ -31,9 +31,9 @@ Contract validation, frontend checks/builds/HTTP smoke tests, and backend race/P
 | Environment | Server | Known capacity | Read-only inspection |
 | --- | --- | --- | --- |
 | Production | Tencent Cloud, SSH alias `tencent` | Owner reports 4 CPU cores / 4 GB RAM | Ubuntu 24.04.4 LTS, x86_64; Docker command present |
-| Staging | JD Cloud, SSH alias `jdcloud` | Owner reports 2 CPU cores / 2 GB RAM | Ubuntu 24.04.2 LTS, x86_64; Docker command not found |
+| Staging | JD Cloud, SSH alias `jdcloud` | Owner reports 2 CPU cores / 2 GB RAM | Ubuntu 24.04.2 LTS, x86_64; Docker 29.1.3 / Compose 2.40.3 installed after review |
 
-The refreshed [2026-11-08 inventory](staging-preparation.md) found existing workloads on both hosts, JD public web ports occupied by a relay, and reachable GHCR image metadata/layer samples. Direct Docker Hub probes timed out on both hosts. Tencent Docker works through existing sudo but lacks Compose; JD lacks Docker/Compose. DNS, TLS, cloud firewall rules, full image pulls, and deployment connectivity still need verification. No server configuration was changed.
+The refreshed [2026-11-08 inventory](staging-preparation.md) found existing workloads on both hosts, JD public web ports occupied by a relay, and reachable GHCR image metadata/layer samples. Direct Docker Hub probes timed out on both hosts. Tencent Docker works through existing sudo but lacks Compose; JD Docker 29.1.3 and Compose 2.40.3 were subsequently installed after package review. A full GHCR fixture pull and isolated container run succeeded on JD but took about ten minutes for roughly 19 MB compressed. DNS, TLS, cloud firewall rules, application/database image delivery, and deployment connectivity still need verification. JD installation started the new Docker/containerd services and added Docker networking; existing relay/Kubernetes configuration was preserved. Tencent configuration was not changed.
 
 Use GitHub-hosted runners for CI and image builds. The servers run the application containers rather than building them. Keep staging and production databases, storage, credentials, and application settings separate. Staging uses synthetic content, not production journals. Resource sizing will be revisited before choosing local versus managed database hosting.
 
@@ -117,7 +117,7 @@ We will prepare explicit commands based on that inventory, then work through:
 
 1. Create a dedicated deployment identity with narrowly defined privileges. Docker daemon access is powerful; Docker-group membership is effectively host administration and must not be presented as limited access.
 2. Install and verify Docker/Compose on JD Cloud; verify the existing Tencent installation.
-3. Choose the registry after testing image pulls from both clouds. GHCR is a candidate; a regional registry may be preferable if connectivity is unreliable.
+3. Choose the registry after testing image pulls from both clouds. Both servers are in mainland China. Prefer an owner-controlled mainland registry (Tencent TCR is the leading candidate), verifying both cloud pulls and GitHub-runner pushes before selection. GHCR probes are diagnostic rather than proof of acceptable deployment performance.
 4. Configure separate staging data/storage and server-side runtime secrets.
 5. Configure the reverse proxy, DNS, TLS, and health checks. Public staging endpoints use synthetic data; protect the dashboard with owner authentication.
 6. Configure deployment connectivity. Prefer an approved private network path or tightly restricted SSH access; do not open SSH to the world just to accommodate hosted-runner IP changes.

@@ -125,7 +125,9 @@ See the [container guide](../operations/containers.md). This is application pack
 
 - [x] Inspect both shared servers and registry connectivity without modifying their configuration.
 - [x] Record port conflicts, package/network constraints, and concrete owner exercise commands in the [staging preparation guide](../operations/staging-preparation.md).
-- [ ] Owner refreshes JD package metadata; review Docker/Compose installation simulation.
-- [ ] Agree staging HTTPS access and verify a full image pull before implementing deployment.
+- [x] Owner delegated execution: refresh JD package metadata, review the zero-removal plan, install Docker/Compose, and recheck existing SSH/relay services.
+- [x] Verify a full GHCR fixture pull and digest-pinned non-root container execution on JD; record poor transfer speed.
+- [ ] Agree staging HTTPS access and verify application/database image delivery before implementing deployment.
+- [ ] Benchmark an owner-controlled mainland registry from both servers and CI, following the owner's China-hosting clarification.
 
 Continue related setup work on one milestone branch; no per-exercise PR cycle is needed.
