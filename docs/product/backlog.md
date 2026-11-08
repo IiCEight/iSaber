@@ -131,3 +131,6 @@ See the [container guide](../operations/containers.md). This is application pack
 - [ ] Benchmark an owner-controlled mainland registry from both servers and CI, following the owner's China-hosting clarification.
 
 Continue related setup work on one milestone branch; no per-exercise PR cycle is needed.
+
+- [x] Confirm Tencent production region (`ap-beijing`) and prepare the [TCR setup proposal](../operations/tencent-registry.md).
+- [ ] Locate or provision the reviewed registry through an authenticated cloud-account session; obtain its non-secret endpoint and agree the CI network path.
