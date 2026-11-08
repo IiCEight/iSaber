@@ -14,6 +14,6 @@ Generate dedicated staging secrets only on the server. The API runtime role rece
 
 ## Operational boundary
 
-The initial deployment helper validates schema/platform/repository digests, explicitly migrates, checks private HTTPS, and records completion only after readiness. It preserves secrets and data after failures and refuses a subsequent data-bearing deployment until backup/promotion/rollback is implemented and reviewed.
+The initial deployment helper validates schema/platform/repository digests, explicitly migrates, checks private HTTPS, and records completion only after readiness. It preserves secrets and data after failures. Subsequent changes use a separate guarded promotion command with a verified recovery point and an unchanged schema/API/database policy.
 
-This is a concrete first cloud staging deployment with restart/authentication acceptance. It is operator-driven, supports synthetic content, and does not imply automatic CD or production recovery readiness. Coordinated backup/restore, promotion/rollback, restricted deployment identity, public ingress, private COS, and final visual design remain subsequent work. See the [staging runbook](../../operations/private-staging.md).
+This is a concrete first cloud staging deployment with restart/authentication acceptance. It is operator-driven, supports synthetic content, and does not imply automatic CD or production recovery readiness. Local coordinated backup/restore and schema-preserving application promotion/rollback are implemented in [ADR 0014](0014-staging-recovery.md). Restricted deployment identity, unattended delivery, offsite recovery, public ingress, private COS, and final visual design remain subsequent work. See the [staging runbook](../../operations/private-staging.md).

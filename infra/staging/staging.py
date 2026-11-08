@@ -32,8 +32,19 @@ def write_private(path, data):
     descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(descriptor, "w") as output:
         output.write(data)
+        output.flush()
+        os.fsync(output.fileno())
     temporary.chmod(0o600)
     os.replace(temporary, path)
+    sync_directory(path.parent)
+
+
+def sync_directory(path):
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def validate_release(release):
@@ -79,8 +90,12 @@ def initialize(root):
         print("Generated dedicated staging secrets on the server; no values printed")
 
 
+def compose_arguments(root, *arguments):
+    return ["docker", "compose", "--project-name", PROJECT, "--env-file", str(root / "secrets.env"), "--env-file", str(root / "release.env"), "--file", str(CONFIG / "compose.yml"), *arguments]
+
+
 def compose(root, *arguments, data=None, timeout=180):
-    return run(["docker", "compose", "--project-name", PROJECT, "--env-file", str(root / "secrets.env"), "--env-file", str(root / "release.env"), "--file", str(CONFIG / "compose.yml"), *arguments], data=data, timeout=timeout)
+    return run(compose_arguments(root, *arguments), data=data, timeout=timeout)
 
 
 def sql(root, statement):
@@ -168,9 +183,94 @@ def deploy(root, manifest):
         raise
 
 
+def compatible_release(current, candidate):
+    validate_release(current)
+    validate_release(candidate)
+    if candidate["contract_sha256"] != current["contract_sha256"] or candidate["migration_version"] != current["migration_version"] or candidate["images"]["postgres"] != current["images"]["postgres"]:
+        raise ValueError("Promotion requires the same reviewed schema, API contract, and database image")
+
+
+def recover_promotion(root):
+    pending = root / "pending-promotion.json"
+    if not pending.exists():
+        print("No interrupted promotion needs recovery")
+        return
+    journal = json.loads(pending.read_text())
+    previous = journal["previous_release"]
+    compatible_release(previous, journal["candidate_release"])
+    print("Restoring previous application images; live database and media are retained", flush=True)
+    compose(root, "stop", "edge", "frontend", "api")
+    write_private(root / "release.env", journal["previous_image_environment"])
+    compose(root, "up", "-d", "--wait", "api", "frontend", "edge")
+    verify_https(root)
+    write_private(root / "current-release.json", json.dumps(previous, indent=2) + "\n")
+    history = journal.get("previous_release_history")
+    if history is not None:
+        write_private(root / "previous-release.json", json.dumps(history, indent=2) + "\n")
+    else:
+        (root / "previous-release.json").unlink(missing_ok=True)
+    write_private(root / "last-promotion.json", json.dumps({"outcome": "recovered_previous", "current_commit": previous["source_commit"], "snapshot": journal["snapshot"]}, indent=2) + "\n")
+    pending.unlink()
+    sync_directory(root)
+    print("Previous release recovered and HTTPS verified", flush=True)
+
+
+def promote(root, manifest):
+    from backup import lock, snapshot, restore_check
+    with lock(root):
+        if (root / "pending-promotion.json").exists():
+            raise ValueError("Recover the pending promotion before starting another")
+        current = json.loads((root / "current-release.json").read_text())
+        candidate = json.loads(Path(manifest).read_text())
+        compatible_release(current, candidate)
+        if candidate == current:
+            print("This exact release is already deployed")
+            return
+        schema = sql(root, "SELECT COALESCE(MAX(version_id) FILTER (WHERE is_applied),0) FROM goose_db_version;")
+        if int(schema.strip()) != current["migration_version"]:
+            raise ValueError("The live schema differs from the recorded reviewed schema")
+        for name in ("frontend", "backend"):
+            image = candidate["images"][name]
+            run(["docker", "pull", "--platform", "linux/amd64", image["reference"]], timeout=900)
+            tag = f"isaber-staging-candidate-{name}:{candidate['source_commit']}"
+            run(["docker", "tag", image["reference"], tag])
+            if image_config_id(tag, environment=os.environ) != image["image_id"]:
+                raise ValueError("Candidate configuration differs from its verified release")
+        print("Creating and restoring a recovery point before promotion", flush=True)
+        recovery = snapshot(root)
+        restore_check(root, recovery)
+        previous_env = (root / "release.env").read_text()
+        images = dict(line.split("=", 1) for line in previous_env.splitlines() if line)
+        images.update({name.upper() + "_IMAGE": image["reference"] for name, image in candidate["images"].items()})
+        history = json.loads((root / "previous-release.json").read_text()) if (root / "previous-release.json").exists() else None
+        journal = {"previous_release": current, "candidate_release": candidate, "previous_release_history": history, "previous_image_environment": previous_env, "snapshot": str(recovery)}
+        write_private(root / "pending-promotion.json", json.dumps(journal, indent=2) + "\n")
+        try:
+            write_private(root / "release.env", "".join(f"{key}={value}\n" for key, value in images.items()))
+            compose(root, "config", "--quiet")
+            statuses = compose(root, "run", "--rm", "--no-deps", "-T", "migrate", "status").decode().splitlines()
+            expected = {str(version) for version in range(1, current["migration_version"] + 1)}
+            parsed = [line.split() for line in statuses]
+            if not parsed or any(len(line) != 2 or line[1].lower() != "applied" for line in parsed) or {line[0] for line in parsed} != expected:
+                raise ValueError("Candidate migration history is incompatible; promotion runs no schema migrations")
+            compose(root, "stop", "edge", "frontend", "api")
+            compose(root, "up", "-d", "--wait", "api", "frontend", "edge")
+            verify_https(root)
+            write_private(root / "previous-release.json", json.dumps(current, indent=2) + "\n")
+            write_private(root / "current-release.json", json.dumps(candidate, indent=2) + "\n")
+            write_private(root / "last-promotion.json", json.dumps({"outcome": "promoted", "previous_commit": current["source_commit"], "current_commit": candidate["source_commit"], "snapshot": str(recovery)}, indent=2) + "\n")
+            (root / "pending-promotion.json").unlink()
+            sync_directory(root)
+            print("Promoted and verified release:", candidate["source_commit"], flush=True)
+        except Exception:
+            print("Candidate did not pass; recovering the previous application release", flush=True)
+            recover_promotion(root)
+            raise RuntimeError("Promotion failed; previous release recovered") from None
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("init", "deploy", "verify", "status"))
+    parser.add_argument("command", choices=("init", "deploy", "promote", "rollback", "recover", "verify", "status"))
     parser.add_argument("--root", type=Path, default=Path("/opt/isaber-staging"))
     parser.add_argument("--release", type=Path)
     arguments = parser.parse_args()
@@ -183,6 +283,16 @@ if __name__ == "__main__":
             deploy(arguments.root, arguments.release)
         elif arguments.command == "verify":
             verify_https(arguments.root)
+        elif arguments.command == "promote":
+            if not arguments.release:
+                raise ValueError("A verified --release manifest is required")
+            promote(arguments.root, arguments.release)
+        elif arguments.command == "rollback":
+            promote(arguments.root, arguments.root / "previous-release.json")
+        elif arguments.command == "recover":
+            from backup import lock
+            with lock(arguments.root):
+                recover_promotion(arguments.root)
         else:
             print(compose(arguments.root, "ps").decode())
     except Exception as error:
