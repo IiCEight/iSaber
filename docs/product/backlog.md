@@ -166,5 +166,6 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Verify CA/HTTPS, production cookies, owner SSR, origin/CSRF rejection, restart/session/database/CA persistence, logout, and temporary-account removal.
 - [x] Prepare an access/owner-setup runbook and block data-bearing redeployment until recovery/promotion are reviewed.
 - [ ] Merge the private staging milestone PR and complete owner browser acceptance.
-- [ ] Verify coordinated database/media backup and disposable restore.
-- [ ] Implement schema-aware promotion/rollback and unattended delivery with a restricted identity.
+- [x] Verify coordinated snapshots and disposable restores, including nonempty synthetic database/media probes and a clean recovery point.
+- [x] Implement application promotion, explicit rollback, automatic recovery on failed candidate health, and pending-journal recovery for the unchanged reviewed schema/API/database baseline.
+- [ ] Add unattended delivery with a restricted identity, offsite recovery, and separate schema-evolution review.
