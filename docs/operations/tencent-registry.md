@@ -1,6 +1,6 @@
 # Tencent registry setup
 
-Status: TCR Personal hostname `ccr.ccs.tencentyun.com` and namespace `isaber` confirmed by the owner's login command and namespace reply. JD login succeeded; the credential directory/file are root-owned with modes 0700/0600. Both servers reach the registry over HTTPS and receive the expected unauthenticated 401. Repository visibility, authenticated image pushes/pulls, and GitHub secrets still need verification. The earlier paid Beijing Enterprise proposal is superseded; no paid TCR instance was created by the agent.
+Status: TCR Personal hostname `ccr.ccs.tencentyun.com` and namespace `isaber` confirmed by the owner's login command and namespace reply. JD login succeeded; the credential directory/file are root-owned with modes 0700/0600. Both servers reach the registry over HTTPS and receive the expected unauthenticated 401. Repository Actions secret names are configured. JD diagnostic push/remote-config verification succeeded and anonymous fixture access was denied. The first GitHub publishing run timed out; actual application publishing and digest pulls remain unverified. The earlier paid Beijing Enterprise proposal is superseded; no paid TCR instance was created by the agent.
 
 ## Proposed configuration
 
@@ -23,7 +23,7 @@ In the [TCR console](https://console.cloud.tencent.com/tcr), use the registry al
 
 For an interactive host login, run `ssh jdcloud`, then use the console's `docker login` command and enter the registry password at its hidden prompt. Use the registry login credential, not a cloud API SecretKey. This logs Docker into the registry; it does not deploy the blog. Do not paste a command containing a literal password into a shell. CI will use `--password-stdin` with a GitHub Actions secret once the publishing workflow is prepared.
 
-Passwords, cloud API keys, and registry tokens belong in the appropriate secret store, not chat or Git. The publishing workflow is now prepared locally at `.github/workflows/publish.yml`; it becomes active only after merge to the default branch. JD login credentials are not copied to GitHub by this work.
+Passwords, cloud API keys, and registry tokens belong in the appropriate secret store, not chat or Git. The publishing workflow at `.github/workflows/publish.yml` was merged in PR #12 and is active on the default branch. JD login credentials are not copied to GitHub by this work.
 
 Current tooling has SSH access to the servers; an authenticated Tencent account/API session has not been established. Account provisioning therefore remains an owner console step until an appropriate access mechanism is configured.
 
@@ -70,4 +70,17 @@ After merging the combined milestone PR:
 
 A failed push may leave some images in the registry, but it does not produce a completed manifest or trigger deployment. Rerun the publishing workflow's jobs after fixing the cause. No server deploys automatically in this milestone. Artifacts are retained for 30 days; durable production release/rollback manifest retention remains deployment work.
 
-Local validation covers six publisher safeguards (credentials, source validation, digest/identity binding, and failure handling) plus workflow lint. Actual GitHub publishing, private repository settings, and cross-cloud pulls are pending owner secret setup and the merged workflow run.
+Local validation covers nine publisher safeguards (credentials, source validation, digest/identity binding, and failure handling) plus workflow lint. Actual GitHub publishing, private repository settings, and cross-cloud pulls are pending owner secret setup and the merged workflow run.
+
+Publisher diagnostics report the registry authentication phase, each image upload start, and completion time without printing passwords or raw command errors. Push commands are limited to 1,200 seconds; other Docker commands to 60 seconds, within the workflow's existing 30-minute job limit. Failures distinguish authorization, network, and manifest-format categories using fixed messages. Timeout/error tests verify subprocess output containing credentials is not echoed. These diagnostics were added after the first publishing run exposed an otherwise opaque long-running step; they do not establish that the network path is fast enough.
+
+
+## First live-run findings and follow-up
+
+PR #12 and all four main CI checks passed for source commit `71ba8704716856c74ed1aa82a8fa6301b831885d`. Its first [publishing run](https://github.com/IiCEight/iSaber/actions/runs/42461428153) passed the release rehearsal, then exceeded the 30-minute job limit inside publishing. No application release tags were readable from JD afterward, and no completed release manifest was retained. The old step captured child output and buffered its own progress, so its logs do not identify the blocked Docker operation. The follow-up adds a 20-second unauthenticated runner HTTPS preflight, flushed phase messages, bounded commands, and fixed safe error categories; it does not claim the GitHub network/credential path has been repaired.
+
+A separate JD-to-TCR test successfully uploaded the previously verified public UV fixture under `isaber/frontend:registry-check-uv-0.13.7`. This is a diagnostic fixture, not a frontend release. It proves that JD's existing login can push to the repository; it does not prove GitHub's credential values or network path work. Application releases still use only the completed release manifest.
+
+The fixture also reproduced a Docker-version compatibility issue: Docker 29's local `.Id` and `.RepoDigests` retained the original multi-platform index digest even though the push published only the available platform under a different digest. The follow-up publisher therefore derives `image_id` from the exact image configuration bytes in a `linux/amd64` Docker export, reads the pushed digest from Docker's tag-specific push receipt, and verifies that digest against the remote registry manifest. For an index, it resolves the unique linux/amd64 child and checks its config digest. It never treats local repository metadata as proof that a digest exists remotely.
+
+The corrected helpers were exercised against the actual pushed fixture on JD's Docker 29, and local/remote config digests matched. The frontend diagnostic fixture was unreadable with an empty Docker credential configuration. CI additionally exports the real rehearsal images to exercise identity extraction on GitHub's Docker engine without registry credentials. Source config digests are stable across wrapper/index differences; operator checks must not compare Docker 29's default `.Id` to the manifest's `image_id` directly.

@@ -195,6 +195,8 @@ jobs:
           docker compose up -d --wait api frontend
           test "$(docker compose run --rm --no-deps -T migrate up)" = "Applied 0 migrations"
           docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
+      - name: Verify platform image identities with the real Docker engine
+        run: python3 infra/publish_images.py --check-images
       - name: Show service logs on failure
         if: failure()
         run: docker compose logs --tail 100

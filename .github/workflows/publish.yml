@@ -40,6 +40,12 @@ jobs:
           test -n "$TCR_PASSWORD" || { echo 'Configure the TCR_PASSWORD Actions secret'; exit 1; }
       - name: Check publisher safeguards
         run: python3 -m unittest discover -s infra/tests -p 'test_publish_images.py'
+      - name: Check the runner can reach TCR over HTTPS
+        # A 401 without credentials is the expected registry challenge.
+        run: |
+          status=$(curl --silent --show-error --output /dev/null --connect-timeout 10 --max-time 20 --write-out '%{http_code}' https://ccr.ccs.tencentyun.com/v2/)
+          printf 'TCR HTTPS endpoint returned HTTP %s\n' "$status"
+          test "$status" = 401 || test "$status" = 200
       - name: Build release images on GitHub
         run: docker compose build
       - name: Pull the official PostgreSQL baseline
