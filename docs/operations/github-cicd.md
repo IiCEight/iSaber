@@ -1,6 +1,6 @@
 # GitHub CI/CD: guided setup
 
-Status: API contract, Frontend, Backend, and Containers checks are merged and passed on PR #11 and its main run. Read-only cloud inventory and the next guided exercise are recorded in [staging preparation](staging-preparation.md). Deployment remains a plan, not a configured pipeline. This branch prepares image publishing to TCR Personal after successful main CI; see the [registry setup guide](tencent-registry.md). Related features now share one milestone PR rather than requiring a merge after each small feature.
+Status: API contract, Frontend, Backend, and Containers checks are merged and passed on PR #11 and its main run. Read-only cloud inventory and the next guided exercise are recorded in [staging preparation](staging-preparation.md). Deployment remains a plan, not a configured pipeline. Direct TCR publishing failed during cross-border upload after authentication. This branch prepares tested image bundles plus a verified operator relay through JD; see the [image relay guide](image-relay.md). Related features now share one milestone PR rather than requiring a merge after each small feature.
 
 Repository: `IiCEight/iSaber`, public, with `main` as the working base. The bootstrap instructions below describe the initial setup; do not repeat them over the existing repository history.
 
