@@ -13,7 +13,7 @@ import tarfile
 REGISTRY = "ccr.ccs.tencentyun.com"
 NAMESPACE = "isaber"
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}\Z")
-SOURCES = {"frontend": "isaber-frontend:rehearsal", "backend": "isaber-api:rehearsal", "postgres": "postgres:16"}
+SOURCES = {"frontend": "isaber-frontend:rehearsal", "backend": "isaber-api:rehearsal", "postgres": "postgres:16@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657"}
 
 
 def docker(arguments, *, environment, password=None):

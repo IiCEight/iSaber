@@ -20,6 +20,14 @@ METADATA_FILES = (
 )
 MAX_BYTES = 4 * 1024**3
 MAX_FILES = 1000
+BASELINE_FILE = "infra/postgres-baseline.json"
+
+
+def postgres_baseline(root):
+    baseline = parse_json(Path(root) / BASELINE_FILE)
+    if not re.fullmatch(r"postgres@sha256:[0-9a-f]{64}", baseline.get("upstream_reference", "")) or not re.fullmatch(re.escape(f"{REGISTRY}/{NAMESPACE}/postgres@") + r"sha256:[0-9a-f]{64}", baseline.get("reference", "")) or not DIGEST.fullmatch(baseline.get("image_id", "")):
+        raise ValueError("Invalid pinned PostgreSQL baseline")
+    return baseline
 
 
 def run(arguments, timeout=900):
@@ -49,7 +57,7 @@ def parse_json(path, limit=2 * 1024 * 1024):
 
 
 def validate_header(bundle, expected_commit=None):
-    if bundle.get("format_version") != 1 or bundle.get("kind") != "isaber-image-bundle":
+    if bundle.get("format_version") not in (1, 2) or bundle.get("kind") != "isaber-image-bundle":
         raise ValueError("Unsupported release bundle")
     if not re.fullmatch(r"[0-9a-f]{40}", bundle.get("source_commit", "")):
         raise ValueError("Invalid source commit")
@@ -67,7 +75,8 @@ def verify(directory, expected_commit=None):
     bundle = parse_json(directory / "bundle.json")
     validate_header(bundle, expected_commit)
     files = bundle.get("files", {})
-    if not isinstance(files, dict) or len(files) > MAX_FILES or not set(METADATA_FILES).issubset(files):
+    metadata_files = (*METADATA_FILES, BASELINE_FILE) if bundle["format_version"] == 2 else METADATA_FILES
+    if not isinstance(files, dict) or len(files) > MAX_FILES or not set(metadata_files).issubset(files):
         raise ValueError("Invalid bundle file inventory")
     total = 0
     actual = set()
@@ -82,7 +91,8 @@ def verify(directory, expected_commit=None):
         parts = PurePosixPath(relative)
         if parts.is_absolute() or ".." in parts.parts or "\\" in relative or parts.as_posix() != relative:
             raise ValueError("Unsafe bundle path")
-        if relative not in METADATA_FILES and not relative.startswith(tuple(f"images/{name}/" for name in SOURCES)):
+        bundled_images = ("frontend", "backend") if bundle["format_version"] == 2 else SOURCES
+        if relative not in metadata_files and not relative.startswith(tuple(f"images/{name}/" for name in bundled_images)):
             raise ValueError("Unexpected bundle path")
         path = directory / relative
         size = path.stat().st_size
@@ -95,6 +105,11 @@ def verify(directory, expected_commit=None):
     if not version or int(version[1]) != bundle.get("migration_version"):
         raise ValueError("Migration version differs from bundle metadata")
     for name, image in bundle["images"].items():
+        if name == "postgres" and bundle["format_version"] == 2:
+            baseline = postgres_baseline(directory)
+            if image != {**baseline, "manifest_digest": baseline["reference"].split("@", 1)[1]}:
+                raise ValueError("PostgreSQL differs from the pinned verified baseline")
+            continue
         manifest_path = directory / "images" / name / "manifest.json"
         if "sha256:" + digest(manifest_path) != image.get("manifest_digest"):
             raise ValueError("Image manifest identity mismatch")
@@ -123,7 +138,7 @@ def export(directory, environment, transport="docker-daemon"):
     directory.mkdir(parents=True, mode=0o700)
     version = re.search(r"const RequiredVersion int64 = ([0-9]+)", (ROOT / METADATA_FILES[3]).read_text())
     bundle = {
-        "format_version": 1, "kind": "isaber-image-bundle", "platform": "linux/amd64",
+        "format_version": 2, "kind": "isaber-image-bundle", "platform": "linux/amd64",
         "source_commit": environment.get("RELEASE_SHA", ""),
         "ci_run_id": environment.get("VERIFIED_CI_RUN_ID", ""),
         "bundle_run_id": environment.get("GITHUB_RUN_ID", ""),
@@ -142,6 +157,14 @@ def export(directory, environment, transport="docker-daemon"):
                 run(["docker", "image", "save", source, "--platform", "linux/amd64", "--output", str(saved)], timeout=120)
                 source_ref = "docker-archive:" + str(saved)
             source_config = run(["skopeo", "inspect", "--config", "--raw", source_ref])
+            identity = "sha256:" + hashlib.sha256(source_config).hexdigest()
+            if name == "postgres":
+                baseline = postgres_baseline(ROOT)
+                if identity != baseline["image_id"] or source.split("@", 1)[-1] != baseline["upstream_reference"].split("@", 1)[-1]:
+                    raise ValueError("Tested PostgreSQL differs from the pinned baseline; mirror and verify an upgrade first")
+                bundle["images"][name] = {**baseline, "manifest_digest": baseline["reference"].split("@", 1)[1]}
+                print("Reusing verified PostgreSQL baseline; database layers omitted", flush=True)
+                continue
             destination = directory / "images" / name
             destination.parent.mkdir(exist_ok=True)
             run(["skopeo", "--override-os", "linux", "--override-arch", "amd64", "copy", "--dest-compress", source_ref, "dir:" + str(destination)])
@@ -150,10 +173,7 @@ def export(directory, environment, transport="docker-daemon"):
         if manifest.get("config", {}).get("digest") != identity:
             raise ValueError("Export changed the tested image configuration")
         bundle["images"][name] = {"image_id": identity, "manifest_digest": "sha256:" + digest(destination / "manifest.json")}
-    engine = "podman" if transport == "containers-storage" else "docker"
-    upstream = json.loads(run([engine, "image", "inspect", "postgres:16", "--format", "{{json .RepoDigests}}"]))
-    bundle["images"]["postgres"]["upstream_reference"] = next((value for value in upstream if re.fullmatch(r"(?:docker.io/library/)?postgres@sha256:[0-9a-f]{64}", value)), "")
-    for relative in METADATA_FILES:
+    for relative in (*METADATA_FILES, BASELINE_FILE):
         destination = directory / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / relative, destination)
@@ -176,8 +196,11 @@ def publish(directory, output, expected_commit, authfile):
         repository = f"{REGISTRY}/{NAMESPACE}/{name}"
         tag = repository + ":sha-" + bundle["source_commit"]
         reference = repository + "@" + image["manifest_digest"]
-        print(f"Publishing {name} from verified local bundle", flush=True)
-        run(["skopeo", "copy", "--preserve-digests", "--authfile", str(authfile), "dir:" + str(directory / "images" / name), "docker://" + tag])
+        if name == "postgres" and bundle["format_version"] == 2:
+            print("Verifying existing PostgreSQL baseline in TCR; no database upload", flush=True)
+        else:
+            print(f"Publishing {name} from verified local bundle", flush=True)
+            run(["skopeo", "copy", "--preserve-digests", "--authfile", str(authfile), "dir:" + str(directory / "images" / name), "docker://" + tag])
         remote = run(["skopeo", "inspect", "--config", "--raw", "--authfile", str(authfile), "docker://" + reference])
         if "sha256:" + hashlib.sha256(remote).hexdigest() != image["image_id"]:
             raise ValueError("Published configuration differs from tested content")

@@ -10,8 +10,11 @@ import sys
 import tarfile
 import tempfile
 import time
+import urllib.error
+import urllib.request
 
-from release_bundle import verify, digest
+from release_bundle import verify, digest, validate_header, parse_json
+from receive_artifact import validate_url
 
 REPOSITORY = "IiCEight/iSaber"
 SSH_OPTIONS = ["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-o", "ForwardAgent=no", "-o", "ClearAllForwardings=yes"]
@@ -24,6 +27,30 @@ def command(arguments, timeout=900, capture=False, text_input=None):
 
 def github(path):
     return json.loads(command(["gh", "api", "repos/" + REPOSITORY + "/" + path], capture=True, timeout=60))
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *arguments):
+        return None
+
+
+def artifact_url(artifact):
+    # Ask for a fresh redirect immediately before JD starts its download. The
+    # GitHub token is used only on this host; the storage URL expires quickly.
+    token = command(["gh", "auth", "token", "--hostname", "github.com"], capture=True, timeout=30)
+    request = urllib.request.Request(f"https://api.github.com/repos/{REPOSITORY}/actions/artifacts/{int(artifact['id'])}/zip", headers={"Authorization": "Bearer " + token, "Accept": "application/vnd.github+json"})
+    try:
+        with urllib.request.build_opener(NoRedirect).open(request, timeout=30):
+            raise RuntimeError("GitHub did not return an artifact redirect")
+    except urllib.error.HTTPError as error:
+        if error.code != 302:
+            raise RuntimeError(f"GitHub artifact redirect failed (HTTP {error.code})") from None
+        url = error.headers.get("Location", "")
+        error.close()
+    except urllib.error.URLError:
+        raise RuntimeError("GitHub artifact redirect request failed") from None
+    validate_url(url)
+    return url
 
 
 def check_run(run, jobs, ci, source_commit=None):
@@ -69,7 +96,46 @@ subprocess.run(['timeout','--kill-after=10s','1800s',sys.executable,str(root/'in
 '''
 
 
-def relay(run_id):
+def retain_release(remote, bundle, run_id, attempt, commit):
+    target = Path(__file__).resolve().parent / "releases" / commit / f"{run_id}-{attempt}"
+    target.mkdir(parents=True, exist_ok=True, mode=0o700)
+    pending = target / ".pending.json"
+    command(["scp", *SSH_OPTIONS, "jdcloud:" + remote + "/release.json", str(pending)])
+    release = json.loads(pending.read_text())
+    if release.get("format_version") != 1 or release.get("source_commit") != commit or any(release.get(key) != bundle.get(key) for key in ("ci_run_id", "platform", "migration_version", "contract_sha256", "bundle_run_id", "bundle_run_attempt")):
+        raise ValueError("Returned release metadata mismatch")
+    if set(release.get("images", {})) != set(bundle["images"]):
+        raise ValueError("Returned release image set mismatch")
+    for name, image in bundle["images"].items():
+        if release["images"][name]["image_id"] != image["image_id"] or release["images"][name]["reference"] != f"ccr.ccs.tencentyun.com/isaber/{name}@{image['manifest_digest']}":
+            raise ValueError("Returned release digest mismatch")
+        if name == "postgres" and release["images"][name].get("upstream_reference") != image.get("upstream_reference"):
+            raise ValueError("Returned database provenance mismatch")
+    pending.chmod(0o600)
+    os.replace(pending, target / "release.json")
+    print("Verified release manifest retained at", target / "release.json", flush=True)
+    print("Images are published; no application services were deployed", flush=True)
+
+
+def relay_direct(artifact, bundle, run_id, attempt, commit):
+    remote = ssh("mktemp", "-d", "/tmp/isaber-relay.XXXXXXXX", capture=True)
+    if not re.fullmatch(r"/tmp/isaber-relay\.[A-Za-z0-9]+", remote):
+        raise ValueError("Invalid remote temporary directory")
+    try:
+        payload = {key: artifact[key] for key in ("digest", "size_in_bytes")}
+        payload.update(url=artifact_url(artifact), bundle=bundle)
+        print("JD is downloading the verified artifact directly from GitHub storage", flush=True)
+        receiver = Path(__file__).with_name("receive_artifact.py").read_text()
+        ssh("python3", "-c", receiver, remote, text_input=json.dumps(payload), timeout=660)
+        root = remote + "/content"
+        ssh("python3", root + "/infra/release_bundle.py", "verify", root, "--commit", commit, timeout=300)
+        ssh("timeout", "--kill-after=10s", "1800s", "python3", root + "/infra/release_bundle.py", "publish", root, "--commit", commit, "--output", remote + "/release.json", timeout=1820)
+        retain_release(remote, bundle, run_id, attempt, commit)
+    finally:
+        ssh("python3", "-c", "import shutil,sys; shutil.rmtree(sys.argv[1])", remote, timeout=60)
+
+
+def relay(run_id, transport="workspace"):
     run = github(f"actions/runs/{run_id}")
     check_run(run, None, None)
     attempt = run.get("run_attempt")
@@ -81,6 +147,23 @@ def relay(run_id):
         raise ValueError("Expected one unexpired bundle for the current workflow attempt")
     artifact_name = candidates[0]["name"]
     commit = artifact_name.split("-")[1]
+    metadata_name = f"metadata-{commit}-{attempt}"
+    metadata = [item for item in artifacts if item.get("name") == metadata_name and not item.get("expired")]
+    if len(metadata) > 1:
+        raise ValueError("Expected at most one metadata artifact for this attempt")
+    if transport == "server" and len(metadata) == 1:
+        with tempfile.TemporaryDirectory(prefix="isaber-metadata-") as directory:
+            command(["gh", "run", "download", str(run_id), "--repo", REPOSITORY, "--name", metadata_name, "--dir", directory])
+            bundle = parse_json(Path(directory) / "bundle.json")
+        validate_header(bundle, commit)
+        if str(bundle["bundle_run_id"]) != str(run_id) or str(bundle["bundle_run_attempt"]) != str(attempt):
+            raise ValueError("Metadata belongs to another workflow attempt")
+        jobs = github(f"actions/runs/{run_id}/attempts/{attempt}/jobs?per_page=100")["jobs"]
+        check_run(run, jobs, github("actions/runs/" + str(bundle["ci_run_id"])), commit)
+        relay_direct(candidates[0], bundle, run_id, attempt, commit)
+        return
+    if transport == "server":
+        print("This older run has no separate metadata; using the workspace relay", flush=True)
     with tempfile.TemporaryDirectory(prefix="isaber-relay-") as directory:
         root = Path(directory)
         content = root / "content"
@@ -105,22 +188,7 @@ def relay(run_id):
             command(["scp", *SSH_OPTIONS, str(archive), "jdcloud:" + remote + "/bundle.tar"])
             print(f"SSH transfer finished in {time.monotonic() - started:.1f}s; validating and publishing on JD", flush=True)
             ssh("python3", "-c", BOOTSTRAP, remote, digest(archive), commit)
-            target = Path(__file__).resolve().parent / "releases" / commit / f"{run_id}-{attempt}"
-            target.mkdir(parents=True, exist_ok=True, mode=0o700)
-            pending = target / ".pending.json"
-            command(["scp", *SSH_OPTIONS, "jdcloud:" + remote + "/release.json", str(pending)])
-            release = json.loads(pending.read_text())
-            if release.get("format_version") != 1 or release.get("source_commit") != commit or any(release.get(key) != bundle.get(key) for key in ("ci_run_id", "platform", "migration_version", "contract_sha256", "bundle_run_id", "bundle_run_attempt")):
-                raise ValueError("Returned release metadata mismatch")
-            if set(release.get("images", {})) != set(bundle["images"]):
-                raise ValueError("Returned release image set mismatch")
-            for name, image in bundle["images"].items():
-                if release["images"][name]["image_id"] != image["image_id"] or release["images"][name]["reference"] != f"ccr.ccs.tencentyun.com/isaber/{name}@{image['manifest_digest']}":
-                    raise ValueError("Returned release digest mismatch")
-            pending.chmod(0o600)
-            os.replace(pending, target / "release.json")
-            print("Verified release manifest retained at", target / "release.json", flush=True)
-            print("Images are published; no application services were deployed", flush=True)
+            retain_release(remote, bundle, run_id, attempt, commit)
         finally:
             ssh("python3", "-c", "import shutil,sys; shutil.rmtree(sys.argv[1])", remote, timeout=60)
 
@@ -128,11 +196,12 @@ def relay(run_id):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("run_id", type=int)
+    parser.add_argument("--transport", choices=("server", "workspace"), default="workspace", help="Use the measured workspace route (default), or opt into direct JD download")
     arguments = parser.parse_args()
     try:
         if arguments.run_id <= 0:
             raise ValueError("A positive workflow run ID is required")
-        relay(arguments.run_id)
+        relay(arguments.run_id, arguments.transport)
     except (ValueError, RuntimeError, OSError, subprocess.SubprocessError) as error:
         print(f"Relay failed: {error}", file=sys.stderr)
         raise SystemExit(1)

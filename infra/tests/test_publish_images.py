@@ -53,7 +53,7 @@ class PublisherTests(unittest.TestCase):
             return ""
         if arguments[:2] == ["image", "inspect"]:
             image = arguments[2]
-            if image == "postgres:16":
+            if image == publisher.SOURCES["postgres"]:
                 return json.dumps([self.upstream])
             repository = image.rsplit(":", 1)[0]
             if self.wrong_repository:

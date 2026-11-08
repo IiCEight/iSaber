@@ -1,0 +1,5 @@
+{
+  "upstream_reference": "postgres@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657",
+  "reference": "ccr.ccs.tencentyun.com/isaber/postgres@sha256:b4836c2a80e8a0e9261f30a9eb02017c7e66031d504522d72eb674a4b98323ee",
+  "image_id": "sha256:ba07bdb15f0f2ac1ba7a88891da731cae65ac36d663fdb7de8f698ea47e0e381"
+}

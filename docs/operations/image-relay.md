@@ -1,44 +1,64 @@
-# Recover image delivery through the existing workspace
+# Deliver tested images through JD Cloud
 
-The direct GitHub-to-TCR frontend upload timed out after successful authentication. The default workflow now prepares a tested image bundle, and an operator command relays it through the workspace to JD for publication. See [ADR 0012](../architecture/decisions/0012-image-bundle-relay.md).
+PR #14 established the first real release: frontend, backend, and PostgreSQL were published to TCR, pulled on JD by exact digest, and checked against their tested configurations. The default route remains `GitHub → workspace → JD → TCR`. See [ADR 0012](../architecture/decisions/0012-image-bundle-relay.md).
 
 ## What is automatic
 
-After successful push-to-main CI, **Prepare release images** builds the frontend/backend images, pulls official PostgreSQL 16, and runs the existing container acceptance flow. It exports compressed image blobs, configuration identities, source/CI metadata, and the reviewed relay tooling into an artifact named `bundle-COMMIT-ATTEMPT`.
+After successful push-to-main CI, **Prepare release images** builds and tests the application images with the pinned official PostgreSQL baseline. It exports application blobs, source/CI metadata, and reviewed publishing tooling as `bundle-COMMIT-ATTEMPT`, plus a small `metadata-COMMIT-ATTEMPT` artifact.
 
-The bundle is retained for **one day**. GitHub artifact storage allowance applies; this does not require another registry subscription. No password, runtime database, journal content, or server Docker configuration is included. A green preparation run does not imply registry publication.
+Version 2 bundles reuse the existing TCR PostgreSQL digest from [`postgres-baseline.json`](../../infra/postgres-baseline.json). Export checks that the database configuration tested on GitHub matches this baseline. Database layers are omitted from the artifact; publication verifies the existing TCR configuration instead of uploading PostgreSQL. A missing or mismatched baseline fails the release. It never silently chooses a different database image.
+
+Artifacts are retained for **one day** and use GitHub artifact storage allowance. No runtime database, journal content, or server credential configuration is included. A green preparation run means the bundle is ready; it does not imply publication or deployment.
 
 ## Publish the tested bundle
 
-Use the existing local Linux workspace with `gh` authenticated and the verified `jdcloud` SSH alias. JD needs Python 3, Skopeo, and its existing registry login. Skopeo 1.13.3 was installed from JD's domestic Ubuntu mirror; no existing packages were upgraded or removed and SSH/relay/Docker stayed active.
-
-From the repository root, use the run ID of the successful **Prepare release images** workflow:
+Use the existing Linux workspace with authenticated `gh` and the trusted `jdcloud` SSH alias. JD needs Python 3, Skopeo, and its existing private registry login. From the repository root:
 
 ```bash
 python3 infra/relay_release.py RUN_ID
 ```
 
-The command verifies trusted main workflow/source CI records, downloads the exact attempt's bundle through `gh`, and checks every file before using SSH. It transfers a checksum-bound archive with strict host-key checking, rejects unsafe extraction entries, verifies again on JD, and publishes through JD's existing credential file using Skopeo. Credentials are not copied to the workspace or GitHub.
+The default workspace route validates the trusted main workflow, successful source CI, current attempt, file hashes, image configurations/layers, and database provenance. It sends a checksum-bound archive through SSH with strict host-key checking. JD verifies it again before publishing with Skopeo through its existing registry credential file.
 
-Each target is `ccr.ccs.tencentyun.com/isaber/NAME:sha-COMMIT`. The registry digest must match the preserved source manifest and the remote configuration must match the tested image config. Only after all three images pass does the command retain:
+Frontend/backend receive `ccr.ccs.tencentyun.com/isaber/NAME:sha-COMMIT` tags. PostgreSQL retains its pinned existing digest. Every remote image configuration must match the tested configuration before a completed manifest is saved:
 
 ```text
 infra/releases/COMMIT/RUN_ID-ATTEMPT/release.json
 ```
 
-That directory is ignored by Git. Keep this manifest for subsequent staging verification and promotion. It contains metadata and image references, not image bytes. JD's temporary archive/content and the local temporary download are cleaned afterward. The operator command never starts the blog or database.
+Keep this ignored local manifest for deployment and rollback. Temporary downloads and staging content are removed afterward. The operator command never starts the blog or database.
+
+## Optional direct artifact download on JD
+
+```bash
+python3 infra/relay_release.py RUN_ID --transport server
+```
+
+The workspace downloads only the small metadata artifact and validates its source CI. It obtains a fresh, short-lived GitHub artifact URL and sends that URL through encrypted SSH stdin. The GitHub token remains local; the URL is not printed, put in process arguments, or written to a configuration file. JD checks the complete archive against GitHub's SHA-256/size receipt, rejects unsafe ZIP entries, and compares its metadata before verifying the bundle and publishing. No persistent GitHub credential or runner is installed on JD. GitHub documents the [artifact download redirect](https://docs.github.com/en/rest/actions/artifacts#download-an-artifact).
+
+This is opt-in because the live JD probe received only **2 MiB in 72 seconds**. Removing the workspace currently makes delivery slower. A direct download is bounded to ten minutes, with a socket timeout; network errors omit signed URLs. If it fails, retry through the default workspace route. Older runs lacking the separate metadata artifact use the workspace route, including version 1 bundles containing PostgreSQL layers.
+
+## Upgrading PostgreSQL
+
+The baseline is a deliberate dependency pin, not a permanent freeze. For each planned PostgreSQL security/maintenance upgrade:
+
+1. Select the official upstream digest and mirror its linux/amd64 image into the existing TCR PostgreSQL repository through a working network path, preserving the destination manifest digest.
+2. Pull and verify that exact TCR digest against the official image configuration and test the database executable. Keep the old digest for rollback.
+3. Update the upstream digest in `compose.rehearsal.yml` and `publish_images.py`, and the upstream, destination, and configuration digests in `postgres-baseline.json`, together in a reviewed PR.
+4. Pass container/migration acceptance on the new baseline before promoting an application release. Export refuses a tested configuration that differs from the pin.
+
+If the existing baseline is removed from TCR, restore the verified image before retrying; the relay does not substitute a mutable `postgres:16` tag.
 
 ## Failure handling
 
-- Preparation failed: inspect the failing build/test/export step; no bundle is accepted for promotion.
-- Artifact expired: rerun the preparation workflow's jobs and use the new attempt after it succeeds.
-- SSH fails: inspect the existing alias and trusted host key; do not disable verification or expose SSH broadly.
-- Integrity/provenance check fails: stop before publication and inspect the trusted source/artifact.
-- One image copy fails: no completed release manifest is returned; retry the same verified bundle after diagnosing the cause. Already copied content can be reused.
-- Direct mode is requested: set repository variable `TCR_PUBLISH_TRANSPORT=direct` explicitly. This retains the old route for controlled testing. Default/unset uses relay mode. If direct mode fails, unset the variable and rerun preparation before invoking the relay.
+- Failed or expired preparation: inspect the failure or rerun preparation and use the successful new attempt.
+- SSH failure: inspect the existing alias and trusted host key; keep host verification enabled.
+- Integrity/provenance failure: stop before publication and inspect the trusted source/artifact.
+- Partial image-copy failure: no completed manifest is returned; retry after diagnosis. Existing registry blobs can be reused.
+- Optional direct GitHub-to-TCR publication: `TCR_PUBLISH_TRANSPORT=direct` retains the earlier publisher for controlled network testing. This is separate from `--transport server`, which changes how JD receives the artifact. The database reuse optimization applies to the bundle relay. Failed direct publication still requires switching back to relay mode and rerunning successful preparation.
 
-## Current evidence and remaining work
+## Timing and remaining work
 
-Twenty-one local safeguards passed. A real cached frontend/backend/PostgreSQL bundle exported and verified locally. The 284 MiB workspace-to-JD transfer took 185 seconds and passed extraction/full verification with publication deliberately omitted. JD also copied a previously verified public fixture through TCR with its digest unchanged. Those probes left only explicit diagnostic tags, not an application release.
+The first release's GitHub CI took 1m 51s and preparation took another 1m 51s. Its 283 MiB workspace-to-JD transfer took 170 seconds, followed by registry upload and first pull verification. The reduced real bundle is **124.3 MiB**, with no database image layers, a reduction of about 56%. A real reduced-bundle transfer took **75.5 seconds** and passed full verification on JD; the existing TCR database configuration also matched. This probe did not publish fixture images or start application services.
 
-The first real GitHub bundle download and all-three-image relay publication are pending the merged workflow. Fully unattended delivery, deployment connectivity, production retention/backups, TLS, and the final artistic frontend remain separate work.
+Building once across main CI and preparation, fully unattended delivery, staging/TLS, backups/restore, and the final artistic frontend remain subsequent work. Direct download has bounded tests and a live throughput probe; full production artifact delivery through that optional route is not yet accepted.

@@ -54,7 +54,7 @@ Keep the Personal repositories `isaber/frontend`, `isaber/backend`, and `isaber/
 
 Direct mode can be explicitly enabled with repository variable `TCR_PUBLISH_TRANSPORT=direct`; it is not the default. Its publishing diagnostics have flushed phases, bounded commands, and safe error categories. Actual direct-route recovery is unverified.
 
-Local acceptance now includes twenty-one safeguards, real image export, strict SSH transfer/full verification, and Skopeo digest-preserving registry copy. The first actual GitHub bundle-to-registry application release remains pending the merged workflow and operator command. Fully unattended delivery and deployment remain subsequent work.
+The first actual GitHub bundle-to-registry application release completed after PR #14, including exact-digest pulls and configuration checks on JD. The follow-up reduces the real bundle to 124.3 MiB, transferred and verified on JD in about 76 seconds, and verifies the reused database configuration against TCR. Fully unattended delivery and deployment remain subsequent work.
 
 ## First live-run findings and follow-up
 
@@ -65,3 +65,6 @@ A separate JD-to-TCR test successfully uploaded the previously verified public U
 The fixture also reproduced a Docker-version compatibility issue: Docker 29's local `.Id` and `.RepoDigests` retained the original multi-platform index digest even though the push published only the available platform under a different digest. The follow-up publisher therefore derives `image_id` from the exact image configuration bytes in a `linux/amd64` Docker export, reads the pushed digest from Docker's tag-specific push receipt, and verifies that digest against the remote registry manifest. For an index, it resolves the unique linux/amd64 child and checks its config digest. It never treats local repository metadata as proof that a digest exists remotely.
 
 The corrected helpers were exercised against the actual pushed fixture on JD's Docker 29, and local/remote config digests matched. The frontend diagnostic fixture was unreadable with an empty Docker credential configuration. CI additionally exports the real rehearsal images to exercise identity extraction on GitHub's Docker engine without registry credentials. Source config digests are stable across wrapper/index differences; operator checks must not compare Docker 29's default `.Id` to the manifest's `image_id` directly.
+
+
+The first real release from PR #14 published all three images, and JD pulled their exact digests and verified the tested configurations. Version 2 bundles reuse the pinned PostgreSQL image in this registry, omitting its layers from each release. Keep that digest available; baseline upgrades require the explicit verification/pin-update procedure in the [relay runbook](image-relay.md). Optional direct JD artifact downloads remain opt-in because the measured GitHub-storage route was slower than the workspace relay.

@@ -1,6 +1,6 @@
 # GitHub CI/CD: guided setup
 
-Status: API contract, Frontend, Backend, and Containers checks are merged and passed on PR #11 and its main run. Read-only cloud inventory and the next guided exercise are recorded in [staging preparation](staging-preparation.md). Deployment remains a plan, not a configured pipeline. Direct TCR publishing failed during cross-border upload after authentication. This branch prepares tested image bundles plus a verified operator relay through JD; see the [image relay guide](image-relay.md). Related features now share one milestone PR rather than requiring a merge after each small feature.
+Status: API contract, Frontend, Backend, and Containers checks are merged and passed on PR #11 and its main run. Read-only cloud inventory and the next guided exercise are recorded in [staging preparation](staging-preparation.md). Deployment remains a plan, not a configured pipeline. Direct TCR publishing failed during cross-border upload after authentication. PR #14 published and verified the first real image bundle through JD; the next optimization reuses the pinned PostgreSQL baseline; see the [image relay guide](image-relay.md). Related features now share one milestone PR rather than requiring a merge after each small feature.
 
 Repository: `IiCEight/iSaber`, public, with `main` as the working base. The bootstrap instructions below describe the initial setup; do not repeat them over the existing repository history.
 
@@ -24,7 +24,7 @@ flowchart TD
     Release --> Production[Tencent Cloud production]
 ```
 
-Contract validation, frontend checks/builds/HTTP smoke tests, and backend race/PostgreSQL integration checks/builds run on main and PRs. Local/CI image builds and an isolated Compose rehearsal are prepared in the [container guide](containers.md). Registry publishing, staging, production deployment, and rollback remain to be implemented after infrastructure readiness is verified.
+Contract validation, frontend checks/builds/HTTP smoke tests, and backend race/PostgreSQL integration checks/builds run on main and PRs. Local/CI image builds and an isolated Compose rehearsal are prepared in the [container guide](containers.md). Operator-driven registry publishing is verified. Staging, production deployment, and rollback remain to be implemented after infrastructure readiness is verified.
 
 ## 2. Proposed server roles
 
