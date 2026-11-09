@@ -5,6 +5,7 @@
   const replay = document.getElementById("replay-motion");
   const reduce = document.getElementById("reduce-motion");
   const status = document.getElementById("preview-status");
+  const motionStatus = document.getElementById("motion-status");
   const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
   const { gsap, ScrollTrigger } = window;
   let context;
@@ -12,10 +13,17 @@
   let pendingFrame = 0;
   let previousWidth = frame.clientWidth;
   let disposed = false;
+  let manualReduced = reduce.checked;
+
+  function describeMotion(message) {
+    motionStatus.textContent = message;
+    status.textContent = message;
+  }
 
   if (!gsap || !ScrollTrigger) {
     replay.disabled = true;
-    status.textContent = "Static preview: the local animation libraries could not load. Content and navigation remain available.";
+    reduce.disabled = true;
+    describeMotion("Static preview: the local GSAP or ScrollTrigger file could not load. Open the complete prototype folder, including vendor/. Content and navigation remain available.");
     return;
   }
   gsap.registerPlugin(ScrollTrigger);
@@ -24,11 +32,15 @@
     if (disposed) return;
     context?.revert();
     entrance = null;
-    const reduced = preference.matches || reduce.checked;
+    const reduced = preference.matches || manualReduced;
+    reduce.checked = reduced;
+    reduce.disabled = preference.matches;
     replay.disabled = reduced;
-    status.textContent = reduced
-      ? "Reduced motion: static hero and articles. Your operating-system preference always takes priority."
-      : "Vivid motion enabled. Native scrolling moves the graphics; article links remain usable.";
+    describeMotion(preference.matches
+      ? "Your system requests reduced motion. The preview is static and Replay is disabled. Enable animations in your system settings to preview movement."
+      : manualReduced
+        ? "Reduced motion is on for this preview. Uncheck Reduce motion to enable Replay and animations."
+        : "Vivid motion enabled. Use Replay entrance to restart the hero, then scroll to see the graphics move.");
     if (reduced) return;
 
     const mobile = frame.clientWidth <= 620;
@@ -76,7 +88,7 @@
     } catch {
       context?.revert();
       replay.disabled = true;
-      status.textContent = "Static preview: animation setup failed. Content and navigation remain available.";
+      describeMotion("Static preview: animation setup failed. Content and navigation remain available. Reload the complete prototype folder to try again.");
     }
   }
 
@@ -85,7 +97,9 @@
     pendingFrame = requestAnimationFrame(() => rebuild(false));
   }
   function onReplay() {
-    if (preference.matches || reduce.checked) return;
+    if (preference.matches || manualReduced) return;
+    cancelAnimationFrame(pendingFrame);
+    previousWidth = frame.clientWidth;
     hero.scrollIntoView({ behavior: "auto", block: "start" });
     rebuild(true);
   }
@@ -107,7 +121,10 @@
   });
   observer.observe(frame);
   replay.addEventListener("click", onReplay);
-  reduce.addEventListener("change", scheduleRebuild);
+  reduce.addEventListener("change", () => {
+    manualReduced = reduce.checked;
+    scheduleRebuild();
+  });
   preference.addEventListener("change", scheduleRebuild);
   document.addEventListener("fullscreenchange", onFullscreen);
   document.addEventListener("visibilitychange", onVisibility);

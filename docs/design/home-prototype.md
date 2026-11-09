@@ -6,8 +6,8 @@ Open [the motion prototype](home-prototype.html) directly in a browser. Keep the
 
 ## Review controls
 
-- **Replay entrance** returns to the hero and repeats the opening sequence.
-- **Reduce motion** displays a complete static composition. OS reduced-motion settings always take precedence and cannot be overridden by unchecking this control.
+- **Replay entrance** returns to the hero and repeats the opening sequence. The status beside the controls explains why Replay is disabled when motion is reduced or a library cannot load.
+- **Reduce motion** displays a complete static composition. When the OS requests reduced motion, the checkbox is checked and locked to reflect the effective setting. OS preferences always take precedence; changing the system animation setting updates this preview immediately. A manual preview preference is retained separately when the system setting changes.
 - **Desktop / Tablet / Mobile** adjust the review frame. The frame never exceeds the actual browser window.
 - **View full screen**, where supported, opens the page without the review toolbar and replays the entrance. Escape returns to the toolbar. Navigation to notes exits full-screen mode first.
 - **Article state** retains four/single/empty/unavailable scenarios. No live data or API behavior changes.
@@ -42,5 +42,7 @@ The circles are a DOM/CSS interpretation of the selected direction. This does no
 The prototype was exercised with a temporary Playwright 1.65.0 / Chromium headless-shell 158 browser. The real browser verified GSAP setup, actual scroll-linked graphic transforms, manual and OS reduced-motion changes, responsive rebuilds without growing trigger counts, article states, immediate keyboard-focused article visibility, mobile navigation, full-screen entry/exit and note links, and JavaScript-disabled/missing-library fallbacks. Direct `file://` opening worked with the local scripts. Checks at 360, 768, and 1440 pixels found no page-level horizontal overflow and no clipped headline bounds with 200% text sizing. No page errors were observed in those checks.
 
 The test environment used a temporary Noto Sans SC font for Chinese coverage; it does not install or select production font assets. Review captures: [desktop hero](previews/home-vivid-desktop.png), [mobile hero](previews/home-vivid-mobile.png), and [article section](previews/home-vivid-articles.png).
+
+A replay regression check verifies actual animation restart/completion, the manual reduced-motion toggle, the checked/locked OS-controlled state, restoration after live OS preference changes, preservation of manual preference, and missing-library messages beside Replay. This addresses the previously unexplained disabled button and unchecked checkbox when the system requested reduced motion.
 
 This establishes Chromium functional/browser verification, not owner visual acceptance, Safari/Firefox coverage, assistive-technology acceptance, or target-device performance. Exact reference animation matching and target-device performance acceptance remain separate from selecting this prototype.

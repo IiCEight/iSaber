@@ -124,6 +124,7 @@
       .section-head h2 { font-size: 1.5rem; }
     }
     #reduce-motion { width: 20px; height: 20px; }
+    #motion-status { padding: 10px 14px; border-left: 3px solid #333; background: white; }
     button:disabled { cursor: default; opacity: .6; }
     @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto !important; } }
   </style>
@@ -133,8 +134,8 @@
     <h1>Home · Vivid motion prototype</h1>
     <p>A · Vivid is selected. Review the hero entrance, scroll-linked shapes, and article reveals. Use Replay or compare reduced motion. Copy and articles remain samples; navigation still leads to design notes.</p>
     <div class="controls" id="controls" hidden>
-      <button type="button" id="replay-motion">Replay entrance</button>
-      <label><input type="checkbox" id="reduce-motion"> Reduce motion</label>
+      <button type="button" id="replay-motion" aria-describedby="motion-status" disabled>Replay entrance</button>
+      <label><input type="checkbox" id="reduce-motion" aria-describedby="motion-status"> Reduce motion</label>
       <div role="group" aria-label="Preview width">
         <button type="button" data-width="desktop" aria-pressed="true">Desktop</button>
         <button type="button" data-width="tablet" aria-pressed="false">Tablet · 768</button>
@@ -143,6 +144,7 @@
       <button type="button" id="fullscreen" hidden>View full screen</button>
       <label>Article state <select id="article-state"><option value="normal">Four sample articles</option><option value="single">One sample article</option><option value="empty">No articles</option><option value="error">API unavailable</option></select></label>
     </div>
+    <p id="motion-status" role="status">Static preview until animation controls finish loading. If this message remains, open the complete prototype folder with its local scripts.</p>
   </div>
   <div class="stage">
     <div class="viewport" id="viewport">
