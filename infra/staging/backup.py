@@ -59,9 +59,10 @@ def lock(root):
         yield
 
 
-def row_counts(root, database="isaber_staging"):
-    def query(statement):
+def row_counts(root, database="isaber_staging", query=None):
+    def default_query(statement):
         return compose(root, "exec", "-T", "postgres", "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "isaber_operator", "-d", database, "-At", data=statement.encode())
+    query = query or default_query
     tables = query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;").decode().splitlines()
     result = {}
     for table in tables:
@@ -71,14 +72,15 @@ def row_counts(root, database="isaber_staging"):
     return result
 
 
-def table_hashes(root, database, tables):
+def table_hashes(root, database, tables, psql=None):
     result = {}
     for table in tables:
         if not re.fullmatch(r"[a-z_0-9]+", table):
             raise ValueError("Unexpected staging table name")
         query = f'''SET statement_timeout='120s'; COPY (SELECT row_to_json(t)::text FROM "{table}" AS t ORDER BY row_to_json(t)::text COLLATE "C") TO STDOUT;'''
         with tempfile.TemporaryFile() as output:
-            stream(compose_arguments(root, "exec", "-T", "postgres", "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "isaber_operator", "-d", database, "-qAt", "-c", query), destination=output)
+            command = psql or compose_arguments(root, "exec", "-T", "postgres", "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "isaber_operator", "-d", database)
+            stream([*command, "-qAt", "-c", query], destination=output)
             output.seek(0)
             value = hashlib.sha256()
             for block in iter(lambda: output.read(1024 * 1024), b""):

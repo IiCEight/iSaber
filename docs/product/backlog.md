@@ -177,5 +177,16 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Measure real GitHub-hosted SSH throughput and verify a complete 124.3 MiB artifact by transferring 43.3 MiB of cache misses.
 - [x] Authenticate metadata independently on JD, reconstruct/hash-check all files, and keep uploaded programs outside the executable control path.
 - [x] Prepare automatic/manual/dry-run workflow paths with stale-source checks, restore-gated promotion, receipts, and manual recovery.
-- [ ] Merge the delivery workflow and observe its first complete automatic publish/promotion.
+- [x] Merge the delivery workflow and observe its first complete automatic publish/promotion (PR #18, deployment run 42567617719).
 - [ ] Add offsite recovery/retention and separately reviewed schema evolution before production.
+
+## Encrypted offsite backups
+
+- [x] Owner approved Tencent as the encrypted vault and daily 03:30 China-time scheduling.
+- [x] Install a public-key encrypted sender and signed, immutable vault through restricted SSH; keep the decryption identity off both cloud servers.
+- [x] Confirm the owner saved a protected recovery-key copy outside the workstation.
+- [x] Upload, retrieve, verify, decrypt, and restore a real snapshot into disposable network-isolated database/media resources; preserve the existing owner/article.
+- [x] Verify idempotent upload, rejection of shell access, HTTPS resumption, and disposable-resource cleanup.
+- [x] Enable the timer and document safe status/recovery commands and capacity limits.
+- [ ] Merge this milestone and observe the first scheduled run.
+- [ ] Review retention/pruning, failure notifications, and full-host disaster-rebuild acceptance before production.
