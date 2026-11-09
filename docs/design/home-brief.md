@@ -1,6 +1,6 @@
 # Home page design brief
 
-Status: Owner approved the purpose and content hierarchy, then specified a full-screen hero using the supplied C2 Montréal screenshot as the composition reference. Wireframes are being revised accordingly; visual direction and motion prototype are not yet approved.
+Status: Owner approved the purpose, content hierarchy, full-screen hero composition, and horizontal top navigation. [Two visual directions](home-directions.md) are ready for selection; visual direction and motion prototype are not yet approved.
 
 ## Agreed foundation
 

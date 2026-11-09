@@ -1,6 +1,6 @@
 # Home wireframe review
 
-Status: The brief and content hierarchy are owner-approved. These wireframes are proposed for review before visual direction and animation work.
+Status: Owner approved the full-screen composition with horizontal top navigation. Continue with the [visual-direction comparison](home-directions.md) before animation work.
 
 Open [the standalone wireframe](home-wireframes.html) in a browser. It runs directly from the file with no package installation, server, network requests, or access to live data. Desktop, Tablet, and Mobile controls change the frame width; a state selector previews four articles, one article, an empty list, and an unavailable API. Frame widths never exceed the actual window, so use a desktop browser to compare larger sizes. Without JavaScript, the default responsive four-article composition remains readable and mobile navigation still uses native disclosure controls.
 
