@@ -20,6 +20,7 @@ from pathlib import PurePosixPath
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "config"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from relay_release import check_run, REPOSITORY, NoRedirect
 from receive_artifact import StorageRedirect, validate_url
 from release_bundle import verify, publish, validate_header, METADATA_FILES, BASELINE_FILE
@@ -27,6 +28,7 @@ from staging import compatible_release, promote, write_private, run as installed
 
 ROOT = Path("/opt/isaber-staging")
 MAX_BYTES = 512 * 1024**2
+PHASE = "header"
 
 
 class StaleRelease(Exception):
@@ -124,6 +126,8 @@ def metadata_from_archive(raw, artifact):
 
 
 def load_source(header):
+    global PHASE
+    PHASE = "source_metadata"
     run_id = header.get("run_id")
     if type(run_id) is not int or run_id < 1:
         raise ValueError("A source preparation run is required")
@@ -188,6 +192,8 @@ def cache_file(path):
 
 
 def seed_cache():
+    global PHASE
+    PHASE = "cache_seed"
     marker = ROOT / "delivery/cache-seeded.json"
     if marker.exists():
         return
@@ -266,6 +272,7 @@ def reconstruct(archive, content, bundle):
 
 
 def deliver(header, stream, directory, verify_only=False):
+    global PHASE
     api, bundle = load_source(header)
     size, expected = header.get("size"), header.get("digest", "")
     if type(size) is not int or not 0 < size <= MAX_BYTES or not re.fullmatch(r"sha256:[0-9a-f]{64}", expected):
@@ -273,8 +280,10 @@ def deliver(header, stream, directory, verify_only=False):
     archive = directory / "missing.tar"
     if shutil.disk_usage(ROOT).free < size * 3 + 1024**3:
         raise ValueError("Insufficient free delivery/cache disk")
+    PHASE = "wire_transfer"
     seconds = receive(stream, archive, size, expected)
     content = directory / "content"
+    PHASE = "bundle_verification"
     reconstruct(archive, content, bundle)
     # Uploaded programs remain hash-bound data. Only installed root-owned tools run.
     commit, run_id, attempt = bundle["source_commit"], bundle["bundle_run_id"], bundle["bundle_run_attempt"]
@@ -293,11 +302,13 @@ def deliver(header, stream, directory, verify_only=False):
     with logfile.open("a") as log, contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
         logfile.chmod(0o600)
         output = directory / "release.json"
+        PHASE = "registry_publish"
         publish(content, output, commit, "/root/.docker/config.json")
         if json.loads(output.read_text()) != candidate:
             raise ValueError("Publisher metadata differs from the tested bundle")
         require_current(api, commit)
-        promote(ROOT, output)
+        PHASE = "staging_promotion"
+        promote(ROOT, output, before_switch=lambda: require_current(api, commit))
     record = {"status": "deployed", "release": candidate, "transfer_seconds": seconds}
     write_private(ROOT / "delivery" / f"{run_id}-{attempt}.json", json.dumps(record, indent=2) + "\n")
     return record
@@ -319,8 +330,17 @@ def handle(header, stream, directory, probe_only=False):
     return deliver(header, stream, directory, verify_only=operation == "verify")
 
 
+def deadline(*_):
+    raise TimeoutError("Operation deadline exceeded")
+
+
+def disconnected(*_):
+    raise ConnectionAbortedError("SSH disconnected before mutation")
+
+
 def main():
-    signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError("Operation deadline exceeded")))
+    signal.signal(signal.SIGALRM, deadline)
+    signal.signal(signal.SIGHUP, disconnected)
     signal.alarm(120)
     os.umask(0o077)
     directory = ROOT / "delivery"
@@ -344,7 +364,9 @@ if __name__ == "__main__":
         result = {"status": "stale", "message": "A newer main commit exists; no stale release was promoted"}
     except Exception as error:
         # No exception text, request/header, subprocess command, or token is logged.
-        result = {"status": "failed", "error_type": type(error).__name__}
+        result = {"status": "failed", "error_type": type(error).__name__, "phase": PHASE}
+        if isinstance(error, urllib.error.HTTPError):
+            result["http_status"] = error.code
     signal.alarm(0)
     print(json.dumps(result), flush=True)
     raise SystemExit(1 if result["status"] == "failed" else 0)

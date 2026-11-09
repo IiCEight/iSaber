@@ -1,5 +1,5 @@
-# Prepare a tested bundle. The operator relay uses existing local SSH credentials;
-# no server login or persistent runner is exposed to GitHub workflows.
+# Prepare a tested bundle. Automatic staging uses a separate restricted receiver;
+# the existing operator relay remains available for manual recovery.
 name: Prepare release images
 on:
   workflow_run:
@@ -103,10 +103,14 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Explain the pending relay step
-        if: vars.TCR_PUBLISH_TRANSPORT != 'direct'
+        if: vars.TCR_PUBLISH_TRANSPORT != 'direct' && vars.STAGING_CD_ENABLED != 'true'
         run: |
           echo 'Tested bundle retained. Registry publication is pending the operator relay.' >> "$GITHUB_STEP_SUMMARY"
           echo "Run locally: python3 infra/relay_release.py $GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+      - name: Explain automatic staging delivery
+        if: vars.TCR_PUBLISH_TRANSPORT != 'direct' && vars.STAGING_CD_ENABLED == 'true'
+        run: |
+          echo 'Tested bundle retained. Deploy private staging will independently verify, publish, and promote it after this run succeeds.' >> "$GITHUB_STEP_SUMMARY"
       - name: Show synthetic rehearsal logs on failure
         if: failure()
         run: docker compose logs --tail 100

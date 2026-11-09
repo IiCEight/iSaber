@@ -88,6 +88,8 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(result["release"], self.expected)
         self.publish.assert_called_once()
         self.promote.assert_called_once()
+        for path in self.root.rglob("*"):
+            if path.is_file(): self.assertNotIn(b"fixture-read-token", path.read_bytes())
 
     def test_ahead_main_is_rejected_before_reading_any_payload(self):
         self.responses["git/ref/heads/main"]["object"]["sha"] = "c" * 40
@@ -150,6 +152,17 @@ class DeliveryTests(unittest.TestCase):
             planned = gateway.plan(self.header())
             self.assertGreater(planned["bytes_missing"], 0)
 
+    def test_a_warm_cache_reconstructs_the_complete_bundle_from_an_empty_tar(self):
+        self.deliver()
+        self.publish.reset_mock(); self.promote.reset_mock()
+        empty = io.BytesIO()
+        with tarfile.open(fileobj=empty, mode="w", format=tarfile.USTAR_FORMAT): pass
+        self.data = empty.getvalue()
+        self.incoming = self.root / "incoming-warm"; self.incoming.mkdir()
+        result = gateway.handle(self.header("verify"), io.BytesIO(self.data), self.incoming, probe_only=True)
+        self.assertEqual(result["status"], "verified")
+        self.publish.assert_not_called(); self.promote.assert_not_called()
+
     def test_authenticated_metadata_cannot_be_replaced_by_upload_headers(self):
         self.api.metadata_archive.return_value = self.metadata_zip[:-1] + b"x"
         with self.assertRaises(ValueError): self.deliver()
@@ -175,7 +188,7 @@ class DeliveryTests(unittest.TestCase):
     def test_authorized_keys_are_forced_and_cannot_inject_options(self):
         for probe in (False, True):
             key = authorized_key("ssh-ed25519 AAAA\ncommand=evil", probe)
-            self.assertTrue(key.startswith('restrict,command="/usr/bin/python3 /usr/local/libexec/isaber-staging-ssh'))
+            self.assertTrue(key.startswith('restrict,command="/usr/bin/python3 -I /usr/local/libexec/isaber-staging-ssh'))
             self.assertNotIn("evil", key)
             self.assertEqual(key.count("\n"), 1)
         with self.assertRaises(ValueError): authorized_key('command="evil" ssh-ed25519 AAAA')

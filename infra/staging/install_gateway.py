@@ -7,14 +7,14 @@ import re
 import subprocess
 
 HOME = Path("/var/lib/isaber-deploy")
-COMMAND = "/usr/bin/timeout --kill-after=15s 2700s /usr/bin/python3 /opt/isaber-staging/control/gateway.py"
+COMMAND = "/usr/bin/timeout --kill-after=15s 2700s /usr/bin/python3 -I /opt/isaber-staging/control/gateway.py"
 
 
 def authorized_key(public, probe=False):
     parts = public.strip().split()
     if len(parts) < 2 or parts[0] != "ssh-ed25519" or not re.fullmatch(r"[A-Za-z0-9+/=]+", parts[1]):
         raise ValueError("Require an Ed25519 public key")
-    command = "/usr/bin/python3 /usr/local/libexec/isaber-staging-ssh" + (" probe" if probe else "")
+    command = "/usr/bin/python3 -I /usr/local/libexec/isaber-staging-ssh" + (" probe" if probe else "")
     return 'restrict,command="' + command + '" ' + " ".join(parts[:2]) + (" isaber-probe" if probe else " isaber-delivery") + "\n"
 
 

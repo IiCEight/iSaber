@@ -169,3 +169,13 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Verify coordinated snapshots and disposable restores, including nonempty synthetic database/media probes and a clean recovery point.
 - [x] Implement application promotion, explicit rollback, automatic recovery on failed candidate health, and pending-journal recovery for the unchanged reviewed schema/API/database baseline.
 - [ ] Add unattended delivery with a restricted identity, offsite recovery, and separate schema-evolution review.
+
+
+## Restricted GitHub staging delivery
+
+- [x] Install a dedicated fixed-command identity without shell/forwarding/Docker-group privileges, with main-only environment credentials and a pinned host key.
+- [x] Measure real GitHub-hosted SSH throughput and verify a complete 124.3 MiB artifact by transferring 43.3 MiB of cache misses.
+- [x] Authenticate metadata independently on JD, reconstruct/hash-check all files, and keep uploaded programs outside the executable control path.
+- [x] Prepare automatic/manual/dry-run workflow paths with stale-source checks, restore-gated promotion, receipts, and manual recovery.
+- [ ] Merge the delivery workflow and observe its first complete automatic publish/promotion.
+- [ ] Add offsite recovery/retention and separately reviewed schema evolution before production.

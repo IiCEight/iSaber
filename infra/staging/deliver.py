@@ -75,7 +75,7 @@ def send(archive, header, directory):
     port = os.environ.get("STAGING_PORT", "22")
     if not re.fullmatch(r"[A-Za-z0-9.-]+", host) or not re.fullmatch(r"[0-9]{1,5}", port) or not 1 <= int(port) <= 65535:
         raise ValueError("Invalid SSH destination")
-    operation = "probe" if header["operation"] == "probe" or os.environ.get("STAGING_PROBE_ONLY") == "true" else "deliver"
+    operation = "probe" if os.environ.get("STAGING_PROBE_ONLY") == "true" else "deliver"
     arguments = ["ssh", "-i", str(key), "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "ForwardAgent=no", "-o", "ClearAllForwardings=yes", "-o", "StrictHostKeyChecking=yes", "-o", "HostKeyAlias=isaber-jd-staging", "-o", "UserKnownHostsFile=" + str(hosts), "-o", "ConnectTimeout=20", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4", "-p", port, "isaber-deploy@" + host, operation]
     started = time.monotonic()
     with tempfile.TemporaryFile() as errors:
@@ -105,6 +105,7 @@ def send(archive, header, directory):
                 raise RuntimeError("Restricted SSH returned no valid bounded result")
             result = json.loads(raw)
             if process.returncode or result.get("status") not in ("probe", "plan", "verified", "deployed", "already_current", "stale"):
+                print(json.dumps({key: result[key] for key in ("status", "error_type", "phase", "http_status") if key in result}), flush=True)
                 raise RuntimeError("Server rejected the staging operation: " + str(result.get("error_type", "unknown")))
         finally:
             watchdog.cancel()

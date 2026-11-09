@@ -69,7 +69,9 @@ jobs:
           DEPLOYED: ${{ steps.delivery.outputs.deployed }}
           OUTCOME: ${{ steps.delivery.outputs.outcome }}
         run: |
-          if [ "$DEPLOYED" = true ]; then
+          if [ "$OUTCOME" = already_current ]; then
+            echo 'Private staging already runs this verified release. No update was needed.' >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$DEPLOYED" = true ]; then
             echo 'Private staging was verified, published, and promoted. Receipt retained.' >> "$GITHUB_STEP_SUMMARY"
           elif [ "$OUTCOME" = verified ]; then
             echo 'Dry run verified the complete artifact. Staging was not promoted.' >> "$GITHUB_STEP_SUMMARY"
