@@ -10,6 +10,8 @@ These findings establish implementation techniques. They do not establish how ev
 
 The owner subsequently supplied a screenshot and specified a full-screen hero. The image establishes the opening composition: broad warm/cool color blocks, large overlapping circular graphics across their boundary, oversized typography near the lower edge, and a narrow navigation rail at the right. This is evidence of one visual state, not animation playback. The revised wireframe uses that composition in grayscale; final color and graphic treatment remain for visual-direction review. The original two-column hero proposal is superseded.
 
+The owner approved the full-screen composition and requested horizontal navigation at the top. The blog therefore adapts the reference with a top bar rather than its side rail. The bar overlays the opening composition, with space reserved beneath it for content; the hero including navigation remains one viewport tall at minimum.
+
 Use the reference's expressive motion as a design input for an original personal blog. Translate relevant patterns into the approved article model and owner content. The event's ticketing, speaker, and marketing content are not part of this blog brief.
 
 ## Proposed prototype interactions

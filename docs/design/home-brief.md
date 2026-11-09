@@ -22,7 +22,7 @@ During prototype review, check whether visitors can identify the site owner, fin
 
 | Area | Content and purpose | Visitor action |
 | --- | --- | --- |
-| Hero and navigation | Full-screen canvas with oversized identity typography and overlapping graphics; propose a narrow navigation rail on desktop and compact top navigation on mobile | Navigate or continue to articles immediately |
+| Hero and navigation | Full-screen canvas with oversized identity typography and overlapping graphics; horizontal top navigation on desktop and compact top navigation on mobile | Navigate or continue to articles immediately |
 | Introduction | Short personal introduction below the opening canvas | Learn about the owner |
 | Recent articles | Up to four public articles with title, short summary, category when present, language, and publication date | Open an article |
 | Explore | A clear archive link; optional links to actual public categories if they help discovery | Browse all articles or a category |
