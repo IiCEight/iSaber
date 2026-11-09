@@ -1,0 +1,13 @@
+[Unit]
+Description=Verified iSaber encrypted vault retention
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 -I /usr/local/lib/isaber-vault/retention.py --site tencent --apply
+TimeoutStartSec=20min
+TimeoutStopSec=1min
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

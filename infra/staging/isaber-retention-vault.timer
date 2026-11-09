@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily iSaber vault retention after the 03:30 backup
+
+[Timer]
+OnCalendar=*-*-* 04:45:00 Asia/Shanghai
+Persistent=true
+AccuracySec=1min
+Unit=isaber-retention-vault.service
+
+[Install]
+WantedBy=timers.target

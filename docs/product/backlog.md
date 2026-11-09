@@ -199,5 +199,15 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Install a separate fixed-command read-only SSH identity and main-only environment secret; retain deployment/upload key separation.
 - [x] Verify the real check from a GitHub-hosted runner and exercise an intentional synthetic notification failure without changing real data.
 - [x] Verify Tencent rejects altered signed metadata in an isolated fixture; preserve the last success when a new attempt fails.
-- [ ] Merge the alert workflow and observe its first main/scheduled check.
+- [x] Merge alert milestone PR #20 and verify first main health check 42586391496.
 - [x] Owner confirmed receipt of the intentional GitHub notification drill.
+
+## Backup retention
+
+- [x] Implement proposed seven-day recent-copy protection, Tencent daily/weekly/monthly buckets, JD minimum copies, and restored/pending/release recovery pins.
+- [x] Require healthy/fresh verified backups and matching restored pins before cleanup; preserve upload/monitor privilege boundaries and serialize exports with pruning.
+- [x] Add seven-day quarantine, safe audit events, retired-ID tombstones, and quarantine-aware vault capacity accounting.
+- [x] Add enabled-policy timer/result/freshness checks to existing backup alerts, including Tencent's safe status in verification replies.
+- [x] Verify real dry-run plans keep ten local snapshots plus both encrypted copies, with zero quarantine/purge; exercise cleanup only on isolated synthetic cloud fixtures.
+- [ ] Obtain approval of the exact retention periods and future permanent deletion after quarantine, then enable the daily jobs.
+- [ ] Merge the milestone and observe the first scheduled retention runs.

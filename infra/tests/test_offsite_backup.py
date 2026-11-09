@@ -115,5 +115,21 @@ class VaultTests(unittest.TestCase):
         with patch.object(vault, "MAX_STORED", 1), self.assertRaises(OSError): self.store(header)
         self.assertFalse((self.namespace / manifest()["id"]).exists())
 
+    def test_quarantined_ciphertext_still_counts_toward_vault_quota(self):
+        directory = self.root / "retention-trash/vault/20240101T000000Z-1234abcd/object"
+        directory.mkdir(parents=True)
+        (directory / "snapshot.age").write_bytes(b"retained")
+        header = self.header()
+        with patch.object(vault, "MAX_STORED", manifest()["cipher_bytes"]), self.assertRaises(OSError):
+            self.store(header)
+        self.assertTrue((directory / "snapshot.age").exists())
+
+    def test_retired_snapshot_id_cannot_be_uploaded_again(self):
+        retired = self.root / "retention-tombstones/vault"
+        retired.mkdir(parents=True)
+        (retired / (manifest()["id"] + ".json")).write_text("{}")
+        with self.assertRaises(ValueError): self.store(self.header())
+        self.assertFalse((self.namespace / manifest()["id"]).exists())
+
 
 if __name__ == "__main__": unittest.main()
