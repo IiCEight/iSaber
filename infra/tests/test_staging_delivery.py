@@ -73,6 +73,8 @@ class DeliveryTests(unittest.TestCase):
         self.publish = patcher.start(); self.addCleanup(patcher.stop)
         patcher = patch.object(gateway, "promote")
         self.promote = patcher.start(); self.addCleanup(patcher.stop)
+        patcher = patch.object(gateway, "check_staging_https")
+        self.https = patcher.start(); self.addCleanup(patcher.stop)
 
     def deliver(self, data=None):
         return gateway.deliver(self.header(), io.BytesIO(self.data if data is None else data), self.incoming)
@@ -133,6 +135,14 @@ class DeliveryTests(unittest.TestCase):
     def test_unchanged_release_is_an_idempotent_noop(self):
         (self.root / "current-release.json").write_text(json.dumps(self.expected))
         self.assertEqual(self.deliver()["status"], "already_current")
+        self.https.assert_called_once_with(self.root)
+        self.publish.assert_not_called(); self.promote.assert_not_called()
+
+    def test_pending_promotion_blocks_even_an_unchanged_receipt(self):
+        (self.root / "pending-promotion.json").write_text("{}")
+        (self.root / "current-release.json").write_text(json.dumps(self.expected))
+        with self.assertRaises(ValueError): self.deliver()
+        gateway.GitHub.assert_not_called()
         self.publish.assert_not_called(); self.promote.assert_not_called()
 
     def test_full_artifact_verification_has_no_publish_or_deployment_side_effect(self):

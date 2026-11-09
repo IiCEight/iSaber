@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from relay_release import check_run, REPOSITORY, NoRedirect
 from receive_artifact import StorageRedirect, validate_url
 from release_bundle import verify, publish, validate_header, METADATA_FILES, BASELINE_FILE
-from staging import compatible_release, promote, write_private, run as installed_run
+from staging import compatible_release, promote, write_private, verify_https as check_staging_https, run as installed_run
 
 ROOT = Path("/opt/isaber-staging")
 MAX_BYTES = 512 * 1024**2
@@ -215,6 +215,8 @@ def seed_cache():
 
 
 def plan(header):
+    if (ROOT / "pending-promotion.json").exists():
+        raise ValueError("Recover the interrupted promotion before planning delivery")
     api, bundle = load_source(header)
     compatible_release(json.loads((ROOT / "current-release.json").read_text()), expected_release(bundle))
     seed_cache()
@@ -273,6 +275,8 @@ def reconstruct(archive, content, bundle):
 
 def deliver(header, stream, directory, verify_only=False):
     global PHASE
+    if (ROOT / "pending-promotion.json").exists():
+        raise ValueError("Recover the interrupted promotion before delivery")
     api, bundle = load_source(header)
     size, expected = header.get("size"), header.get("digest", "")
     if type(size) is not int or not 0 < size <= MAX_BYTES or not re.fullmatch(r"sha256:[0-9a-f]{64}", expected):
@@ -294,6 +298,10 @@ def deliver(header, stream, directory, verify_only=False):
     if verify_only:
         return {"status": "verified", "release": candidate, "current_commit": current["source_commit"], "transfer_seconds": seconds}
     if current == candidate:
+        # A matching receipt alone does not prove the containers are healthy.
+        # Keep the structured SSH response separate from operator check output.
+        with io.StringIO() as checks, contextlib.redirect_stdout(checks):
+            check_staging_https(ROOT)
         return {"status": "already_current", "release": current, "transfer_seconds": seconds}
     require_current(api, commit)
     signal.alarm(600)
