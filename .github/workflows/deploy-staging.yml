@@ -1,0 +1,78 @@
+# A third stage after CI and image preparation. No server shell is exposed.
+name: Deploy private staging
+on:
+  workflow_run:
+    workflows: [Prepare release images]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bundle_run_id:
+        description: Successful main image-preparation run ID (current attempt)
+        required: true
+        type: string
+      verify_only:
+        description: Verify the complete artifact without publishing or promotion
+        required: false
+        default: false
+        type: boolean
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: private-staging-delivery
+  # An active deployment must finish its recovery/health checks. The server
+  # also rejects artifacts for a main commit that has become stale.
+  cancel-in-progress: false
+jobs:
+  deploy:
+    name: Verify, publish, and promote private staging
+    if: >-
+      vars.STAGING_CD_ENABLED == 'true' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-24.04
+    environment: staging
+    timeout-minutes: 50
+    steps:
+      - name: Check out trusted main delivery client
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Download verified artifact and use the fixed staging receiver
+        id: delivery
+        env:
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id || inputs.bundle_run_id }}
+          DELIVERY_OPERATION: ${{ inputs.verify_only && 'verify' || 'deliver' }}
+          GH_TOKEN: ${{ github.token }}
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          STAGING_HOST: ${{ vars.STAGING_HOST }}
+          STAGING_PORT: ${{ vars.STAGING_PORT }}
+          STAGING_SSH_HOST_KEY: ${{ vars.STAGING_SSH_HOST_KEY }}
+        # The job token is temporary/read-only. It goes through encrypted SSH
+        # stdin for independent source verification, never an argument or file.
+        run: python3 infra/staging/deliver.py "$DELIVERY_OPERATION" --run-id "$SOURCE_RUN_ID" --output "$RUNNER_TEMP/isaber-staging/result.json"
+      - name: Retain the completed staging receipt without runtime secrets
+        if: steps.delivery.outputs.outcome != 'stale' && success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: staging-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/isaber-staging/result.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Explain staging state
+        if: success()
+        env:
+          DEPLOYED: ${{ steps.delivery.outputs.deployed }}
+          OUTCOME: ${{ steps.delivery.outputs.outcome }}
+        run: |
+          if [ "$DEPLOYED" = true ]; then
+            echo 'Private staging was verified, published, and promoted. Receipt retained.' >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$OUTCOME" = verified ]; then
+            echo 'Dry run verified the complete artifact. Staging was not promoted.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'A newer main commit superseded this bundle; it was not promoted.' >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -9,13 +9,14 @@ import subprocess
 import sys
 import tempfile
 import threading
+import tarfile
 import time
 import urllib.request
 import urllib.error
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from relay_release import REPOSITORY, NoRedirect, check_run
-from receive_artifact import StorageRedirect, validate_url
+from receive_artifact import StorageRedirect, validate_url, extract
 
 
 def github(path, token):
@@ -74,7 +75,7 @@ def send(archive, header, directory):
     port = os.environ.get("STAGING_PORT", "22")
     if not re.fullmatch(r"[A-Za-z0-9.-]+", host) or not re.fullmatch(r"[0-9]{1,5}", port) or not 1 <= int(port) <= 65535:
         raise ValueError("Invalid SSH destination")
-    operation = header["operation"]
+    operation = "probe" if header["operation"] == "probe" or os.environ.get("STAGING_PROBE_ONLY") == "true" else "deliver"
     arguments = ["ssh", "-i", str(key), "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "ForwardAgent=no", "-o", "ClearAllForwardings=yes", "-o", "StrictHostKeyChecking=yes", "-o", "HostKeyAlias=isaber-jd-staging", "-o", "UserKnownHostsFile=" + str(hosts), "-o", "ConnectTimeout=20", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4", "-p", port, "isaber-deploy@" + host, operation]
     started = time.monotonic()
     with tempfile.TemporaryFile() as errors:
@@ -97,12 +98,13 @@ def send(archive, header, directory):
                     process.stdin.close()
                 except BrokenPipeError:
                     pass
-            raw = process.stdout.read(128 * 1024 + 1)
+            limit = 2 * 1024**2 if header["operation"] == "plan" else 128 * 1024
+            raw = process.stdout.read(limit + 1)
             process.wait()
-            if len(raw) > 128 * 1024 or not raw:
+            if len(raw) > limit or not raw:
                 raise RuntimeError("Restricted SSH returned no valid bounded result")
             result = json.loads(raw)
-            if process.returncode or result.get("status") not in ("probe", "deployed", "already_current", "stale"):
+            if process.returncode or result.get("status") not in ("probe", "plan", "verified", "deployed", "already_current", "stale"):
                 raise RuntimeError("Server rejected the staging operation: " + str(result.get("error_type", "unknown")))
         finally:
             watchdog.cancel()
@@ -115,7 +117,7 @@ def send(archive, header, directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("operation", choices=("probe", "deliver"))
+    parser.add_argument("operation", choices=("probe", "verify", "deliver"))
     parser.add_argument("--run-id", type=int)
     parser.add_argument("--output", type=Path)
     options = parser.parse_args()
@@ -131,15 +133,44 @@ def main():
                 raise ValueError("A source preparation --run-id is required")
             token = os.environ["GH_TOKEN"]
             download(options.run_id, archive, token)
-            header = {"operation": "deliver", "run_id": options.run_id, "token": token}
-        print(f"Sending {archive.stat().st_size / 1024**2:.1f} MiB through restricted SSH", flush=True)
-        result = send(archive, header, directory)
+            empty = directory / "empty"; empty.touch()
+            plan = send(empty, {"operation": "plan", "run_id": options.run_id, "token": token}, directory)
+            if plan["status"] == "stale":
+                result = plan
+                header = None
+            else:
+                content = directory / "content"
+                extract(archive, content)
+                metadata = json.loads((content / "bundle.json").read_text())
+                if metadata != plan["bundle"]:
+                    raise ValueError("Server-authenticated metadata differs from the verified runner bundle")
+                thin = directory / "missing.tar"
+                with tarfile.open(thin, "w", format=tarfile.USTAR_FORMAT) as output:
+                    for relative in plan["missing"]:
+                        if relative not in metadata["files"]:
+                            raise ValueError("Unknown missing-file request")
+                        entry = output.gettarinfo(str(content / relative), arcname=relative)
+                        entry.mtime = entry.uid = entry.gid = 0
+                        entry.uname = entry.gname = ""
+                        with (content / relative).open("rb") as source:
+                            output.addfile(entry, source)
+                print(f"JD cache leaves {thin.stat().st_size / 1024**2:.1f} MiB to transfer from the original {archive.stat().st_size / 1024**2:.1f} MiB bundle", flush=True)
+                archive = thin
+                value = hashlib.sha256()
+                with archive.open("rb") as source:
+                    for block in iter(lambda: source.read(1024 * 1024), b""):
+                        value.update(block)
+                header = {"operation": options.operation, "run_id": options.run_id, "token": token, "size": archive.stat().st_size, "digest": "sha256:" + value.hexdigest()}
+        if header is not None:
+            print(f"Sending {archive.stat().st_size / 1024**2:.1f} MiB through restricted SSH", flush=True)
+            result = send(archive, header, directory)
         if options.output:
             options.output.parent.mkdir(parents=True, exist_ok=True)
             options.output.write_text(json.dumps(result, indent=2) + "\n")
         if "GITHUB_OUTPUT" in os.environ:
             with open(os.environ["GITHUB_OUTPUT"], "a") as output:
                 output.write("deployed=" + str(result["status"] in ("deployed", "already_current")).lower() + "\n")
+                output.write("outcome=" + result["status"] + "\n")
         print(json.dumps({key: value for key, value in result.items() if key != "release"}), flush=True)
 
 

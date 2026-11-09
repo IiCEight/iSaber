@@ -217,7 +217,10 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     environment: staging-transfer-probe
-    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -229,3 +232,12 @@ jobs:
           STAGING_PORT: ${{ vars.STAGING_PORT }}
           STAGING_SSH_HOST_KEY: ${{ vars.STAGING_SSH_HOST_KEY }}
         run: python3 infra/staging/deliver.py probe
+      - name: Verify a complete trusted main artifact through restricted SSH
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STAGING_PROBE_ONLY: 'true'
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          STAGING_HOST: ${{ vars.STAGING_HOST }}
+          STAGING_PORT: ${{ vars.STAGING_PORT }}
+          STAGING_SSH_HOST_KEY: ${{ vars.STAGING_SSH_HOST_KEY }}
+        run: python3 infra/staging/deliver.py verify --run-id 42495809815
