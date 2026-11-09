@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 import fcntl
 import hashlib
 import json
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -142,6 +143,15 @@ class LifecycleTests(unittest.TestCase):
         with patch.object(backup, "credentials", return_value={}):
             with retention.locked(self.root, "jd"), self.assertRaises(BlockingIOError):
                 with backup.lock(self.root): self.fail("Concurrent lock acquired")
+
+    def test_jd_unknown_outbox_files_require_operator_review(self):
+        source = self.root / "jd-staging" / self.pin
+        target = self.root / "offsite/outbox" / self.pin
+        shutil.copytree(source, target)
+        self.assertEqual(len(retention.jd_records(self.root)[1]), 1)
+        valuable = target / "operator-note.txt"; valuable.write_text("preserve")
+        with self.assertRaises(ValueError): retention.jd_records(self.root)
+        self.assertEqual(valuable.read_text(), "preserve")
 
     def test_enabled_maintenance_alerts_for_stale_failed_or_disabled_runs(self):
         timer = b"LoadState=loaded\nActiveState=active\nUnitFileState=enabled\n"

@@ -139,6 +139,8 @@ def jd_records(root):
         local.append({"id": directory.name, "captured": validate_id(directory.name), "received": validate_id(directory.name), "backup_sha256": digest(directory / "backup.json"), "identity": digest(directory / "backup.json"), "source_commit": metadata["release"]["source_commit"], "bytes": size})
     for directory in directories(root / "offsite/outbox"):
         size = safe_tree(directory)
+        if {path.name for path in directory.iterdir()} != {"manifest.json", "signature", "receipt.json", "snapshot.age"}:
+            raise ValueError("Unexpected outbox members; cleanup refused")
         manifest = validate_manifest(read(directory / "manifest.json"))
         receipt = read(directory / "receipt.json")
         if manifest["id"] != directory.name or receipt.get("manifest") != manifest or receipt.get("status") not in ("stored", "exists") or (directory / "snapshot.age").stat().st_size != manifest["cipher_bytes"] or digest(directory / "snapshot.age") != manifest["cipher_sha256"]:
