@@ -211,3 +211,21 @@ jobs:
       - name: Remove only this run's disposable stack and volumes
         if: always()
         run: docker compose down --volumes --remove-orphans
+
+  staging-transfer-probe:
+    name: Bounded staging SSH transfer probe
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    environment: staging-transfer-probe
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Measure restricted GitHub-to-JD SSH transfer
+        env:
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          STAGING_HOST: ${{ vars.STAGING_HOST }}
+          STAGING_PORT: ${{ vars.STAGING_PORT }}
+          STAGING_SSH_HOST_KEY: ${{ vars.STAGING_SSH_HOST_KEY }}
+        run: python3 infra/staging/deliver.py probe
