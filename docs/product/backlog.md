@@ -188,5 +188,16 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Upload, retrieve, verify, decrypt, and restore a real snapshot into disposable network-isolated database/media resources; preserve the existing owner/article.
 - [x] Verify idempotent upload, rejection of shell access, HTTPS resumption, and disposable-resource cleanup.
 - [x] Enable the timer and document safe status/recovery commands and capacity limits.
-- [ ] Merge this milestone and observe the first scheduled run.
+- [x] Merge encrypted backup milestone PR #19 and verify its automatic staging delivery.
+- [ ] Observe the first scheduled daily backup run.
 - [ ] Review retention/pruning, failure notifications, and full-host disaster-rebuild acceptance before production.
+
+## Backup health alerts
+
+- [x] Owner selected GitHub Actions notifications and confirmed failures-only email notifications enabled.
+- [x] Implement hourly external checks for unavailable monitoring, timer/service/attempt failure, overdue capture, low disk space, pending work, clock skew, and actual Tencent ciphertext verification.
+- [x] Install a separate fixed-command read-only SSH identity and main-only environment secret; retain deployment/upload key separation.
+- [x] Verify the real check from a GitHub-hosted runner and exercise an intentional synthetic notification failure without changing real data.
+- [x] Verify Tencent rejects altered signed metadata in an isolated fixture; preserve the last success when a new attempt fails.
+- [ ] Merge the alert workflow and observe its first main/scheduled check.
+- [x] Owner confirmed receipt of the intentional GitHub notification drill.
