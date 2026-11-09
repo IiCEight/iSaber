@@ -86,7 +86,11 @@ def transfer(root, directory):
     if receipt.get("status") not in ("stored", "exists") or receipt.get("manifest") != manifest:
         raise ValueError("Vault acknowledgement differs from the signed snapshot")
     write_private(directory / "receipt.json", json.dumps(receipt, indent=2) + "\n")
-    write_private(root / "offsite/status.json", json.dumps({"state": "uploaded", "snapshot_id": manifest["id"], "source_commit": manifest["source_commit"], "checked_at": datetime.now(timezone.utc).isoformat(), "cipher_sha256": manifest["cipher_sha256"]}, indent=2) + "\n")
+    status = json.dumps({"state": "uploaded", "snapshot_id": manifest["id"], "source_commit": manifest["source_commit"], "checked_at": datetime.now(timezone.utc).isoformat(), "cipher_sha256": manifest["cipher_sha256"]}, indent=2) + "\n"
+    # Preserve the last successful capture when a later attempt fails. Freshness
+    # is measured from its snapshot ID, never from a retry's acknowledgement.
+    write_private(root / "offsite/last-success.json", status)
+    write_private(root / "offsite/status.json", status)
     print("Encrypted offsite snapshot confirmed:", manifest["id"], flush=True)
 
 
