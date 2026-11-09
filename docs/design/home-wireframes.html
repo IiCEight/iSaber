@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>iSaber — Home wireframe review</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { color-scheme: light; font-family: system-ui,sans-serif; color: #252525; background: #ececec; }
+    body { margin: 0; line-height: 1.6; }
+    a { color: inherit; text-underline-offset: .22em; }
+    button,select { font: inherit; color: inherit; background: white; padding: .55rem .8rem; border: 1px solid #777; border-radius: .2rem; min-height: 44px; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 3px solid #111; outline-offset: 4px; }
+    .review { max-width: 1120px; margin: auto; padding: 24px; }
+    .review h1 { font-size: 1.25rem; margin: 0; }
+    .review p { max-width: 76ch; margin: .5rem 0 1rem; }
+    .controls { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; }
+    button[aria-pressed="true"] { background: #292929; color: white; }
+    .controls label { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .stage { padding: 8px 24px 32px; }
+    .viewport { container-type: inline-size; width: min(100%,1040px); margin: auto; border: 1px solid #888; background: white; }
+    .viewport.mobile { width: min(100%,390px); }
+    .viewport.tablet { width: min(100%,768px); }
+    .screen { padding-inline: 42px; }
+    .site-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-block: 20px; border-bottom: 1px solid #bdbdbd; }
+    .brand { font-size: 1.25rem; font-weight: 700; text-decoration: none; }
+    .nav { display: flex; flex-wrap: wrap; gap: 24px; }
+    .nav a { min-height: 44px; display: inline-flex; align-items: center; }
+    .mobile-nav { display: none; position: relative; }
+    summary { cursor: pointer; padding-block: 10px; }
+    .mobile-nav nav { position: absolute; top: 100%; right: 0; min-width: 180px; background: white; border: 1px solid #888; padding: 12px; z-index: 2; }
+    .mobile-nav a { display: block; padding: 10px; }
+    .hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; padding-block: 48px 44px; }
+    .eyebrow { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 14px; }
+    .hero h2 { font-size: clamp(2rem,5cqi,3.4rem); letter-spacing: -.035em; line-height: 1.1; margin: 0 0 20px; max-width: 14ch; }
+    .intro { max-width: 40ch; margin: 0 0 22px; }
+    .hero-link { display: inline-block; padding-block: 10px; }
+    .graphic { display: grid; place-content: center; text-align: center; min-height: 235px; border: 1px dashed #888; background: repeating-linear-gradient(-45deg,#f6f6f6,#f6f6f6 14px,#efefef 14px,#efefef 15px); }
+    .graphic span { background: #f6f6f6; padding: 10px; margin: 20px; }
+    .graphic small { display: block; }
+    .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 22px; border-top: 2px solid #333; }
+    .section-head h2 { font-size: 1.5rem; margin: 0; }
+    .samples { font-size: .8rem; color: #555; margin: 0 0 12px; }
+    .articles { list-style: none; margin: 0; padding: 0; }
+    .article { padding: 24px 0; border-top: 1px solid #ccc; }
+    .article a { display: grid; grid-template-columns: 30px 1fr 24px; gap: 18px; text-decoration: none; }
+    .number { font-size: .8rem; padding-top: .25rem; color: #555; }
+    .article h3 { font-size: 1.4rem; line-height: 1.3; margin: 0 0 9px; overflow-wrap: anywhere; }
+    .article a:hover h3,.article a:focus-visible h3 { text-decoration: underline; text-underline-offset: .18em; }
+    .article p { margin: 0; max-width: 64ch; }
+    .meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: .78rem; color: #555; margin-top: 12px; }
+    .state { padding: 30px 0 38px; border-top: 1px solid #ccc; }
+    .state h3 { margin: 0; }
+    .explore { border-block: 1px solid #aaa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding-block: 30px; margin-top: 24px; }
+    .explore p { margin: 0; }
+    .footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-block: 28px; font-size: .85rem; }
+    [hidden] { display: none !important; }
+    .notes { max-width: 1040px; margin: auto; padding: 0 24px 48px; }
+    .notes h2 { font-size: 1.2rem; }
+    .notes li { margin-block: 8px; max-width: 80ch; }
+    .destination { border-top: 1px solid #aaa; padding-top: 12px; margin-top: 20px; }
+    @container (max-width: 620px) {
+      .screen { padding-inline: 22px; }
+      .desktop-nav { display: none; }
+      .mobile-nav { display: block; }
+      .hero { grid-template-columns: 1fr; gap: 18px; padding-block: 30px; }
+      .hero h2 { font-size: 2.3rem; }
+      .graphic { min-height: 110px; }
+      .graphic span { margin: 10px; }
+      .article a { grid-template-columns: 1fr 18px; gap: 12px; }
+      .number { display: none; }
+      .article h3 { font-size: 1.2rem; }
+      .section-head h2 { font-size: 1.3rem; }
+    }
+    @media (max-width: 480px) { .review { padding: 16px; } .stage { padding: 8px 12px 24px; } }
+  </style>
+</head>
+<body>
+  <div class="review">
+    <h1>Home · structure review</h1>
+    <p>Wireframe, not the final visual design. All article content and introduction copy below are samples. Review the balance between personal identity and writing. Navigation links open the corresponding design notes below.</p>
+    <div class="controls" id="controls" hidden>
+      <div role="group" aria-label="Preview width">
+        <button type="button" data-width="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" data-width="tablet" aria-pressed="false">Tablet · 768</button>
+        <button type="button" data-width="mobile" aria-pressed="false">Mobile · 390</button>
+      </div>
+      <label>Article state <select id="article-state"><option value="normal">Four sample articles</option><option value="single">One sample article</option><option value="empty">No articles</option><option value="error">API unavailable</option></select></label>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="viewport" id="viewport">
+      <div class="screen">
+        <header class="site-header">
+          <a class="brand" href="#home-introduction">iSaber</a>
+          <nav class="nav desktop-nav" aria-label="Main"><a href="#archive-note">Archive</a><a href="#about-note">About</a><a href="#search-note">Search</a></nav>
+          <details class="mobile-nav"><summary>Menu</summary><nav aria-label="Mobile"><a href="#archive-note">Archive</a><a href="#about-note">About</a><a href="#search-note">Search</a></nav></details>
+        </header>
+        <main>
+          <section class="hero" id="home-introduction" aria-labelledby="intro-title">
+            <div>
+              <p class="eyebrow">iSaber · a personal space</p>
+              <h2 id="intro-title">Words, ideas,<br>and discoveries.</h2>
+              <p class="intro">A place for personal notes, technical explorations, and things I make. Written in English and Chinese.</p>
+              <a class="hero-link" href="#recent-articles">Explore the writing ↓</a>
+            </div>
+            <div class="graphic" aria-hidden="true"><span>Identity / graphic study<small>Reserved for the visual-direction stage</small></span></div>
+          </section>
+          <section aria-labelledby="recent-articles">
+            <div class="section-head"><h2 id="recent-articles">Recent writing</h2><a href="#archive-note">View archive ↗</a></div>
+            <p class="samples">Sample content for layout review · publication dates shown</p>
+            <ol class="articles" id="articles">
+              <li class="article"><a href="#article-note"><span class="number" aria-hidden="true">01</span><div><h3>A small idea, carefully explored</h3><p>A short summary gives readers a reason to open the article without overwhelming the page.</p><div class="meta"><span>Sample category</span><span>English</span><time datetime="2026-11-09">09 Nov 2026</time></div></div><span aria-hidden="true">↗</span></a></li>
+              <li class="article"><a href="#article-note"><span class="number" aria-hidden="true">02</span><div><h3 lang="zh">把想法写下来，让思考慢慢生长</h3><p lang="zh">中文示例：用真实的长标题与摘要检查换行、阅读节奏和留白。</p><div class="meta"><span>Sample category</span><span lang="zh">中文</span><time datetime="2026-11-07">07 Nov 2026</time></div></div><span aria-hidden="true">↗</span></a></li>
+              <li class="article"><a href="#article-note"><span class="number" aria-hidden="true">03</span><div><h3>Notes from building something from the beginning</h3><p>Another sample article uses the same layout. Its subject is organized through labels.</p><div class="meta"><span>English</span><time datetime="2026-11-05">05 Nov 2026</time></div></div><span aria-hidden="true">↗</span></a></li>
+              <li class="article"><a href="#article-note"><span class="number" aria-hidden="true">04</span><div><h3>A longer sample title to test how the page handles multiple lines gracefully</h3><div class="meta"><span>English</span><time datetime="2026-11-02">02 Nov 2026</time></div></div><span aria-hidden="true">↗</span></a></li>
+            </ol>
+            <div class="state" id="empty-state" hidden><h3>The first chapter is on its way.</h3><p>New public articles will appear here.</p></div>
+            <div class="state" id="error-state" hidden><h3>Articles are temporarily unavailable.</h3><p>The introduction and navigation remain available. Please try again shortly.</p></div>
+          </section>
+          <section class="explore" aria-label="Explore more writing"><p>There is more to explore.</p><a href="#archive-note">Browse all articles ↗</a></section>
+        </main>
+        <footer class="footer"><a href="#home-introduction">iSaber ↑</a><span>Owner-supplied contact links go here.</span></footer>
+      </div>
+    </div>
+  </div>
+  <aside class="notes" aria-labelledby="review-title">
+    <h2 id="review-title">Review notes</h2>
+    <ol>
+      <li>The introduction and latest writing share the opening composition. The hero is not a full-screen gate.</li>
+      <li>One article layout serves every subject. Categories are optional metadata, not fixed content types.</li>
+      <li>Article imagery is optional. This structure works with the existing API without a new cover-image field.</li>
+      <li>Desktop uses a graphic beside the introduction. Mobile puts a compact graphic below it so writing stays close.</li>
+      <li>The header and section heading both reach Archive. The bottom invitation supports readers who finish the list; we can remove it if it feels repetitive.</li>
+    </ol>
+    <p id="preview-status" aria-live="polite">Preview uses the available width.</p>
+    <div class="destination" id="archive-note"><strong>Archive destination</strong><p>The complete article list, category/tag/language filters, and pagination belong here. This wireframe does not build or replace that page.</p></div>
+    <div class="destination" id="article-note"><strong>Article destination</strong><p>Each sample title represents a link to the shared article-reading page. All subjects use that same template. These samples are not published articles.</p></div>
+    <div class="destination" id="about-note"><strong>About destination</strong><p>A longer biography and owner-provided contact links belong here. The short introduction on Home remains provisional copy.</p></div>
+    <div class="destination" id="search-note"><strong>Search destination</strong><p>Search remains easy to reach. A dedicated results page or accessible overlay will be designed separately.</p></div>
+  </aside>
+  <script>
+    const viewport = document.getElementById("viewport");
+    const status = document.getElementById("preview-status");
+    document.getElementById("controls").hidden = false;
+    document.querySelectorAll("[data-width]").forEach(button => {
+      button.addEventListener("click", () => {
+        const mode = button.dataset.width;
+        viewport.className = "viewport" + (mode === "desktop" ? "" : " " + mode);
+        document.querySelectorAll("[data-width]").forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+        status.textContent = mode + " preview selected; frame width is capped by the available window width.";
+      });
+    });
+    document.getElementById("article-state").addEventListener("change", event => {
+      const state = event.target.value;
+      document.getElementById("articles").hidden = state === "empty" || state === "error";
+      document.querySelectorAll(".article").forEach((article, index) => { article.hidden = state === "single" && index > 0; });
+      document.getElementById("empty-state").hidden = state !== "empty";
+      document.getElementById("error-state").hidden = state !== "error";
+      status.textContent = "Article state: " + event.target.selectedOptions[0].textContent + ".";
+    });
+    document.querySelectorAll(".mobile-nav a").forEach(link => link.addEventListener("click", () => {
+      const menu = link.closest("details");
+      menu.open = false;
+      menu.querySelector("summary").focus();
+    }));
+  </script>
+</body>
+</html>

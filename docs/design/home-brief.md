@@ -1,6 +1,6 @@
 # Home page design brief
 
-Status: Purpose, content model, reference, and initial animation-tool direction agreed. The proposed sections below are ready for review; visual direction and prototype are not yet approved.
+Status: Owner approved the brief and proposed content hierarchy. Desktop/mobile wireframes are the next review artifact; visual direction and motion prototype are not yet approved.
 
 ## Agreed foundation
 
