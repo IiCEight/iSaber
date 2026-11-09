@@ -1,6 +1,6 @@
 # Staging snapshots and disposable restore checks
 
-The private JD staging project now has coordinated snapshots and verified local recovery. This is operator-driven and uses the existing server; no scheduled backup service or offsite destination is configured.
+The private JD staging project has coordinated snapshots and verified local recovery. [Encrypted offsite backups](offsite-backups.md) also run daily at 03:30 China time, from JD to a restricted vault on Tencent.
 
 ## Take a snapshot
 
@@ -42,4 +42,4 @@ Application HTTPS resumed after each snapshot. The source database/media were ne
 
 `restore-check` proves a local logical database/media restore. It does not switch the live application to the disposable targets. Live data restoration requires a deliberate maintenance plan: stop writers, choose and verify a recovery point, restore into replacement database/media volumes, provision the operator/runtime roles, restore matching secrets and CA storage, verify schema and privacy, then switch the dedicated project. There is no automatic data rewind during application rollback.
 
-Current snapshots stay on the same disk as staging. Offsite encrypted copies, retention/pruning, scheduled backup jobs, full-host disaster-rebuild acceptance, and production recovery objectives remain follow-up work. Do not treat local snapshots as protection against losing the entire JD server. The application remains a synthetic-content staging environment.
+Local snapshots remain on JD. Encrypted offsite copies now protect against losing that disk, and a retrieved copy has passed an isolated database/media recovery check. Retention/pruning, full-host disaster-rebuild acceptance, failure notifications, and production recovery objectives remain follow-up work. Staging now contains the owner's account and an article; preserve them during operational rehearsals.

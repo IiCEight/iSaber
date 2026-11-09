@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily iSaber offsite backup at 03:30 China time
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Asia/Shanghai
+Persistent=true
+AccuracySec=1min
+Unit=isaber-offsite.service
+
+[Install]
+WantedBy=timers.target
