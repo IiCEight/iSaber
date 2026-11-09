@@ -14,6 +14,7 @@ The monitor fails for:
 - A Tencent copy whose signed manifest/ciphertext checksum cannot be verified, including unreachable Tencent.
 - Less than **5 GiB** free on JD.
 - Pending backup work while its service is not running, or a significant clock mismatch.
+- Enabled retention policies with a stopped timer, failed apply, or no successful apply within 26 hours, on JD or Tencent.
 
 Freshness uses the UTC capture timestamp in the immutable snapshot ID, not the time an upload was retried. `last-success.json` preserves the last successful capture when a newer attempt fails; `status.json` continues to describe the latest attempt. The monitor supports the original uploaded `status.json` during upgrade. A pending capture is allowed while the service is running, but an earlier recorded failure remains visible until success.
 

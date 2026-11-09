@@ -69,6 +69,19 @@ class HealthTests(unittest.TestCase):
                     report = health.collect(root)
                     self.assertEqual(report["last_snapshot_id"], healthy()["last_snapshot_id"] if state == "uploaded" else None)
 
+    def test_vault_retention_failure_is_reported_without_faking_cipher_damage(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); (root / "offsite").mkdir()
+            (root / "offsite/status.json").write_text(json.dumps({"state": "uploaded", "snapshot_id": healthy()["last_snapshot_id"]}))
+            def verify(_root, _success, maintenance):
+                maintenance["healthy"] = False
+                return True
+            unit = {"UnitFileState": "enabled", "ActiveState": "active", "Result": "success"}
+            with patch.object(health, "unit_state", return_value=unit), patch.object(health, "verify_vault", side_effect=verify):
+                report = health.collect(root)
+            self.assertTrue(report["vault_verified"])
+            self.assertIn("vault_retention_failed", report["errors"])
+
     def test_action_annotations_are_specific_and_fail_the_job(self):
         with redirect_stdout(io.StringIO()) as output, patch.dict("os.environ", {}, clear=True):
             self.assertEqual(backup_monitor.publish({**healthy(), "vault_verified": False}, NOW), 1)

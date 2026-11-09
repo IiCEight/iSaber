@@ -36,14 +36,15 @@ def sync_directory(path):
     finally: os.close(descriptor)
 
 
-def check_signature(manifest, signature, temporary):
+def check_signature(manifest, signature, temporary, root=None):
+    root = root or ROOT
     path = temporary / ".validation-signature"
     path.write_text(validate_signature(signature))
-    result = subprocess.run(["ssh-keygen", "-Y", "verify", "-f", str(ROOT / "allowed_signers"), "-I", "isaber-jd-staging", "-n", "isaber-backup", "-s", str(path)], input=canonical(manifest), capture_output=True, timeout=15)
+    result = subprocess.run(["ssh-keygen", "-Y", "verify", "-f", str(root / "allowed_signers"), "-I", "isaber-jd-staging", "-n", "isaber-backup", "-s", str(path)], input=canonical(manifest), capture_output=True, timeout=15)
     if result.returncode:
         raise ValueError("Sender signature rejected")
     path.unlink()
-    config = json.loads((ROOT / "policy.json").read_text())
+    config = json.loads((root / "policy.json").read_text())
     if manifest["recipient"] != config["recipient"]:
         raise ValueError("Unexpected recovery recipient")
 
@@ -57,11 +58,18 @@ def store(header, source, temporary):
         previous = json.loads((target / "manifest.json").read_text())
         if previous != manifest or digest(target / "snapshot.age") != manifest["cipher_sha256"]:
             raise ValueError("Existing immutable snapshot differs; overwrite is forbidden")
-        return {"status": "exists", "manifest": previous, "received_at": json.loads((target / "receipt.json").read_text())["received_at"]}
+        receipt = {"status": "exists", "manifest": previous, "received_at": json.loads((target / "receipt.json").read_text())["received_at"]}
+        if (ROOT / "retention/policy.json").exists():
+            from retention import maintenance_status
+            receipt["retention"] = maintenance_status(ROOT, "tencent")
+        return receipt
+    if (ROOT / "retention-tombstones/vault" / (manifest["id"] + ".json")).exists():
+        raise ValueError("Retired snapshot ID cannot be reused; recovery requires an operator")
     if header.get("operation") != "put":
         raise FileNotFoundError("Requested offsite snapshot is missing")
     import shutil
     used = sum(path.stat().st_size for path in NAMESPACE.glob("*/snapshot.age"))
+    used += sum(path.stat().st_size for path in (ROOT / "retention-trash/vault").glob("*/object/snapshot.age"))
     if used + manifest["cipher_bytes"] > MAX_STORED or shutil.disk_usage(ROOT).free < manifest["cipher_bytes"] + MIN_FREE:
         raise OSError("Vault capacity limit; existing backups were retained")
     started = time.monotonic()
@@ -110,6 +118,13 @@ def receive():
 
 
 def export(snapshot_id):
+    # Serialize retention against an operator download as well as uploads.
+    with (ROOT / ".lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        export_unlocked(snapshot_id)
+
+
+def export_unlocked(snapshot_id):
     # This mode is operator-only. The forced SSH key can invoke only 'receive'.
     validate_id(snapshot_id)
     directory = NAMESPACE / snapshot_id

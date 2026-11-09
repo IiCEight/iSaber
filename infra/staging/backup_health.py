@@ -30,6 +30,8 @@ MESSAGES = {
     "vault_unverified": "Tencent could not confirm the signed ciphertext and checksum.",
     "low_disk_space": "JD has less than 5 GiB free for backups.",
     "pending_backup": "A pending backup remains while the service is not running.",
+    "local_retention_failed": "JD retention is enabled but its timer, last run, or freshness check failed.",
+    "vault_retention_failed": "Tencent retention is enabled but its timer, last run, or freshness check failed.",
 }
 
 
@@ -85,7 +87,7 @@ def unit_state(unit):
     return state
 
 
-def verify_vault(root, success):
+def verify_vault(root, success, maintenance=None):
     from offsite import ssh_arguments
     directory = root / "offsite/outbox" / success["snapshot_id"]
     manifest = validate_manifest(read_json(directory / "manifest.json"))
@@ -100,7 +102,11 @@ def verify_vault(root, success):
             result = subprocess.run(ssh_arguments(root), input=header, capture_output=True, timeout=40)
             if result.returncode == 0 and len(result.stdout) <= 16384:
                 receipt = json.loads(result.stdout)
-                if receipt.get("status") == "exists" and receipt.get("manifest") == manifest: return True
+                if receipt.get("status") == "exists" and receipt.get("manifest") == manifest:
+                    state = receipt.get("retention")
+                    if maintenance is not None and state is not None:
+                        maintenance["healthy"] = isinstance(state, dict) and set(state) == {"enabled", "healthy"} and type(state.get("enabled")) is bool and type(state.get("healthy")) is bool and (not state["enabled"] or state["healthy"])
+                    return True
         except (subprocess.TimeoutExpired, ValueError):
             pass
         if attempt == 0: time.sleep(3)
@@ -130,8 +136,15 @@ def collect(root=ROOT):
     except Exception:
         success = None; report["errors"].append("status_invalid")
     if success:
-        try: report["vault_verified"] = verify_vault(root, success)
+        maintenance = {}
+        try:
+            report["vault_verified"] = verify_vault(root, success, maintenance)
+            if not maintenance.get("healthy", True): report["errors"].append("vault_retention_failed")
         except Exception: report["errors"].append("receipt_invalid")
+    if (root / "retention/policy.json").exists():
+        from retention import maintenance_status
+        state = maintenance_status(root, "jd")
+        if state["enabled"] and not state["healthy"]: report["errors"].append("local_retention_failed")
     return report
 
 
