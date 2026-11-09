@@ -215,7 +215,7 @@ def recover_promotion(root):
     print("Previous release recovered and HTTPS verified", flush=True)
 
 
-def promote(root, manifest):
+def promote(root, manifest, before_switch=None):
     from backup import lock, snapshot, restore_check
     with lock(root):
         if (root / "pending-promotion.json").exists():
@@ -239,6 +239,8 @@ def promote(root, manifest):
         print("Creating and restoring a recovery point before promotion", flush=True)
         recovery = snapshot(root)
         restore_check(root, recovery)
+        if before_switch is not None:
+            before_switch()
         previous_env = (root / "release.env").read_text()
         images = dict(line.split("=", 1) for line in previous_env.splitlines() if line)
         images.update({name.upper() + "_IMAGE": image["reference"] for name, image in candidate["images"].items()})

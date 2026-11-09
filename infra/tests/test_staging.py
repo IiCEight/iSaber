@@ -113,6 +113,15 @@ class PromotionTests(unittest.TestCase):
         self.assertEqual((self.root / "release.env").read_text(), self.environment)
         self.assertFalse((self.root / "pending-promotion.json").exists())
 
+    def test_final_source_gate_prevents_a_stale_switch_after_backup(self):
+        gate = Mock(side_effect=RuntimeError("a newer main commit exists"))
+        with self.assertRaises(RuntimeError):
+            staging.promote(self.root, self.root / "candidate.json", before_switch=gate)
+        gate.assert_called_once_with()
+        self.compose.assert_not_called()
+        self.assertFalse((self.root / "pending-promotion.json").exists())
+        self.assertEqual((self.root / "release.env").read_text(), self.environment)
+
     def test_contract_database_and_live_schema_changes_are_rejected(self):
         for field in ("contract", "database", "schema"):
             candidate = json.loads(json.dumps(self.candidate))

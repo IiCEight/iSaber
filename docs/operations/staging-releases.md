@@ -1,6 +1,6 @@
 # Promote and roll back private staging releases
 
-Initial deployment uses `deploy`; subsequent updates use the guarded operator `promote` command. The existing private HTTPS endpoint, secrets, database, uploads, and CA persist across application releases. These operations are not yet triggered automatically by GitHub.
+Initial deployment uses `deploy`; subsequent updates use the guarded operator `promote` command. The existing private HTTPS endpoint, secrets, database, uploads, and CA persist across application releases. The [automatic staging workflow](automatic-staging.md) invokes the same guarded path after successful main image preparation; manual commands remain available.
 
 ## Promote a verified release
 
@@ -51,4 +51,4 @@ The cloud rehearsal uses the two already verified releases from PR #14 and PR #1
 
 Unit guards cover incompatible contract/database/schema rejection, pending-journal rejection, restore-proof failure before application changes, normal release metadata/history, migration status without migration execution, and recovery after a failed health gate.
 
-Next is a restricted deployment identity and a measured, authenticated GitHub-to-server delivery path. No new server SSH key is copied to GitHub and no unattended job is installed by this milestone.
+The next delivery milestone adds the [restricted GitHub receiver](automatic-staging.md), authenticated cached transfers, and main-only environment credentials. Production and schema-changing releases retain separate review requirements.

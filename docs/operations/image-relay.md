@@ -1,6 +1,6 @@
 # Deliver tested images through JD Cloud
 
-PR #14 established the first real release: frontend, backend, and PostgreSQL were published to TCR, pulled on JD by exact digest, and checked against their tested configurations. The default route remains `GitHub → workspace → JD → TCR`. See [ADR 0012](../architecture/decisions/0012-image-bundle-relay.md).
+PR #14 established the first real release: frontend, backend, and PostgreSQL were published to TCR, pulled on JD by exact digest, and checked against their tested configurations. The operator recovery route remains `GitHub → workspace → JD → TCR`. [Automatic staging](automatic-staging.md) uses a restricted GitHub-to-JD cached transfer after its workflow is merged and enabled. See [ADR 0012](../architecture/decisions/0012-image-bundle-relay.md).
 
 ## What is automatic
 
