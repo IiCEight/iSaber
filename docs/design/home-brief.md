@@ -1,6 +1,6 @@
 # Home page design brief
 
-Status: Owner approved the brief and proposed content hierarchy. Desktop/mobile wireframes are the next review artifact; visual direction and motion prototype are not yet approved.
+Status: Owner approved the purpose and content hierarchy, then specified a full-screen hero using the supplied C2 Montréal screenshot as the composition reference. Wireframes are being revised accordingly; visual direction and motion prototype are not yet approved.
 
 ## Agreed foundation
 
@@ -22,13 +22,13 @@ During prototype review, check whether visitors can identify the site owner, fin
 
 | Area | Content and purpose | Visitor action |
 | --- | --- | --- |
-| Header | Site name/wordmark, Archive, About, accessible Search control | Navigate or search |
-| Introduction | Owner's name, a short personal introduction, one expressive typographic or graphic composition | Read the introduction; continue to articles |
+| Hero and navigation | Full-screen canvas with oversized identity typography and overlapping graphics; propose a narrow navigation rail on desktop and compact top navigation on mobile | Navigate or continue to articles immediately |
+| Introduction | Short personal introduction below the opening canvas | Learn about the owner |
 | Recent articles | Up to four public articles with title, short summary, category when present, language, and publication date | Open an article |
 | Explore | A clear archive link; optional links to actual public categories if they help discovery | Browse all articles or a category |
 | Footer | Compact site identity and owner-supplied contact/social links | Contact or return to navigation |
 
-This is the content hierarchy for a wireframe, not a final layout. The visual exploration should make the relationship between introduction and articles deliberate, with a clear invitation to writing within or immediately below the first screen. A large introduction must not make the article list feel buried.
+The hero fills the opening viewport. Typography and graphics share its composition, following the owner's screenshot; a separate text column and boxed illustration no longer define this layout. A visible writing link lets readers skip directly to recent articles. The introduction and articles follow below, and navigation remains usable without waiting for animation. Full-screen sizing must allow content to grow when text is enlarged rather than clipping controls.
 
 Avoid repeating the biography in another large section. About can hold the longer personal story. Category links should add useful navigation rather than repeat every label in the header and footer.
 
@@ -65,4 +65,4 @@ Keep the admin dashboard and article reading styles stable while exploring Home.
 5. Build an interactive prototype of the chosen direction, testing the signature animation early.
 6. Implement the approved experience and complete responsive, accessibility, privacy, and performance checks.
 
-Still needed: final display name and introduction, contact/social links, representative English/Chinese writing, and confirmation of which reference interactions matter most. The current reference was inspected through page/source access; interactive visual playback was unavailable in this session. Exact timing and choreography remain to be validated through a browser session or owner-provided recording.
+Still needed: final display name and introduction, contact/social links, representative English/Chinese writing, and confirmation of which reference interactions matter most. The owner supplied a static screenshot showing the opening composition, supplementing the page/source inspection. Interactive visual playback was unavailable in this session. Exact animation timing and choreography remain to be validated through a browser session or owner-provided recording.

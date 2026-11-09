@@ -23,23 +23,37 @@
     .viewport { container-type: inline-size; width: min(100%,1040px); margin: auto; border: 1px solid #888; background: white; }
     .viewport.mobile { width: min(100%,390px); }
     .viewport.tablet { width: min(100%,768px); }
-    .screen { padding-inline: 42px; }
-    .site-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-block: 20px; border-bottom: 1px solid #bdbdbd; }
-    .brand { font-size: 1.25rem; font-weight: 700; text-decoration: none; }
-    .nav { display: flex; flex-wrap: wrap; gap: 24px; }
-    .nav a { min-height: 44px; display: inline-flex; align-items: center; }
+    .viewport:fullscreen { width: 100%; height: 100%; overflow-y: auto; border: 0; }
+    .screen { position: relative; }
+    .body-section,.footer { margin-inline: 42px; }
+    .site-header { position: absolute; right: 0; top: 0; z-index: 3; width: 64px; height: 100svh; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 20px; padding: 20px 8px; border-left: 1px solid #bdbdbd; background: white; }
+    .brand { font-size: 1rem; font-weight: 700; text-decoration: none; writing-mode: vertical-rl; }
+    .nav { display: flex; flex-direction: column; gap: 24px; }
+    .nav a { min-height: 44px; display: inline-flex; align-items: center; writing-mode: vertical-rl; }
     .mobile-nav { display: none; position: relative; }
     summary { cursor: pointer; padding-block: 10px; }
     .mobile-nav nav { position: absolute; top: 100%; right: 0; min-width: 180px; background: white; border: 1px solid #888; padding: 12px; z-index: 2; }
     .mobile-nav a { display: block; padding: 10px; }
-    .hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; padding-block: 48px 44px; }
+    .hero { position: relative; isolation: isolate; min-height: 100svh; width: calc(100% - 64px); display: flex; flex-direction: column; justify-content: space-between; padding: 28px; background: #333; overflow: hidden; }
+    .hero::before { content: ""; position: absolute; z-index: -2; inset: 0 50% 35% 0; background: #ddd; }
+    .hero::after { content: ""; position: absolute; z-index: -2; inset: 65% 50% 0 0; background: #111; }
     .eyebrow { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 14px; }
-    .hero h2 { font-size: clamp(2rem,5cqi,3.4rem); letter-spacing: -.035em; line-height: 1.1; margin: 0 0 20px; max-width: 14ch; }
-    .intro { max-width: 40ch; margin: 0 0 22px; }
-    .hero-link { display: inline-block; padding-block: 10px; }
-    .graphic { display: grid; place-content: center; text-align: center; min-height: 235px; border: 1px dashed #888; background: repeating-linear-gradient(-45deg,#f6f6f6,#f6f6f6 14px,#efefef 14px,#efefef 15px); }
-    .graphic span { background: #f6f6f6; padding: 10px; margin: 20px; }
-    .graphic small { display: block; }
+    .hero .eyebrow { max-width: 40%; color: #222; }
+    .hero-type { position: relative; z-index: 1; margin-top: auto; padding-top: 220px; }
+    .hero h2 { font-size: clamp(3.5rem,16cqi,10rem); letter-spacing: -.055em; line-height: .95; margin: 0 0 24px; color: white; }
+    .hero h2 span { display: block; }
+    .hero h2 span:last-child { font-size: .48em; text-align: right; margin-top: 16px; letter-spacing: -.035em; }
+    .intro { max-width: 65ch; margin: 0 0 12px; }
+    .introduction { padding-block: 36px; }
+    .hero-link { display: inline-block; padding: 12px 16px; background: #111; color: white; }
+    .graphic { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+    .graphic span { position: absolute; width: 44cqi; height: 44cqi; border-radius: 50%; background: rgb(255 255 255 / .13); border: 1px solid rgb(255 255 255 / .2); }
+    .graphic span:nth-child(1) { top: 8%; left: 40%; }
+    .graphic span:nth-child(2) { top: 20%; left: 57%; }
+    .graphic span:nth-child(3) { top: 38%; left: 60%; }
+    .graphic span:nth-child(4) { top: 49%; left: 46%; }
+    .graphic span:nth-child(5) { top: 40%; left: 26%; }
+    .graphic span:nth-child(6) { top: 18%; left: 23%; }
     .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 22px; border-top: 2px solid #333; }
     .section-head h2 { font-size: 1.5rem; margin: 0; }
     .samples { font-size: .8rem; color: #555; margin: 0 0 12px; }
@@ -62,13 +76,17 @@
     .notes li { margin-block: 8px; max-width: 80ch; }
     .destination { border-top: 1px solid #aaa; padding-top: 12px; margin-top: 20px; }
     @container (max-width: 620px) {
-      .screen { padding-inline: 22px; }
+      .body-section,.footer { margin-inline: 22px; }
+      .site-header { width: 100%; height: 64px; flex-direction: row; padding: 8px 18px; border-left: 0; border-bottom: 1px solid #aaa; }
+      .brand { writing-mode: horizontal-tb; }
       .desktop-nav { display: none; }
       .mobile-nav { display: block; }
-      .hero { grid-template-columns: 1fr; gap: 18px; padding-block: 30px; }
-      .hero h2 { font-size: 2.3rem; }
-      .graphic { min-height: 110px; }
-      .graphic span { margin: 10px; }
+      .hero { width: 100%; padding: 86px 20px 24px; }
+      .hero h2 { font-size: clamp(3rem,19cqi,5rem); }
+      .graphic span { width: 78cqi; height: 78cqi; }
+      .graphic span:nth-child(1) { top: 18%; left: 26%; }
+      .graphic span:nth-child(2) { top: 29%; left: 43%; }
+      .graphic span:nth-child(3) { top: 42%; left: 28%; }
       .article a { grid-template-columns: 1fr 18px; gap: 12px; }
       .number { display: none; }
       .article h3 { font-size: 1.2rem; }
@@ -87,6 +105,7 @@
         <button type="button" data-width="tablet" aria-pressed="false">Tablet · 768</button>
         <button type="button" data-width="mobile" aria-pressed="false">Mobile · 390</button>
       </div>
+      <button type="button" id="fullscreen" hidden>View full screen</button>
       <label>Article state <select id="article-state"><option value="normal">Four sample articles</option><option value="single">One sample article</option><option value="empty">No articles</option><option value="error">API unavailable</option></select></label>
     </div>
   </div>
@@ -101,14 +120,16 @@
         <main>
           <section class="hero" id="home-introduction" aria-labelledby="intro-title">
             <div>
-              <p class="eyebrow">iSaber · a personal space</p>
-              <h2 id="intro-title">Words, ideas,<br>and discoveries.</h2>
-              <p class="intro">A place for personal notes, technical explorations, and things I make. Written in English and Chinese.</p>
+              <p class="eyebrow">A personal space<br>English &amp; 中文</p>
+            </div>
+            <div class="hero-type">
+              <h2 id="intro-title"><span>iSaber</span><span>notes &amp; ideas.</span></h2>
               <a class="hero-link" href="#recent-articles">Explore the writing ↓</a>
             </div>
-            <div class="graphic" aria-hidden="true"><span>Identity / graphic study<small>Reserved for the visual-direction stage</small></span></div>
+            <div class="graphic" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
           </section>
-          <section aria-labelledby="recent-articles">
+          <section class="body-section introduction" aria-label="Personal introduction"><p class="intro">A place for personal notes, technical explorations, and things I make. Written in English and Chinese.</p><a href="#about-note">More about me ↗</a></section>
+          <section class="body-section" aria-labelledby="recent-articles">
             <div class="section-head"><h2 id="recent-articles">Recent writing</h2><a href="#archive-note">View archive ↗</a></div>
             <p class="samples">Sample content for layout review · publication dates shown</p>
             <ol class="articles" id="articles">
@@ -120,7 +141,7 @@
             <div class="state" id="empty-state" hidden><h3>The first chapter is on its way.</h3><p>New public articles will appear here.</p></div>
             <div class="state" id="error-state" hidden><h3>Articles are temporarily unavailable.</h3><p>The introduction and navigation remain available. Please try again shortly.</p></div>
           </section>
-          <section class="explore" aria-label="Explore more writing"><p>There is more to explore.</p><a href="#archive-note">Browse all articles ↗</a></section>
+          <section class="body-section explore" aria-label="Explore more writing"><p>There is more to explore.</p><a href="#archive-note">Browse all articles ↗</a></section>
         </main>
         <footer class="footer"><a href="#home-introduction">iSaber ↑</a><span>Owner-supplied contact links go here.</span></footer>
       </div>
@@ -129,10 +150,10 @@
   <aside class="notes" aria-labelledby="review-title">
     <h2 id="review-title">Review notes</h2>
     <ol>
-      <li>The introduction and latest writing share the opening composition. The hero is not a full-screen gate.</li>
+      <li>The hero occupies a full screen. Oversized typography and overlapping graphics share its canvas; the short introduction and articles follow below.</li>
       <li>One article layout serves every subject. Categories are optional metadata, not fixed content types.</li>
       <li>Article imagery is optional. This structure works with the existing API without a new cover-image field.</li>
-      <li>Desktop uses a graphic beside the introduction. Mobile puts a compact graphic below it so writing stays close.</li>
+      <li>The reference screenshot informs the full-bleed blocks, overlapping circles, large lower-edge typography, and proposed desktop navigation rail. Grayscale is still a wireframe choice, not a final palette.</li>
       <li>The header and section heading both reach Archive. The bottom invitation supports readers who finish the list; we can remove it if it feels repetitive.</li>
     </ol>
     <p id="preview-status" aria-live="polite">Preview uses the available width.</p>
@@ -145,6 +166,12 @@
     const viewport = document.getElementById("viewport");
     const status = document.getElementById("preview-status");
     document.getElementById("controls").hidden = false;
+    const fullscreen = document.getElementById("fullscreen");
+    fullscreen.hidden = !document.fullscreenEnabled;
+    fullscreen.addEventListener("click", async () => {
+      try { await viewport.requestFullscreen(); }
+      catch { status.textContent = "Full-screen preview is unavailable in this browser. The responsive frame remains usable."; }
+    });
     document.querySelectorAll("[data-width]").forEach(button => {
       button.addEventListener("click", () => {
         const mode = button.dataset.width;

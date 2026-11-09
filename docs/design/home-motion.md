@@ -8,6 +8,8 @@ The owner supplied [C2 Montréal](https://c2mtl.koki-kiko.com/) as the first ref
 
 These findings establish implementation techniques. They do not establish how every effect looks in motion. Interactive visual playback was unavailable during inspection, so colors, camera movement, precise sequencing, scroll distances, and easing are not recorded as visually verified observations. A recording or interactive inspection should close those gaps before claiming a close reproduction.
 
+The owner subsequently supplied a screenshot and specified a full-screen hero. The image establishes the opening composition: broad warm/cool color blocks, large overlapping circular graphics across their boundary, oversized typography near the lower edge, and a narrow navigation rail at the right. This is evidence of one visual state, not animation playback. The revised wireframe uses that composition in grayscale; final color and graphic treatment remain for visual-direction review. The original two-column hero proposal is superseded.
+
 Use the reference's expressive motion as a design input for an original personal blog. Translate relevant patterns into the approved article model and owner content. The event's ticketing, speaker, and marketing content are not part of this blog brief.
 
 ## Proposed prototype interactions
@@ -22,7 +24,7 @@ Use the reference's expressive motion as a design input for an original personal
 
 Starting timing ranges for testing: 400–700 ms for a hero element, 40–70 ms stagger where useful, and 150–250 ms for small control feedback. Aim to finish the initial sequence within roughly 1.2 seconds. These are proposed tuning values, not measurements of the reference. Clicking and reading must not wait for the sequence to finish.
 
-Choose one signature effect for the first motion prototype. A decorative WebGL hero can be evaluated as an alternative if simpler typography/graphics cannot express the approved direction. Pinning, smooth scrolling, and a custom cursor each need a concrete purpose and mobile/accessibility review before inclusion.
+Choose one signature effect within the full-screen hero for the first motion prototype. Prototype layered circular geometry sharing the canvas with typography. A decorative WebGL version can be evaluated if simpler graphics cannot express the approved direction. A full-screen section does not itself require scroll pinning; pinning, smooth scrolling, and a custom cursor each need a concrete purpose and mobile/accessibility review before inclusion.
 
 ## Tool responsibilities
 
