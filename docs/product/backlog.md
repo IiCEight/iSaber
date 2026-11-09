@@ -201,3 +201,15 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Verify Tencent rejects altered signed metadata in an isolated fixture; preserve the last success when a new attempt fails.
 - [ ] Merge the alert workflow and observe its first main/scheduled check.
 - [x] Owner confirmed receipt of the intentional GitHub notification drill.
+
+
+## Vivid Home and public navigation
+
+- [x] Agree on Home, Archive, Article, About, and Search, with one article model organized by categories/tags.
+- [x] Review the full-screen hero composition and horizontal top navigation.
+- [x] Select A · Vivid and positively review its GSAP motion prototype.
+- [x] Integrate the Home into React with public article data, scoped motion, reduced motion, and useful data states.
+- [x] Preserve existing browsing/search/filter/pagination behavior in Archive/Search and retain legacy homepage-query redirects.
+- [x] Provide actual navigation destinations and preserve existing owner and reading paths.
+- [ ] Merge the milestone and review the integrated site with real staging articles.
+- [ ] Refine final owner copy/fonts and separately design Archive, Article, and About.

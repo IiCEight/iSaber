@@ -8,6 +8,8 @@ The PRD and logical API/data model are approved. The React/Go foundation, Postgr
 
 JD staging has [daily encrypted offsite backups to Tencent](docs/operations/offsite-backups.md), scheduled for 03:30 China time, with [hourly external health checks and GitHub alerts](docs/operations/backup-alerts.md). A retrieved copy passed isolated database/media recovery; retention and full-host rebuild acceptance remain pending.
 
+The owner-approved [Vivid Home design](docs/design/home-integration.md) is integrated for review, with real public article data and preserved Archive/Search behavior.
+
 ## Local development
 
 Prerequisites: Node.js **24.22.2** with npm, Go **1.27.3**, and PostgreSQL **16** (Docker Compose is provided). Version pins are recorded in `frontend/.nvmrc` and `backend/go.mod`. On WSL, use Linux Node.js/npm rather than Windows npm from a mounted drive.
@@ -46,7 +48,9 @@ Open `http://127.0.0.1:3000`, then `/admin` to sign in. Upload a `.md` file or a
 
 | Endpoint | Current behavior |
 | --- | --- |
-| Frontend `/` | Public articles with English/Chinese search and category/tag/language filters; final visual design is pending |
+| Frontend `/` | Vivid full-screen Home, personal introduction, and up to four recent public articles |
+| Frontend `/archive`, `/search` | Public browsing/search with category, tag, language filters, and pagination; legacy homepage query links redirect here |
+| Frontend `/about` | Short site introduction |
 | Frontend `/admin` | Owner sign-in/out, imports, metadata, preview, publishing, history/restoration, category/tag management, comment moderation/controls, and private reading |
 | Frontend `/articles/{slug}` | Published public Markdown, code, math, and dates; private/missing articles return 404 |
 | Frontend `/healthz` | Frontend process liveness |

@@ -1,6 +1,6 @@
 # Home page design brief
 
-Status: Owner approved the purpose, content hierarchy, full-screen hero composition, horizontal top navigation, and **A · Vivid** visual direction. The [motion prototype](home-prototype.md) is next for review before React implementation.
+Status: Owner approved the purpose, content hierarchy, full-screen hero composition, horizontal top navigation, and **A · Vivid** visual direction, then positively reviewed the motion. The [React integration](home-integration.md) is implemented for milestone review.
 
 ## Agreed foundation
 

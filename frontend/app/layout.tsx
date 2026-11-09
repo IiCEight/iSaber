@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import SiteHeader from "../components/site-header";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 import "highlight.js/styles/github-dark.css";
@@ -18,8 +18,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         <a className="skip-link" href="#content">Skip to content</a>
-        <header><Link href="/" aria-label="iSaber home">iSaber</Link></header>
-        <main id="content">{children}</main>
+        <SiteHeader />
+        <main id="content" className="app-main">{children}</main>
       </body>
     </html>
   );

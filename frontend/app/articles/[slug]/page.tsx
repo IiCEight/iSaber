@@ -37,8 +37,8 @@ export default async function ArticlePage({ params }: Props) {
       <div><dt>Updated</dt><dd><time dateTime={article.updated_at}>{date(article.updated_at)}</time></dd></div>
     </dl>
     {(article.category || article.tags.length > 0) && <nav aria-label="Article categories and tags">
-      {article.category && <p>Category: <Link href={{ pathname: "/", query: { category: article.category.slug } }}>{article.category.name}</Link></p>}
-      {article.tags.length > 0 && <ul>{article.tags.map((tag) => <li key={tag.id}><Link href={{ pathname: "/", query: { tag: tag.slug } }}>{tag.name}</Link></li>)}</ul>}
+      {article.category && <p>Category: <Link href={{ pathname: "/archive", query: { category: article.category.slug } }}>{article.category.name}</Link></p>}
+      {article.tags.length > 0 && <ul>{article.tags.map((tag) => <li key={tag.id}><Link href={{ pathname: "/archive", query: { tag: tag.slug } }}>{tag.name}</Link></li>)}</ul>}
     </nav>}
     <Markdown content={article.markdown} />
     <ArticleComments articleId={article.id} enabled={!missing && article.comments_enabled} initialPage={commentPage} unavailable={!commentPage} />

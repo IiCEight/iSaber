@@ -1,6 +1,6 @@
 # Home page reference and motion plan
 
-Status: Owner selected **A · Vivid**. The [local GSAP motion prototype](home-prototype.md) implements an initial entrance, scroll-linked graphic, article reveals, and reduced-motion handling for review. Production application dependencies and routes remain unchanged.
+Status: Owner selected **A · Vivid** and positively reviewed the [local GSAP motion prototype](home-prototype.md). The [React integration](home-integration.md) now uses the pinned package dependency and real public articles, with existing browse/search URLs preserved through dedicated routes and redirects.
 
 ## Reference evidence
 

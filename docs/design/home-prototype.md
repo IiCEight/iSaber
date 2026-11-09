@@ -1,6 +1,6 @@
 # Vivid Home motion prototype
 
-Status: The owner selected **A · Vivid**. The local motion prototype is ready for review before React integration or production deployment.
+Status: The owner selected **A · Vivid** and positively reviewed this motion. The [React integration](home-integration.md) is now the implementation under review. This standalone prototype remains a reference.
 
 Open [the motion prototype](home-prototype.html) directly in a browser. Keep the adjacent JavaScript and `vendor/` directory with the HTML file. It uses local, pinned GSAP/ScrollTrigger files; there are no runtime CDN, font, image, or live-article requests. Sample content and navigation-to-design-notes remain clearly identified.
 

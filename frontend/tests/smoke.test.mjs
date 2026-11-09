@@ -12,8 +12,21 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const origin = "http://127.0.0.1:4317";
 
 test("production frontend handles unavailable and older backend capabilities", async (t) => {
+  let listMode = "unavailable";
+  const publicRequests = [];
+  const sampleArticles = Array.from({ length: 6 }, (_, index) => ({
+    id: `11111111-1111-4111-8111-${String(index + 1).padStart(12, "0")}`, slug: `public-article-${index}`,
+    title: index === 1 ? "中文标题与阅读" : `Public article ${index}`, summary: `Summary ${index}`, language: index === 1 ? "zh" : "en",
+    written_at: "2026-11-07", published_at: "2026-11-07T08:00:00Z", updated_at: "2026-11-07T08:00:00Z",
+    category: { id: "label", name: "Notes", slug: "notes" }, tags: [],
+  }));
   const olderAPI = createServer((request, response) => {
-    if (request.url === "/api/v1/articles/legacy-article") {
+    const url = new URL(request.url, "http://fixture.invalid");
+    publicRequests.push({ path: url.pathname, query: url.searchParams, cookie: request.headers.cookie });
+    if ((url.pathname === "/api/v1/articles" || url.pathname === "/api/v1/articles/search") && listMode !== "unavailable") {
+      response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+      response.end(JSON.stringify({ items: listMode === "empty" ? [] : sampleArticles, next_cursor: listMode === "empty" ? null : "fixture-next" }));
+    } else if (request.url === "/api/v1/articles/legacy-article") {
       response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
       response.end(JSON.stringify({ id: "11111111-1111-4111-8111-111111111111", slug: "legacy-article", title: "Legacy article", summary: "A readable existing article.", language: "en", written_at: "2026-11-07", published_at: "2026-11-07T08:00:00Z", updated_at: "2026-11-07T08:00:00Z", category: null, tags: [], markdown: "Existing article body.", comments_enabled: true }));
     } else { response.writeHead(404, { "Content-Type": "application/problem+json" }); response.end(JSON.stringify({ status: 404, code: "not_found" })); }
@@ -56,8 +69,52 @@ test("production frontend handles unavailable and older backend capabilities", a
     assert.equal(response.status, 200);
     assert.match(response.headers.get("cache-control") ?? "", /no-store/);
     const html = await response.text();
-    assert.match(html, /A home for words and ideas\./);
+    assert.match(html, /id="home-title"/);
+    assert.match(html, /notes &amp; ideas/);
+    assert.match(html, /Articles are temporarily unavailable/);
     assert.match(html, /Skip to content/);
+  });
+  await t.test("home renders only four public summaries without forwarding reader cookies", async () => {
+    listMode = "populated";
+    publicRequests.length = 0;
+    const html = await (await fetch(origin, { headers: { Cookie: "test-private-session=fixture" } })).text();
+    assert.match(html, /Public article 0/);
+    assert.match(html, /中文标题与阅读/);
+    assert.doesNotMatch(html, /Public article 4/);
+    assert.match(html, /href="\/archive\?category=notes"/);
+    const listing = publicRequests.find(request => request.path === "/api/v1/articles");
+    assert.equal(listing.query.get("limit"), "4");
+    assert.equal(listing.cookie, undefined);
+    assert.equal(publicRequests.some(request => request.path.startsWith("/api/v1/admin")), false);
+  });
+  await t.test("home handles a successful empty response separately from an outage", async () => {
+    listMode = "empty";
+    const html = await (await fetch(origin)).text();
+    assert.match(html, /The first chapter is on its way/);
+    assert.doesNotMatch(html, /Articles are temporarily unavailable/);
+    listMode = "populated";
+  });
+  await t.test("archive preserves filters and pagination", async () => {
+    const html = await (await fetch(`${origin}/archive?category=notes&tag=go&language=zh`)).text();
+    assert.match(html, /<h1>Archive<\/h1>/);
+    assert.ok(html.includes('/archive?category=notes&amp;tag=go&amp;language=zh&amp;cursor=fixture-next'));
+    assert.match(html, /action="\/search"/);
+  });
+  await t.test("legacy homepage URLs redirect internally with their complete query", async () => {
+    const filtered = await fetch(`${origin}/?category=notes&tag=go`, { redirect: "manual" });
+    assert.equal(filtered.status, 307);
+    assert.equal(filtered.headers.get("location"), "/archive?category=notes&tag=go");
+    const searched = await fetch(`${origin}/?q=one&q=two&language=zh`, { redirect: "manual" });
+    assert.equal(searched.status, 307);
+    assert.equal(searched.headers.get("location"), "/search?q=one&q=two&language=zh");
+  });
+  await t.test("search and About navigation destinations work", async () => {
+    const searched = await fetch(`${origin}/search?q=${encodeURIComponent("中文")}`);
+    assert.equal(searched.status, 200);
+    assert.match(await searched.text(), /Search results/);
+    const searchRequest = publicRequests.find(request => request.path === "/api/v1/articles/search");
+    assert.equal(searchRequest.query.get("q"), "中文");
+    assert.equal((await fetch(`${origin}/about`)).status, 200);
   });
   await t.test("admin page offers sign-in but exposes no owner data", async () => {
     const response = await fetch(`${origin}/admin`);
