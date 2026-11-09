@@ -1,0 +1,15 @@
+[Unit]
+Description=Verified iSaber local backup retention
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 -I /opt/isaber-staging/config/retention.py --site jd --apply
+TimeoutStartSec=20min
+TimeoutStopSec=1min
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
