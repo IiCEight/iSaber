@@ -1,6 +1,6 @@
 # Home visual directions
 
-Status: The owner approved the full-screen composition and horizontal top navigation. These two visual studies are ready for selection; no visual direction or animation prototype has been approved yet.
+Status: The owner approved the full-screen composition and horizontal top navigation, then selected **A · Vivid**. Continue with the [motion prototype](home-prototype.md). The two static studies remain as design history; motion is not yet approved.
 
 Open [the comparison](home-directions.html) directly in a browser. Choose **A · Vivid** or **B · Editorial**, then compare Desktop, Tablet, Mobile, and full-screen views. Both studies use the same approved layout and sample content. No installation, external fonts, live article requests, or production changes are required. Without JavaScript, the default Vivid study remains readable; the comparison controls require JavaScript.
 
@@ -34,6 +34,6 @@ Proposed motion after selection: slow geometric movement and a concise typograph
 
 Recommended starting direction: **A · Vivid**, because it responds most directly to the reference the owner selected. B provides a meaningful alternative within the same approved layout.
 
-Choose one direction, identify any elements to adjust, then develop its interactive motion prototype. Keep the other study as a reference rather than mixing both palettes and typographic systems by default.
+The owner selected A. Its motion prototype is the next review. B remains a reference rather than a second palette or typographic system to mix into the selected design.
 
-Browser visual playback and screenshot verification remain unavailable in this session. The studies must be viewed in a browser before final visual approval.
+These static studies were initially prepared without browser playback. The selected A direction now has a separate [motion prototype and Chromium verification record](home-prototype.md). Owner motion approval remains pending.

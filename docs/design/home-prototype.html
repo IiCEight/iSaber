@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>iSaber — Vivid motion prototype</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { color-scheme: light; font-family: system-ui,sans-serif; color: #252525; background: #ececec; }
+    body { margin: 0; line-height: 1.6; }
+    a { color: inherit; text-underline-offset: .22em; }
+    button,select { font: inherit; color: inherit; background: white; padding: .55rem .8rem; border: 1px solid #777; border-radius: .2rem; min-height: 44px; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 3px solid #111; outline-offset: 4px; }
+    .review { max-width: 1120px; margin: auto; padding: 24px; }
+    .review h1 { font-size: 1.25rem; margin: 0; }
+    .review p { max-width: 76ch; margin: .5rem 0 1rem; }
+    .controls { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; }
+    button[aria-pressed="true"] { background: #292929; color: white; }
+    .controls label { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .stage { padding: 8px 24px 32px; }
+    .viewport { container-type: inline-size; width: min(100%,1040px); margin: auto; border: 1px solid #888; background: white; }
+    .viewport.mobile { width: min(100%,390px); }
+    .viewport.tablet { width: min(100%,768px); }
+    .viewport:fullscreen { width: 100%; height: 100%; overflow-y: auto; border: 0; }
+    .screen { position: relative; }
+    .body-section,.footer { margin-inline: 42px; }
+    .site-header { position: absolute; left: 0; top: 0; z-index: 3; width: 100%; min-height: 72px; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 12px 28px; border-bottom: 1px solid #bdbdbd; background: white; }
+    .brand { font-size: 1rem; font-weight: 700; text-decoration: none; }
+    .nav { display: flex; flex-wrap: wrap; gap: 24px; }
+    .nav a { min-height: 44px; display: inline-flex; align-items: center; }
+    .mobile-nav { display: none; position: relative; }
+    summary { cursor: pointer; padding-block: 10px; }
+    .mobile-nav nav { position: absolute; top: 100%; right: 0; min-width: 180px; background: white; border: 1px solid #888; padding: 12px; z-index: 2; }
+    .mobile-nav a { display: block; padding: 10px; }
+    .hero { position: relative; isolation: isolate; min-height: 100svh; width: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 100px 28px 28px; background: #333; overflow: hidden; }
+    .hero::before { content: ""; position: absolute; z-index: -2; inset: 0 50% 35% 0; background: #ddd; }
+    .hero::after { content: ""; position: absolute; z-index: -2; inset: 65% 50% 0 0; background: #111; }
+    .eyebrow { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 14px; }
+    .hero .eyebrow { max-width: 40%; color: #222; }
+    .hero-type { position: relative; z-index: 1; margin-top: auto; padding-top: 220px; }
+    .hero h2 { font-size: clamp(3.5rem,16cqi,10rem); letter-spacing: -.055em; line-height: .95; margin: 0 0 24px; color: white; }
+    .hero h2 span { display: block; }
+    .hero h2 span:last-child { font-size: .48em; text-align: right; margin-top: 16px; letter-spacing: -.035em; }
+    .intro { max-width: 65ch; margin: 0 0 12px; }
+    .introduction { padding-block: 36px; }
+    .hero-link { display: inline-block; padding: 12px 16px; background: #111; color: white; }
+    .graphic { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+    .graphic span { position: absolute; width: 44cqi; height: 44cqi; border-radius: 50%; background: rgb(255 255 255 / .13); border: 1px solid rgb(255 255 255 / .2); }
+    .graphic span:nth-child(1) { top: 8%; left: 40%; }
+    .graphic span:nth-child(2) { top: 20%; left: 57%; }
+    .graphic span:nth-child(3) { top: 38%; left: 60%; }
+    .graphic span:nth-child(4) { top: 49%; left: 46%; }
+    .graphic span:nth-child(5) { top: 40%; left: 26%; }
+    .graphic span:nth-child(6) { top: 18%; left: 23%; }
+    .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 22px; border-top: 2px solid #333; }
+    .section-head h2 { font-size: 1.5rem; margin: 0; }
+    .samples { font-size: .8rem; color: #555; margin: 0 0 12px; }
+    .articles { list-style: none; margin: 0; padding: 0; }
+    .article { padding: 24px 0; border-top: 1px solid #ccc; }
+    .article a { display: grid; grid-template-columns: 30px 1fr 24px; gap: 18px; text-decoration: none; }
+    .number { font-size: .8rem; padding-top: .25rem; color: #555; }
+    .article h3 { font-size: 1.4rem; line-height: 1.3; margin: 0 0 9px; overflow-wrap: anywhere; }
+    .article a:hover h3,.article a:focus-visible h3 { text-decoration: underline; text-underline-offset: .18em; }
+    .article p { margin: 0; max-width: 64ch; }
+    .meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: .78rem; color: #555; margin-top: 12px; }
+    .state { padding: 30px 0 38px; border-top: 1px solid #ccc; }
+    .state h3 { margin: 0; }
+    .explore { border-block: 1px solid #aaa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding-block: 30px; margin-top: 24px; }
+    .explore p { margin: 0; }
+    .footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-block: 28px; font-size: .85rem; }
+    [hidden] { display: none !important; }
+    .notes { max-width: 1040px; margin: auto; padding: 0 24px 48px; }
+    .notes h2 { font-size: 1.2rem; }
+    .notes li { margin-block: 8px; max-width: 80ch; }
+    .destination { border-top: 1px solid #aaa; padding-top: 12px; margin-top: 20px; }
+    @container (max-width: 620px) {
+      .body-section,.footer { margin-inline: 22px; }
+      .site-header { min-height: 64px; padding: 8px 18px; }
+      .desktop-nav { display: none; }
+      .mobile-nav { display: block; }
+      .hero { width: 100%; padding: 86px 20px 24px; }
+      .hero h2 { font-size: clamp(3rem,19cqi,5rem); }
+      .graphic span { width: 78cqi; height: 78cqi; }
+      .graphic span:nth-child(1) { top: 18%; left: 26%; }
+      .graphic span:nth-child(2) { top: 29%; left: 43%; }
+      .graphic span:nth-child(3) { top: 42%; left: 28%; }
+      .article a { grid-template-columns: 1fr 18px; gap: 12px; }
+      .number { display: none; }
+      .article h3 { font-size: 1.2rem; }
+      .section-head h2 { font-size: 1.3rem; }
+    }
+    @media (max-width: 480px) { .review { padding: 16px; } .stage { padding: 8px 12px 24px; } }
+
+    /* Two visual studies share the approved structure. No remote font or asset requests. */
+    .screen { font-family: Arial,"Helvetica Neue","Noto Sans CJK SC",sans-serif; background: #f8f5ee; color: #171717; }
+    .site-header { background: #121215; color: #fff; border-color: #121215; }
+    .brand { font-size: 1.25rem; letter-spacing: -.06em; }
+    .mobile-nav nav { background: #121215; border-color: #777; }
+    .hero { background: linear-gradient(150deg,#2442e6,#166ee0 55%,#173baf); }
+    .hero::before { background: linear-gradient(115deg,#ef623c,#f75cac 58%,#ec812c); }
+    .hero::after { background: #121215; }
+    .hero .eyebrow { font-weight: 700; color: #121215; }
+    .hero h2 { font-weight: 500; letter-spacing: -.075em; }
+    .hero h2 span:first-child { width: fit-content; background: #121215; padding: .04em .08em; margin-left: -.08em; }
+    .hero h2 span:last-child { width: fit-content; margin-left: auto; background: #193c9e; padding: .08em .16em; }
+    .hero-link { color: white; background: #121215; border: 1px solid #eee; }
+    .graphic span { border: 0; background: linear-gradient(130deg,#be0b45,#ec250d 55%,#ff6e0b); opacity: .95; }
+    .graphic span:nth-child(2n) { background: linear-gradient(120deg,#ba1552,#ce09cb 90%); }
+    .graphic span:nth-child(3n) { background: linear-gradient(120deg,#ec220d,#f44923 70%,#e7751d); }
+    .section-head { border-color: #171717; }
+    .section-head h2 { letter-spacing: -.045em; font-size: 1.8rem; }
+    .article { border-color: #c8c4bc; }
+    .article h3 { letter-spacing: -.035em; font-weight: 500; font-size: 1.65rem; }
+    .intro { font-size: 1.2rem; line-height: 1.65; }
+    .meta,.number,.samples { color: #53514b; }
+    .article a:hover h3 { color: #173baf; }
+    .screen :focus-visible { outline-color: #222; }
+    .site-header :focus-visible,.hero :focus-visible { outline-color: white; }
+    @container (max-width: 620px) {
+      .article h3 { font-size: 1.35rem; }
+      .intro { font-size: 1.05rem; }
+      .section-head h2 { font-size: 1.5rem; }
+    }
+    #reduce-motion { width: 20px; height: 20px; }
+    button:disabled { cursor: default; opacity: .6; }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body data-direction="vivid">
+  <div class="review">
+    <h1>Home · Vivid motion prototype</h1>
+    <p>A · Vivid is selected. Review the hero entrance, scroll-linked shapes, and article reveals. Use Replay or compare reduced motion. Copy and articles remain samples; navigation still leads to design notes.</p>
+    <div class="controls" id="controls" hidden>
+      <button type="button" id="replay-motion">Replay entrance</button>
+      <label><input type="checkbox" id="reduce-motion"> Reduce motion</label>
+      <div role="group" aria-label="Preview width">
+        <button type="button" data-width="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" data-width="tablet" aria-pressed="false">Tablet · 768</button>
+        <button type="button" data-width="mobile" aria-pressed="false">Mobile · 390</button>
+      </div>
+      <button type="button" id="fullscreen" hidden>View full screen</button>
+      <label>Article state <select id="article-state"><option value="normal">Four sample articles</option><option value="single">One sample article</option><option value="empty">No articles</option><option value="error">API unavailable</option></select></label>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="viewport" id="viewport">
+      <div class="screen">
+        <header class="site-header">
+          <a class="brand" href="#home-introduction">iSaber</a>
+          <nav class="nav desktop-nav" aria-label="Main"><a href="#archive-note">Archive</a><a href="#about-note">About</a><a href="#search-note">Search</a></nav>
+          <details class="mobile-nav"><summary>Menu</summary><nav aria-label="Mobile"><a href="#archive-note">Archive</a><a href="#about-note">About</a><a href="#search-note">Search</a></nav></details>
+        </header>
+        <main>
+          <section class="hero" id="home-introduction" aria-labelledby="intro-title">
+            <div>
+              <p class="eyebrow">A personal space<br>English &amp; 中文</p>
+            </div>
+            <div class="hero-type">
+              <h2 id="intro-title"><span>iSaber</span><span>notes &amp; ideas.</span></h2>
+              <a class="hero-link" href="#recent-articles">Explore the writing ↓</a>
+            </div>
+            <div class="graphic" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          </section>
+          <section class="body-section introduction" aria-label="Personal introduction"><p class="intro">A place for personal notes, technical explorations, and things I make. Written in English and Chinese.</p><a href="#about-note">More about me ↗</a></section>
+          <section class="body-section" aria-labelledby="recent-articles">
+            <div class="section-head"><h2 id="recent-articles">Recent writing</h2><a href="#archive-note">View archive ↗</a></div>
+            <p class="samples">Sample content for layout review · publication dates shown</p>
+            <ol class="articles" id="articles">
+              <li class="article"><a href="#article-note"><span class="number" aria-hidden="true">01</span><div><h3>A small idea, carefully explored</h3><p>A short summary gives readers a reason to open the article without overwhelming the page.</p><div class="meta"><span>Sample category</span><span>English</span><time datetime="2026-11-09">09 Nov 2026</time></div></div><span aria-hidden="true">↗</span></a></li>
+              <li class="article"><a href="#article-note"><span class="number" aria-hidden="true">02</span><div><h3 lang="zh">把想法写下来，让思考慢慢生长</h3><p lang="zh">中文示例：用真实的长标题与摘要检查换行、阅读节奏和留白。</p><div class="meta"><span>Sample category</span><span lang="zh">中文</span><time datetime="2026-11-07">07 Nov 2026</time></div></div><span aria-hidden="true">↗</span></a></li>
+              <li class="article"><a href="#article-note"><span class="number" aria-hidden="true">03</span><div><h3>Notes from building something from the beginning</h3><p>Another sample article uses the same layout. Its subject is organized through labels.</p><div class="meta"><span>English</span><time datetime="2026-11-05">05 Nov 2026</time></div></div><span aria-hidden="true">↗</span></a></li>
+              <li class="article"><a href="#article-note"><span class="number" aria-hidden="true">04</span><div><h3>A longer sample title to test how the page handles multiple lines gracefully</h3><div class="meta"><span>English</span><time datetime="2026-11-02">02 Nov 2026</time></div></div><span aria-hidden="true">↗</span></a></li>
+            </ol>
+            <div class="state" id="empty-state" hidden><h3>The first chapter is on its way.</h3><p>New public articles will appear here.</p></div>
+            <div class="state" id="error-state" hidden><h3>Articles are temporarily unavailable.</h3><p>The introduction and navigation remain available. Please try again shortly.</p></div>
+          </section>
+          <section class="body-section explore" aria-label="Explore more writing"><p>There is more to explore.</p><a href="#archive-note">Browse all articles ↗</a></section>
+        </main>
+        <footer class="footer"><a href="#home-introduction">iSaber ↑</a><span>Owner-supplied contact links go here.</span></footer>
+      </div>
+    </div>
+  </div>
+  <aside class="notes" aria-labelledby="review-title">
+    <h2 id="review-title">Review notes</h2>
+    <ol>
+      <li><strong>Selected: A · Vivid.</strong> saturated warm/cool fields, filled overlapping circles, oversized sans-serif typography, a dark navigation bar, and quiet off-white article sections. This is the closer direction to the supplied reference.</li>
+      <li>The approved full-screen opening, horizontal top navigation, and shared article model remain. The graphic moves with native scrolling; the page is not pinned.</li>
+      <li>All copy and article entries are samples. OS reduced-motion preferences always take priority. The checkbox can additionally reduce motion, never override that preference.</li>
+      <li>Review animation timing, intensity, and the transition into writing. The layered CSS circles are an original motion study, not a verified reproduction of the reference's WebGL shader.</li>
+    </ol>
+    <p id="preview-status" aria-live="polite">Preview uses the available width.</p>
+    <div class="destination" id="archive-note"><strong>Archive destination</strong><p>The complete article list, category/tag/language filters, and pagination belong here. This wireframe does not build or replace that page.</p></div>
+    <div class="destination" id="article-note"><strong>Article destination</strong><p>Each sample title represents a link to the shared article-reading page. All subjects use that same template. These samples are not published articles.</p></div>
+    <div class="destination" id="about-note"><strong>About destination</strong><p>A longer biography and owner-provided contact links belong here. The short introduction on Home remains provisional copy.</p></div>
+    <div class="destination" id="search-note"><strong>Search destination</strong><p>Search remains easy to reach. A dedicated results page or accessible overlay will be designed separately.</p></div>
+  </aside>
+  <script>
+    const viewport = document.getElementById("viewport");
+    const status = document.getElementById("preview-status");
+    document.getElementById("controls").hidden = false;
+    const fullscreen = document.getElementById("fullscreen");
+    fullscreen.hidden = !document.fullscreenEnabled;
+    fullscreen.addEventListener("click", async () => {
+      try { await viewport.requestFullscreen(); }
+      catch { status.textContent = "Full-screen preview is unavailable in this browser. The responsive frame remains usable."; }
+    });
+    document.querySelectorAll("[data-width]").forEach(button => {
+      button.addEventListener("click", () => {
+        const mode = button.dataset.width;
+        viewport.className = "viewport" + (mode === "desktop" ? "" : " " + mode);
+        document.querySelectorAll("[data-width]").forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+        status.textContent = mode + " preview selected; frame width is capped by the available window width.";
+      });
+    });
+    document.getElementById("article-state").addEventListener("change", event => {
+      const state = event.target.value;
+      document.getElementById("articles").hidden = state === "empty" || state === "error";
+      document.querySelectorAll(".article").forEach((article, index) => { article.hidden = state === "single" && index > 0; });
+      document.getElementById("empty-state").hidden = state !== "empty";
+      document.getElementById("error-state").hidden = state !== "error";
+      status.textContent = "Article state: " + event.target.selectedOptions[0].textContent + ".";
+    });
+    document.querySelectorAll(".mobile-nav a").forEach(link => link.addEventListener("click", () => {
+      const menu = link.closest("details");
+      menu.open = false;
+      menu.querySelector("summary").focus();
+    }));
+  </script>
+  <script defer src="vendor/gsap-3.15.1/gsap.min.js"></script>
+  <script defer src="vendor/gsap-3.15.1/ScrollTrigger.min.js"></script>
+  <script defer src="home-prototype.js"></script>
+</body>
+</html>

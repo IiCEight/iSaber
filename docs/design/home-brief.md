@@ -1,6 +1,6 @@
 # Home page design brief
 
-Status: Owner approved the purpose, content hierarchy, full-screen hero composition, and horizontal top navigation. [Two visual directions](home-directions.md) are ready for selection; visual direction and motion prototype are not yet approved.
+Status: Owner approved the purpose, content hierarchy, full-screen hero composition, horizontal top navigation, and **A · Vivid** visual direction. The [motion prototype](home-prototype.md) is next for review before React implementation.
 
 ## Agreed foundation
 

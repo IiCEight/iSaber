@@ -1,6 +1,6 @@
 # Home page reference and motion plan
 
-Status: Initial direction agreed; this document proposes prototype behavior, not final choreography. No animation dependencies have been installed for this planning step.
+Status: Owner selected **A · Vivid**. The [local GSAP motion prototype](home-prototype.md) implements an initial entrance, scroll-linked graphic, article reveals, and reduced-motion handling for review. Production application dependencies and routes remain unchanged.
 
 ## Reference evidence
 
