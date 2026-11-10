@@ -1,13 +1,13 @@
 # GitHub delivery to private staging
 
-The workflow in [deploy-staging.yml](../../.github/workflows/deploy-staging.yml) follows successful main image preparation. JD has a dedicated restricted receiver and the GitHub `staging` environment is restricted to `main`. The first complete automatic publish/promotion run requires this workflow to be merged; the real GitHub-to-JD artifact dry run has passed.
+The workflow in [deploy-staging.yml](../../.github/workflows/deploy-staging.yml) follows successful main image preparation. JD has a dedicated restricted receiver and the GitHub `staging` environment is restricted to `main`. Automatic publish/promotion was verified after PR #18 in run [42567617719](https://github.com/IiCEight/iSaber/actions/runs/42567617719).
 
 ## What runs where
 
 ```mermaid
 flowchart LR
-  A[Main CI succeeds] --> B[GitHub builds and tests release images]
-  B --> C[GitHub retains bundle and metadata]
+  A[Main CI builds, tests, and exports images] --> B[Preparation verifies and reuses the CI artifact]
+  B --> C[GitHub retains release bundle and metadata]
   C --> D[Runner checks ZIP and asks JD for missing files]
   D --> E[Restricted SSH sends missing files]
   E --> F[JD verifies full bundle and publishes to TCR]
@@ -29,7 +29,27 @@ The transfer uses a bounded plain tar containing only requested files. JD valida
 
 Only installed root-owned verification/publishing/promotion tools run on JD. The bundle's `.py` files remain authenticated data and are never imported or executed. This prevents an upload from replacing the privileged receiver. Updates to control tools require the existing operator SSH connection and code review.
 
-The cache reduces unchanged content; it does not guarantee a fixed deployment time. New application layers still need to cross the link. Repeated delivery of the exact current artifact is an idempotent no-op. Build reuse across main CI and image preparation remains a separate optimization.
+The cache reduces unchanged content; it does not guarantee a fixed deployment time. New application layers still need to cross the link. Repeated delivery of the exact current artifact is an idempotent no-op.
+
+## Tested image reuse
+
+The Containers job builds and exercises the application images, including database outage/restart acceptance, then exports the verified bundle. Successful push-to-main runs retain `ci-images-COMMIT-ATTEMPT` for three days; PR/manual runs do not publish this handoff artifact. Preparation downloads the exact successful CI attempt's artifact using a read-only Actions token. It verifies GitHub's ZIP size/SHA-256 receipt, every bundled file/image digest, source commit, run/attempt, container-job success, and metadata against its trusted checkout. [GitHub's artifact API](https://docs.github.com/en/rest/actions/artifacts) supplies the integrity receipt.
+
+Preparation changes only `bundle.json` to bind the release to its preparation run/attempt and record the source CI artifact identity. Image manifests, configurations, layers, contract, schema, and PostgreSQL baseline remain byte-identical. Preparation runs no builds, Compose rehearsal, or image export. The optional direct registry path publishes this same verified bundle. An expired/missing/wrong-attempt artifact fails closed; rerun main CI rather than silently rebuilding. Existing pre-change bundles remain usable for their existing deployment/manual relay paths.
+
+## Transfer timeouts, progress, and retries
+
+The receiver reads available chunks of at most 64 KiB with `read1`, rather than waiting for a complete buffered 1 MiB read. A 120-second idle timeout resets on received traffic; a separate 30-minute transfer deadline bounds each connection's continuous slow traffic. The fixed command retains its 45-minute outer deadline. The runner limits the complete operation to 45 minutes within the 50-minute job, including retries, and prints progress every 15 seconds: resumed plus submitted bytes, elapsed time, average rate for the current connection, or waiting for server verification/promotion. Submitted bytes do not prove that the server has verified them. Receiver transfer failures include a bounded count of bytes received.
+
+The client makes at most three attempts, waiting five then ten seconds. Each retry requests independently authenticated metadata and a fresh cache plan, rechecks its match with the runner bundle, and resends only missing content. Retryable structured failures are transient network/timeouts before publication. An SSH disconnect without a result is retryable only for a read-only plan or an incompletely submitted body. Integrity/authorization errors, failures during registry publication/promotion, and a missing result after the full body stop for operator inspection. Pending-promotion and stale-source checks remain enforced.
+
+The receiver retains at most one 512 MiB partial archive at `delivery/transfer.tar` with a private `transfer.json` receipt bound to source commit and preparation run/attempt. A fresh plan reports its current length/prefix hash only for that source. The client rebuilds its deterministic thin archive, checks total size/digest and hashes its own prefix, and requests resume only if all match. The receiver rechecks the prefix/offset under the delivery lock and hashes the complete archive before reconstructing and verifying every file/image. Partial bytes never enter the verified blob cache or authorize publication. A different source/archive or a client without resume support starts from zero, replacing only this bounded transfer cache. Successful reconstruction removes the partial. Damaged receipts/symlinks fail closed; operators can remove the two transfer-cache files while no delivery is active to force a complete retransmission, without touching backups, promotion journals, or application data.
+
+### November 10 acceptance
+
+Deployment [42834374327](https://github.com/IiCEight/iSaber/actions/runs/42834374327) initially failed during its 43.4 MiB transfer. After the idle-timeout repair, a retry sustained only about 20 KiB/s; it was canceled during incomplete transfer, before publication/promotion, to install the tested resumable receiver. Both receiver replacements were atomic under the delivery lock, with preceding files retained.
+
+A workspace-assisted verification deliberately ended after 1 MiB, confirmed the receiver's saved prefix, then resumed the remaining archive in 23.3 seconds. Full bundle verification passed without publication/promotion and warmed the verified blob cache. The subsequent GitHub retry completed automatic registry publication, restore-gated promotion, and deployment of `baad4161a5d0851999106fc7fdb2cd9a013829be`. Its cache-assisted transfer was effectively empty (`transfer_seconds: 0.0`); independent HTTPS checks passed, with no pending promotion or retained partial. This verifies live resume and automatic cached promotion; it is not a full-bulk GitHub-route speed benchmark. The new CI artifact handoff still needs acceptance after merging this milestone into main.
 
 ## Identity and credentials
 
@@ -90,4 +110,4 @@ For rotation, generate a new dedicated key in private operator storage, install 
 
 Receiver logs/receipts are under `/opt/isaber-staging/delivery/`. Errors report bounded phase/type/HTTP status, excluding raw headers and secret-bearing command output. Transfers and reconstruction enforce size/disk limits. Cache eviction and delivery-log retention remain operator-managed; clearing the data cache and its `cache-seeded.json` marker while no delivery is active forces a safe reseed/retransfer, without touching live database/uploads/certificates.
 
-Offsite recovery/retention, full-host rebuild acceptance, reviewed schema evolution, and production delivery remain separate work. Staging stays private at `https://localhost:3443` through the [existing access guide](private-staging.md).
+[Encrypted offsite backups](offsite-backups.md) and external health alerts are installed. [Retention](backup-retention.md) is merged but disabled pending owner policy approval. Full-host rebuild acceptance, reviewed schema evolution, and production delivery remain separate work. Staging stays private at `https://localhost:3443` through the [existing access guide](private-staging.md).

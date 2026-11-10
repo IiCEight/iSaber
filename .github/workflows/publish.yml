@@ -8,6 +8,7 @@ on:
     branches: [main]
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: publish-images
   cancel-in-progress: false
@@ -25,8 +26,6 @@ jobs:
     env:
       RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
       VERIFIED_CI_RUN_ID: ${{ github.event.workflow_run.id }}
-      COMPOSE_FILE: infra/compose.rehearsal.yml
-      COMPOSE_PROJECT_NAME: isaber-release-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out the exact commit whose main CI passed
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -50,28 +49,15 @@ jobs:
           status=$(curl --silent --show-error --output /dev/null --connect-timeout 10 --max-time 20 --write-out '%{http_code}' https://ccr.ccs.tencentyun.com/v2/)
           printf 'TCR HTTPS endpoint returned HTTP %s\n' "$status"
           test "$status" = 401 || test "$status" = 200
-      - name: Build release images on GitHub
-        run: docker compose build
-      - name: Install image bundle tooling
+      - name: Reuse the exact tested images from the successful main CI attempt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 infra/prepare_release.py prepare "$RUNNER_TEMP/isaber-bundle"
+      - name: Install image publishing tooling
+        if: vars.TCR_PUBLISH_TRANSPORT == 'direct'
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends skopeo
-      - name: Pull the official PostgreSQL baseline
-        run: docker compose pull postgres
-      - name: Test these exact application and database images before publishing
-        run: |
-          docker compose up -d --wait postgres
-          docker compose run --rm --no-deps migrate up
-          docker compose up -d --wait api frontend
-          docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
-          docker compose stop postgres
-          docker compose exec -T frontend node -e "fetch('http://api:8080/readyz',{signal:AbortSignal.timeout(10000)}).then(r=>process.exit(r.status===503?0:1)).catch(()=>process.exit(1))"
-          docker compose restart postgres api frontend
-          docker compose up -d --wait api frontend
-          test "$(docker compose run --rm --no-deps -T migrate up)" = "Applied 0 migrations"
-          docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
-      - name: Export and verify the tested image bundle
-        run: python3 infra/release_bundle.py export "$RUNNER_TEMP/isaber-bundle"
       - name: Retain the verified bundle before attempting registry delivery
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -93,7 +79,7 @@ jobs:
           TCR_USERNAME: ${{ secrets.TCR_USERNAME }}
           TCR_PASSWORD: ${{ secrets.TCR_PASSWORD }}
         # Credentials exist only for this step and an ephemeral Docker config.
-        run: python3 infra/publish_images.py "$RUNNER_TEMP/isaber-release/release.json"
+        run: python3 infra/prepare_release.py publish "$RUNNER_TEMP/isaber-bundle" --output "$RUNNER_TEMP/isaber-release/release.json"
       - name: Retain the completed release manifest
         if: vars.TCR_PUBLISH_TRANSPORT == 'direct'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -111,9 +97,3 @@ jobs:
         if: vars.TCR_PUBLISH_TRANSPORT != 'direct' && vars.STAGING_CD_ENABLED == 'true'
         run: |
           echo 'Tested bundle retained. Deploy private staging will independently verify, publish, and promote it after this run succeeds.' >> "$GITHUB_STEP_SUMMARY"
-      - name: Show synthetic rehearsal logs on failure
-        if: failure()
-        run: docker compose logs --tail 100
-      - name: Remove this runner's disposable stack and volumes
-        if: always()
-        run: docker compose down --volumes --remove-orphans

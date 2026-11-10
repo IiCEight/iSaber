@@ -55,7 +55,17 @@ The restore uses a new **network-isolated PostgreSQL container**, constrained CP
 
 ## Verified acceptance
 
-On November 9, 2026, snapshot `20261109T065908Z-e351832d` from application release `32cea61ba29defa610bf24937697669e407d283a` was encrypted on JD, uploaded to Tencent, retrieved, signature/hash checked, decrypted on the workstation, and restored into isolated JD resources. Database rows, database contents, and media bytes matched. The retry returned the existing immutable object, and an upload-key shell request was rejected. The live owner/article counts remained one each, HTTPS passed, and no disposable check containers or volumes remained. The first scheduled run is November 10 at 03:30 China time.
+On November 9, 2026, snapshot `20261109T065908Z-e351832d` from application release `32cea61ba29defa610bf24937697669e407d283a` was encrypted on JD, uploaded to Tencent, retrieved, signature/hash checked, decrypted on the workstation, and restored into isolated JD resources. Database rows, database contents, and media bytes matched. The retry returned the existing immutable object, and an upload-key shell request was rejected. The live owner/article counts remained one each, HTTPS passed, and no disposable check containers or volumes remained.
+
+The first scheduled daily run succeeded at **03:30 Asia/Shanghai on November 10**: snapshot `20261109T193000Z-8216edf6` completed upload at `2026-11-09T19:30:23.827186+00:00`. On November 10, a read-only inspection verified both Tencent objects' ciphertext hashes and sender signatures. This confirms scheduled capture/upload and stored integrity; the scheduled copy has not yet received a separate decrypt/restore rehearsal.
+
+## Tencent recovery-target inventory
+
+The November 10 inspection confirmed that Tencent already hosts the restricted encrypted vault under `/var/lib/isaber-backup-vault`, installed `vault.py`/`vault_protocol.py`/`retention.py`, and the restored recovery pin. Retention policy and timer remain disabled. Do not treat this server as a blank replacement host.
+
+All three installed tools' SHA-256 digests match this repository. The vault authorized-key file, forced-command wrapper, and sudo policy are root-owned; the sudo policy is mode 0440. This inventory did not change Tencent configuration or activate retention.
+
+Tencent also runs a private Fieldnotes site, host PostgreSQL, Docker/RSSHub, k3s, feed services, and other workloads. It had about 22 GiB free disk and 2.1 GiB available memory during inspection. Docker is installed, but `docker compose` is unavailable. A rehearsal there must use a separate private directory, uniquely named containers/networks/volumes, resource limits, and an unused loopback port. Preserve the vault, host database, existing containers, services, ports, and retention settings. Installing additional tooling or restoring onto live resources is a separate operation from this read-only inventory. An isolated rehearsal on this shared server does not establish complete host provisioning or production failover acceptance.
 
 ## Capacity and recovery limits
 
