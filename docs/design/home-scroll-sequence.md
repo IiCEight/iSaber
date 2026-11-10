@@ -26,4 +26,6 @@ The complete linear content is the default HTML/CSS. Reduced motion, short viewp
 
 Focused TypeScript/lint and Chromium checks cover the four scenes, persistent scene/menu bounds through a long list, direct article jumps and hash reloads, reduced motion, mobile overflow and keyboard visibility, enlarged-text fallback, route cleanup, and JavaScript-disabled content. Long-list QA uses temporary browser-only content without changing application data. Browser captures were inspected locally. The development server at `http://127.0.0.1:3000/` remains the review surface; no full production build or pipeline is needed for this iteration.
 
+Pointer verification measures rendered bounding-box centers before and after mouse movement, including the first loop after its entrance and all three loops in scene three. Checking custom-property values alone misses transform overrides. The entrance animates a separate CSS variable so GSAP does not flatten the lenses' independent translate, rotation, and breathing scale into an inline transform.
+
 This is a DOM/CSS interpretation of the supplied screenshots, not a reproduction of the reference site's WebGL shader. Final timing, copy, and graphic composition remain open to owner review.

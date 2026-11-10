@@ -105,7 +105,10 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
           stopAttraction = attractCircles(element);
           if (animateEntrance && !document.hidden && window.scrollY < 100) {
             entrance = gsap.timeline({ defaults: { ease: "power3.out" } });
-            entrance.from(".home-orbit--one span", { scale: 0.45, opacity: 0, duration: mobile.matches ? 0.6 : 0.8, stagger: 0.03 }, 0);
+            // A GSAP scale tween normalizes CSS translate/rotate/scale into an
+            // inline transform, disabling pointer translation and breathing.
+            // Animate a separate variable so those CSS properties stay live.
+            entrance.fromTo(".home-orbit--one span", { "--lens-entrance": 0.45, opacity: 0 }, { "--lens-entrance": 1, opacity: 0.85, duration: mobile.matches ? 0.6 : 0.8, stagger: 0.03 }, 0);
             entrance.from(".home-title span", { yPercent: 32, opacity: 0, duration: 0.65, stagger: 0.07 }, 0.12);
           }
 
