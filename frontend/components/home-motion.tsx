@@ -9,7 +9,8 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
   useEffect(() => {
     const element = root.current;
     const story = element?.querySelector<HTMLElement>(".home-story");
-    if (!element || !story) return;
+    const writing = element?.querySelector<HTMLElement>(".home-content");
+    if (!element || !story || !writing) return;
     gsap.registerPlugin(ScrollTrigger);
     const preference = matchMedia("(prefers-reduced-motion: reduce)");
     const mobile = matchMedia("(max-width: 620px)");
@@ -25,7 +26,7 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
       scene = undefined;
       // The default document is a complete, linear version of the story.
       // Short/zoomed viewports also use it so cards never get trapped in a crop.
-      if (preference.matches || shortViewport.matches || parseFloat(getComputedStyle(document.documentElement).fontSize) > 20 || !element || !story) return;
+      if (preference.matches || shortViewport.matches || parseFloat(getComputedStyle(document.documentElement).fontSize) > 20 || !element || !story || !writing) return;
       try {
         context = gsap.context(() => {}, element);
         context.add(() => {
@@ -39,7 +40,13 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
 
           scene = gsap.timeline({
             defaults: { ease: "power1.inOut" },
-            scrollTrigger: { trigger: story, start: "top top", end: "bottom bottom", scrub: 0.6, invalidateOnRefresh: true },
+            scrollTrigger: {
+              trigger: story, start: "top top",
+              // End the composition at the reading entrance, independent of
+              // how many articles are returned. The list then scrolls normally.
+              end: () => `+=${Math.max(innerHeight, writing.offsetTop - (mobile.matches ? 84 : 112))}`,
+              scrub: 0.6, invalidateOnRefresh: true,
+            },
           });
           scene.to(".home-hero", { autoAlpha: 0, yPercent: -18, duration: 0.55 }, 0.25)
             .to(".home-warm-pane", { width: "100%", height: "74%", duration: 1 }, 0.2)
@@ -51,8 +58,19 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
             .to(".home-orbit--one", { left: mobile.matches ? "-34%" : "-3%", top: mobile.matches ? "8%" : "-22%", x: 0, y: 0, rotation: 135, scale: mobile.matches ? 0.62 : 0.67, duration: 1.2 }, 1.45)
             .fromTo(".home-orbit--two", { autoAlpha: 0, scale: 0.45, rotation: 25 }, { autoAlpha: 1, scale: 1, rotation: -90, duration: 1.1 }, 1.55)
             .fromTo(".home-story-invitation", { autoAlpha: 0, yPercent: 12 }, { autoAlpha: 1, yPercent: 0, duration: 0.65 }, 1.95)
-            .to(".home-story-invitation", { autoAlpha: 1, duration: 0.3 }, 2.8);
+            .to(".home-story-invitation", { autoAlpha: 1, duration: 0.3 }, 2.6)
+            .to(".home-story-invitation", { autoAlpha: 0, yPercent: -12, duration: 0.5 }, 2.85)
+            .to(".home-orbit--one", { left: mobile.matches ? "-88%" : "-40%", top: mobile.matches ? "4%" : "2%", rotation: 220, scale: mobile.matches ? 0.6 : 0.63, duration: 1.1 }, 2.9)
+            .to(".home-orbit--two", { left: mobile.matches ? "58%" : "70%", top: mobile.matches ? "54%" : "-6%", rotation: -170, duration: 1.1 }, 2.9)
+            .to(".home-orbit--three", { top: "65%", left: "32%", scale: 0.72, rotation: 120, duration: 1.1 }, 2.9)
+            .fromTo(".home-section-heading", { y: 32 }, { y: 0, duration: 0.9 }, 3.1)
+            .to(".home-section-heading", { y: 0, duration: 0.2 }, 4);
           if (!mobile.matches) scene.fromTo(".home-orbit--three", { autoAlpha: 0, scale: 0.5, rotation: -20 }, { autoAlpha: 1, scale: 0.9, rotation: 70, duration: 1 }, 1.7);
+
+          gsap.to(".home-graphic", {
+            y: mobile.matches ? -35 : -70, ease: "none",
+            scrollTrigger: { trigger: writing, start: "top bottom", end: "bottom bottom", scrub: 0.6, invalidateOnRefresh: true },
+          });
 
           element.querySelectorAll<HTMLElement>("[data-home-article]").forEach(article => {
             const reveal = gsap.from(article, {
@@ -70,13 +88,18 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
         story.classList.remove("is-animated");
       }
     }
-    const rebuild = () => setup(false);
+    const rebuild = () => {
+      const before = writing.getBoundingClientRect();
+      const readingInView = before.top < innerHeight && before.bottom > 72;
+      setup(false);
+      if (readingInView) window.scrollBy({ top: writing.getBoundingClientRect().top - before.top, behavior: "auto" });
+    };
     let fontSize = getComputedStyle(document.documentElement).fontSize;
     const textObserver = new ResizeObserver(() => {
       const nextSize = getComputedStyle(document.documentElement).fontSize;
       if (nextSize !== fontSize) {
         fontSize = nextSize;
-        setup(false);
+        rebuild();
       }
     });
     const introCard = element.querySelector(".home-intro-card");
@@ -89,7 +112,12 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
       // through intermediate panels underneath the reader's new position.
       scene?.progress(1);
     };
-    const normalizeTopLink = () => {
+    const restoreAnchor = () => {
+      if (location.hash === "#recent-articles") {
+        scene?.progress(1);
+        document.getElementById("recent-articles")?.scrollIntoView({ behavior: "auto", block: "start" });
+        return;
+      }
       if (location.hash !== "#home-title") return;
       // A heading inside a sticky scene is not a stable document-top anchor.
       history.replaceState(history.state, "", `${location.pathname}${location.search}#content`);
@@ -100,10 +128,10 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
     shortViewport.addEventListener("change", rebuild);
     document.addEventListener("visibilitychange", visibility);
     element.addEventListener("click", jumpToWriting);
-    window.addEventListener("hashchange", normalizeTopLink);
-    window.addEventListener("load", normalizeTopLink);
+    window.addEventListener("hashchange", restoreAnchor);
+    window.addEventListener("load", restoreAnchor);
     setup(true);
-    normalizeTopLink();
+    restoreAnchor();
     return () => {
       context?.revert();
       story.classList.remove("is-animated");
@@ -113,8 +141,8 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
       shortViewport.removeEventListener("change", rebuild);
       document.removeEventListener("visibilitychange", visibility);
       element.removeEventListener("click", jumpToWriting);
-      window.removeEventListener("hashchange", normalizeTopLink);
-      window.removeEventListener("load", normalizeTopLink);
+      window.removeEventListener("hashchange", restoreAnchor);
+      window.removeEventListener("load", restoreAnchor);
     };
   }, []);
   return <div className="home-page" ref={root}>{children}</div>;

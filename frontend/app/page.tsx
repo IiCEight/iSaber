@@ -60,8 +60,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
           <span className="home-scroll-cue" aria-hidden="true">Keep scrolling ↓</span>
         </section>
       </div>
-    </section>
-    <div className="home-content">
+      <div className="home-story-track" aria-hidden="true" />
+      <div className="home-content">
       <section aria-labelledby="recent-articles">
         <div className="home-section-heading"><h2 id="recent-articles" tabIndex={-1}>Recent writing</h2><Link href="/archive">View archive <span aria-hidden="true">↗</span></Link></div>
         {!page ? <div className="home-state"><h3>Articles are temporarily unavailable.</h3><p>Please try again shortly.</p><a href="/#recent-articles">Try again</a></div>
@@ -81,6 +81,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
       </section>
       <section className="home-explore" aria-label="Explore more writing"><p>There is more to explore.</p><Link href="/archive">Browse all articles <span aria-hidden="true">↗</span></Link></section>
       <footer className="home-footer"><a href="#content">iSaber <span aria-hidden="true">↑</span></a><nav aria-label="Footer"><Link href="/archive">Archive</Link><Link href="/about">About</Link></nav></footer>
-    </div>
+      </div>
+    </section>
   </HomeMotion>;
 }
