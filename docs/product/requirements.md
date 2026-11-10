@@ -63,9 +63,9 @@ Go verifies the owner session and authorization for every management operation. 
 | PRIV-01 | Private content | Owner-only access across content and assets |
 | COMM-01 | Comments | Guest submission, pending moderation, approval and removal |
 | DESIGN-01 | Visual experience | Owner-approved artistic direction, responsive layouts, accessible interactions |
-| PORT-01 | Portfolio | An introduction and curated project entries with optional external links |
+| PORT-01 | Personal identity and project writing | An introduction and project articles using the shared content model |
 
-Portfolio defaults to a simple public page, maintained in site configuration for the first release. A dedicated portfolio editor is outside this scope unless requested.
+Owner-confirmed page refinement during Home design: public pages are Home, Archive, Article, About, and Search. Journals, technical writing, and projects are all articles, organized by owner-managed categories/tags. There is no separate Work page, project content type, or hardcoded Journal/Technical/Projects navigation. About provides the personal introduction. A dedicated portfolio editor remains outside scope.
 
 ## 4. Core journeys
 
@@ -211,7 +211,7 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 ### DESIGN-01: Artistic and usable interface
 
 - Owner supplies references and approves the visual direction before full visual implementation.
-- Prototype review covers the homepage, portfolio, article, discovery, mobile navigation, and owner upload flow.
+- Prototype review covers Home, Archive, Article, About, Search, mobile navigation, and the owner upload flow.
 - Typography, composition, colors, motion, and component states form a consistent design language rather than unrelated effects.
 - Essential navigation and reading do not depend on hover, animation completion, or precise pointer movement.
 - Keyboard users can reach interactive elements with a visible focus indicator; forms have labels and actionable errors.
@@ -220,10 +220,11 @@ Portfolio defaults to a simple public page, maintained in site configuration for
 - Accessibility target: WCAG 2.2 AA. Agree on the detailed audit checklist during design review.
 - Define measurable page-loading and interaction budgets against an agreed device/network profile before accepting expensive motion or media. Final performance thresholds remain an open decision.
 
-### PORT-01: Portfolio
+### PORT-01: Personal identity and project writing
 
-- Visitors can reach the portfolio from primary navigation.
-- It presents an owner introduction and curated projects with a name, description, and optional image and external link.
+- Visitors can reach About and Archive from primary navigation.
+- Project writeups use the same article model and reading page as other writing, with ordinary Markdown images/links and owner-managed category/tag labels.
+- Home balances personal introduction with public writing; About can hold the longer biography and supplied contact links.
 - Missing optional images or links do not create broken controls or empty blocks.
 - Final copy, project content, imagery, and layout require owner review. Demo content must not be represented as the owner's actual work.
 
@@ -277,7 +278,7 @@ The owner explicitly approved all defaults documented in this PRD, including the
 | Updates | Explicit article selection, draft revisions, stable URL, and revision history |
 | Metadata and dates | Documented field defaults, owner-selected writing date, automatic first-publication time, and public update date changed on publication; Asia/Shanghai display timezone |
 | Chinese search | Literal substring matching for the first release |
-| Portfolio | Public introduction and curated project entries maintained in configuration |
+| Personal/project content | Home/About introduction and shared article pages; owner-managed labels organize all subjects |
 | Quality | Documented responsive and keyboard checks, WCAG 2.2 AA target, and browser coverage |
 | Scope | First-release capabilities, deferred features, and implementation slice order as documented above |
 

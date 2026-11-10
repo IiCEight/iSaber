@@ -1,4 +1,4 @@
-/* Neutral foundation styles; the artistic direction is pending design review. */
+/* Shared foundation; the approved Home direction is scoped in home.css. */
 :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
 * { box-sizing: border-box; }
 body { margin: 0; line-height: 1.6; }
@@ -8,8 +8,28 @@ main { padding-block: 4rem; }
 h1 { font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.15; overflow-wrap: anywhere; }
 p { max-width: 65ch; }
 :focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
-.skip-link { position: absolute; top: -5rem; left: 1rem; padding: 0.5rem; background: Canvas; color: CanvasText; }
+.skip-link { position: absolute; z-index: 50; top: -5rem; left: 1rem; padding: 0.5rem; background: Canvas; color: CanvasText; }
 .skip-link:focus { top: 0.5rem; }
+.site-header { position: relative; z-index: 10; width: 100%; min-height: 72px; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 12px 28px; margin: 0; background: #121215; color: white; font-family: Arial,sans-serif; }
+.site-header--home { position: absolute; left: 0; top: 0; }
+.site-brand { font-size: 1.25rem; letter-spacing: -.06em; }
+.site-nav { display: flex; flex-wrap: wrap; gap: 24px; }
+.site-nav a { display: inline-flex; min-height: 44px; align-items: center; font-weight: 400; text-underline-offset: .25em; }
+.site-nav a:hover,.site-nav a[aria-current="page"] { text-decoration: underline; }
+.site-mobile-nav { display: none; position: relative; }
+.site-mobile-nav summary { min-height: 44px; display: list-item; align-content: center; cursor: pointer; }
+.site-mobile-nav nav { position: absolute; right: 0; top: 100%; min-width: 180px; padding: 12px; border: 1px solid #777; background: #121215; }
+.site-mobile-nav nav a { display: block; min-height: 44px; padding: 10px; font-weight: 400; }
+.article-browser { overflow-wrap: anywhere; }
+.article-browser input,.article-browser select,.article-browser button { max-width: 100%; min-height: 44px; font: inherit; padding: .5rem; }
+.archive-search-form { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.archive-search-form p { flex-basis: 100%; }
+.article-browser li { margin-block: 1.5rem; }
+@media (max-width: 620px) {
+  .site-header { min-height: 64px; padding: 8px 18px; }
+  .site-nav { display: none; }
+  .site-mobile-nav { display: block; }
+}
 .owner-access { max-width: 32rem; }
 .owner-access form { display: grid; gap: 0.75rem; }
 .owner-access input, .owner-access button { font: inherit; padding: 0.65rem 0.85rem; border: 1px solid currentColor; border-radius: 0.25rem; }

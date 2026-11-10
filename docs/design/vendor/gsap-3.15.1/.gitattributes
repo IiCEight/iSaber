@@ -1,0 +1,2 @@
+# Preserve the official distributions byte-for-byte, including upstream whitespace.
+*.min.js -whitespace

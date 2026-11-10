@@ -211,3 +211,15 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Verify real dry-run plans keep ten local snapshots plus both encrypted copies, with zero quarantine/purge; exercise cleanup only on isolated synthetic cloud fixtures.
 - [ ] Obtain approval of the exact retention periods and future permanent deletion after quarantine, then enable the daily jobs.
 - [ ] Merge the milestone and observe the first scheduled retention runs.
+
+
+## Vivid Home and public navigation
+
+- [x] Agree on Home, Archive, Article, About, and Search, with one article model organized by categories/tags.
+- [x] Review the full-screen hero composition and horizontal top navigation.
+- [x] Select A · Vivid and positively review its GSAP motion prototype.
+- [x] Integrate the Home into React with public article data, scoped motion, reduced motion, and useful data states.
+- [x] Preserve existing browsing/search/filter/pagination behavior in Archive/Search and retain legacy homepage-query redirects.
+- [x] Provide actual navigation destinations and preserve existing owner and reading paths.
+- [ ] Merge the milestone and review the integrated site with real staging articles.
+- [ ] Refine final owner copy/fonts and separately design Archive, Article, and About.

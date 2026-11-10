@@ -10,7 +10,11 @@ async function check(path, status) {
 assert.equal((await fetch("http://api:8080/readyz")).status, 200);
 assert.deepEqual(await (await check("/healthz", 200)).json(), { status: "ok" });
 const home = await (await check("/", 200)).text();
-assert.match(home, /A home for words and ideas/);
+assert.match(home, /id="home-title"/);
+assert.match(home, /The first chapter is on its way/);
+assert.match(await (await check("/archive", 200)).text(), /<h1>Archive<\/h1>/);
+assert.match(await (await check("/search", 200)).text(), /Enter a word or phrase/);
+await check("/about", 200);
 const staticPaths = [...home.matchAll(/(?:src|href)="([^"?]+\.(?:js|css))(?:\?[^"]*)?"/g)].map(match => match[1]);
 assert.ok(staticPaths.length > 0, "SSR must reference static assets");
 for (const path of staticPaths) {

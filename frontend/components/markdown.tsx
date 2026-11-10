@@ -1,3 +1,4 @@
+// biome-ignore-all lint/performance/noImgElement: Markdown images use authorized direct delivery; an image optimizer must not cache private media or fetch arbitrary external URLs.
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -22,7 +23,7 @@ export default function Markdown({ content }: { content: string }) {
             }
             let remote: URL | null = null;
             try { if (typeof src === "string") remote = new URL(src); } catch { /* Show unavailable images without executing a URL. */ }
-            if (!remote || remote.protocol !== "https:" || !remote.hostname || remote.username || remote.password) {
+            if (remote?.protocol !== "https:" || !remote.hostname || remote.username || remote.password) {
               return <span className="image-warning">Image unavailable: {alt || "local image"}</span>;
             }
             return <span className="external-image"><small>External image · {remote.host}</small><img src={remote.href} alt={alt ?? ""} loading="lazy" referrerPolicy="no-referrer" /></span>;
