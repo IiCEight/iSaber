@@ -1,10 +1,10 @@
 # Deliver tested images through JD Cloud
 
-PR #14 established the first real release: frontend, backend, and PostgreSQL were published to TCR, pulled on JD by exact digest, and checked against their tested configurations. The operator recovery route remains `GitHub → workspace → JD → TCR`. [Automatic staging](automatic-staging.md) uses a restricted GitHub-to-JD cached transfer after its workflow is merged and enabled. See [ADR 0012](../architecture/decisions/0012-image-bundle-relay.md).
+PR #14 established the first real release: frontend, backend, and PostgreSQL were published to TCR, pulled on JD by exact digest, and checked against their tested configurations. The operator recovery route remains `GitHub → workspace → JD → TCR`. [Automatic staging](automatic-staging.md) uses the restricted GitHub-to-JD cached transfer merged in PR #18. See [ADR 0012](../architecture/decisions/0012-image-bundle-relay.md).
 
 ## What is automatic
 
-After successful push-to-main CI, **Prepare release images** builds and tests the application images with the pinned official PostgreSQL baseline. It exports application blobs, source/CI metadata, and reviewed publishing tooling as `bundle-COMMIT-ATTEMPT`, plus a small `metadata-COMMIT-ATTEMPT` artifact.
+Push-to-main CI builds and tests the application images with the pinned official PostgreSQL baseline, then exports them as `ci-images-COMMIT-CI_ATTEMPT`. After CI succeeds, **Prepare release images** verifies and reuses that exact artifact without rebuilding or re-exporting images. It retains application blobs, source/CI metadata, and reviewed publishing tooling as `bundle-COMMIT-PREPARATION_ATTEMPT`, plus a small `metadata-COMMIT-PREPARATION_ATTEMPT` artifact. See [tested image reuse](automatic-staging.md#tested-image-reuse) for provenance and expiry rules.
 
 Version 2 bundles reuse the existing TCR PostgreSQL digest from [`postgres-baseline.json`](../../infra/postgres-baseline.json). Export checks that the database configuration tested on GitHub matches this baseline. Database layers are omitted from the artifact; publication verifies the existing TCR configuration instead of uploading PostgreSQL. A missing or mismatched baseline fails the release. It never silently chooses a different database image.
 
@@ -55,10 +55,10 @@ If the existing baseline is removed from TCR, restore the verified image before 
 - SSH failure: inspect the existing alias and trusted host key; keep host verification enabled.
 - Integrity/provenance failure: stop before publication and inspect the trusted source/artifact.
 - Partial image-copy failure: no completed manifest is returned; retry after diagnosis. Existing registry blobs can be reused.
-- Optional direct GitHub-to-TCR publication: `TCR_PUBLISH_TRANSPORT=direct` retains the earlier publisher for controlled network testing. This is separate from `--transport server`, which changes how JD receives the artifact. The database reuse optimization applies to the bundle relay. Failed direct publication still requires switching back to relay mode and rerunning successful preparation.
+- Optional direct GitHub-to-TCR publication: `TCR_PUBLISH_TRANSPORT=direct` publishes the same reused verified bundle with an ephemeral registry login. This is separate from `--transport server`, which changes how JD receives the artifact. Both paths retain the verified database baseline. Failed direct publication still requires switching back to relay mode and rerunning successful preparation.
 
 ## Timing and remaining work
 
 The first release's GitHub CI took 1m 51s and preparation took another 1m 51s. Its 283 MiB workspace-to-JD transfer took 170 seconds, followed by registry upload and first pull verification. The reduced real bundle is **124.3 MiB**, with no database image layers, a reduction of about 56%. A real reduced-bundle transfer took **75.5 seconds** and passed full verification on JD; the existing TCR database configuration also matched. This probe did not publish fixture images or start application services.
 
-Building once across main CI and preparation, fully unattended delivery, staging/TLS, backups/restore, and the final artistic frontend remain subsequent work. Direct download has bounded tests and a live throughput probe; full production artifact delivery through that optional route is not yet accepted.
+The current milestone removes duplicate image builds across CI/preparation. Unattended private staging/TLS, encrypted backups, and isolated database/media restore are implemented; replacement-server/full-host recovery, production delivery, and remaining artistic page design still need acceptance. Direct download has bounded tests and a live throughput probe; full production artifact delivery through that optional route is not yet accepted.

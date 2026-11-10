@@ -4,9 +4,9 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 ## Current state
 
-The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. Category/tag management, public browsing, and English/Chinese search are merged in PR #9. Guest comments, owner moderation, and article comment controls are merged in PR #10. Separate application images and the container CI rehearsal are merged in PR #11. Private HTTPS [staging on JD](docs/operations/private-staging.md) is running through SSH for synthetic-content acceptance. Direct registry upload timed out; the [image bundle relay](docs/operations/image-relay.md) published and verified the first release. Delivery optimizations reuse the verified PostgreSQL baseline. [Automatic staging delivery](docs/operations/automatic-staging.md) is prepared with a restricted receiver and verified cached transfers. See the [publishing guide](docs/operations/publishing.md). Private COS, production delivery, and the final artistic design remain subsequent work.
+The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. Category/tag management, public browsing, and English/Chinese search are merged in PR #9. Guest comments, owner moderation, and article comment controls are merged in PR #10. Separate application images and the container CI rehearsal are merged in PR #11. Private HTTPS [staging on JD](docs/operations/private-staging.md) is running through SSH for synthetic-content acceptance. Direct registry upload timed out; the [image bundle relay](docs/operations/image-relay.md) published and verified the first release. Delivery optimizations reuse the verified PostgreSQL baseline. [Automatic staging delivery](docs/operations/automatic-staging.md) is merged in PR #18 and has completed verified publish/promotion through the restricted receiver. Transfer reliability and reuse of CI-tested images are the current CI/CD milestone; see the [backlog](docs/product/backlog.md). See the [publishing guide](docs/operations/publishing.md). Private COS, production delivery, and the remaining artistic design remain subsequent work.
 
-JD staging has [daily encrypted offsite backups to Tencent](docs/operations/offsite-backups.md), scheduled for 03:30 China time, with [hourly external health checks and GitHub alerts](docs/operations/backup-alerts.md). A retrieved copy passed isolated database/media recovery. [Retention with recovery pins and quarantine](docs/operations/backup-retention.md) is prepared for owner approval; full-host rebuild acceptance remains pending.
+JD staging has [daily encrypted offsite backups to Tencent](docs/operations/offsite-backups.md), scheduled for 03:30 China time, with [hourly external health checks and GitHub alerts](docs/operations/backup-alerts.md). The first scheduled backup succeeded on November 10. A retrieved copy passed isolated database/media recovery. [Retention with recovery pins and quarantine](docs/operations/backup-retention.md) is merged in PR #21 but disabled pending policy approval and activation; replacement-server/full-host rebuild acceptance remains pending.
 
 The owner-approved [Vivid Home design](docs/design/home-integration.md) is integrated for review, with real public article data and preserved Archive/Search behavior.
 
@@ -72,7 +72,7 @@ Both development servers bind to loopback. Development authentication uses an is
 
 ## Container rehearsal
 
-Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). Cloud deployment remains pending. The next owner exercise is in the [staging preparation guide](docs/operations/staging-preparation.md).
+Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). Private cloud staging and automatic delivery are implemented; public production deployment remains pending.
 
 ## Checks
 
@@ -100,7 +100,7 @@ go build -trimpath -o bin/isaber-owner ./cmd/owner
 
 `gofmt -l` should print nothing. Go dependency versions/checksums are committed in `go.mod` and `go.sum`. See the [database guide](docs/operations/database.md) for real PostgreSQL integration tests and migration operations, and the [contract guide](contracts/README.md) for API specification checks.
 
-GitHub Actions runs **API contract**, **Frontend**, and **Backend** independently. Add the latter two as required checks in branch protection after their first successful remote run. Nothing deploys from this workflow.
+GitHub Actions runs **API contract**, **Frontend**, **Backend**, and **Containers** independently. CI itself does not deploy. Successful push-to-main CI triggers image preparation and then the separate guarded staging delivery workflow. Branch-protection settings must be checked on GitHub separately.
 
 ## Project documents
 

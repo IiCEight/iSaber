@@ -2,6 +2,8 @@
 
 Status: Derived from the approved PRD. Ordered for incremental delivery; a checked item indicates local completion, not a production release.
 
+Current CI/CD priorities (November 10): repair SSH transfer timeouts and verify deployment; reuse CI-tested images during preparation; keep scheduled-backup/retention records current; rehearse replacement-server recovery before production storage, public domain/HTTPS, and controlled production releases. Tencent is an existing backup-vault/shared-workload host, not an empty recovery target; see the [inventory](../operations/offsite-backups.md#tencent-recovery-target-inventory).
+
 | Order | Work item | PRD coverage | Completion evidence |
 | --- | --- | --- | --- |
 | 1 | Independent frontend/backend scaffold and CI | Foundation for all capabilities | Separate builds/checks, real HTTP smoke tests, documented local setup |
@@ -147,7 +149,7 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Prepare tested image bundles and an operator relay using existing workspace GitHub/SSH access and JD's existing registry login.
 - [x] Validate twenty-one safeguards, real cached image export, a 284 MiB SSH transfer/full verification, and digest-preserving fixture copy.
 - [x] Merge PR #14, observe its real export artifact, and complete three-image publication and digest pulls.
-- [ ] Design unattended delivery after the verified transfer path is accepted; the operator recovery path is not an automatic server deployment pipeline.
+- [x] Implement unattended delivery with the restricted receiver in PR #18; keep the operator relay for recovery.
 
 
 ## Image delivery performance
@@ -156,8 +158,9 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Implement PostgreSQL baseline reuse, configuration-drift guards, and a reduced application bundle.
 - [x] Add optional direct JD artifact receipt with short-lived URLs and archive integrity checks; retain the faster measured workspace route as default.
 - [x] Merge PR #15 and verify its real release: 124.3 MiB transferred in 75.8 seconds with database reuse.
-- [ ] Reuse the main-CI tested images across preparation instead of rebuilding.
-- [ ] Automate delivery after selecting a reliable network path and restricted server identity.
+- [x] Implement reuse of the exact main-CI tested image bundle with source run/attempt and artifact/file/image integrity checks; preparation no longer rebuilds or re-exports images.
+- [x] Automate delivery with the restricted server identity in PR #18.
+- [ ] Merge and verify the image-reuse workflow on a successful main CI → preparation → staging run.
 
 
 ## Private JD staging
@@ -165,10 +168,12 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Deploy verified application/database images with dedicated secrets, runtime/operator DB roles, persistent storage, private HTTPS, resource limits, and bounded logs.
 - [x] Verify CA/HTTPS, production cookies, owner SSR, origin/CSRF rejection, restart/session/database/CA persistence, logout, and temporary-account removal.
 - [x] Prepare an access/owner-setup runbook and block data-bearing redeployment until recovery/promotion are reviewed.
-- [ ] Merge the private staging milestone PR and complete owner browser acceptance.
+- [x] Merge private staging in PR #16.
+- [ ] Complete owner browser acceptance.
 - [x] Verify coordinated snapshots and disposable restores, including nonempty synthetic database/media probes and a clean recovery point.
 - [x] Implement application promotion, explicit rollback, automatic recovery on failed candidate health, and pending-journal recovery for the unchanged reviewed schema/API/database baseline.
-- [ ] Add unattended delivery with a restricted identity, offsite recovery, and separate schema-evolution review.
+- [x] Add unattended delivery with a restricted identity (PR #18) and verified encrypted offsite recovery (PR #19).
+- [ ] Review schema evolution separately before schema-changing releases.
 
 
 ## Restricted GitHub staging delivery
@@ -178,7 +183,18 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Authenticate metadata independently on JD, reconstruct/hash-check all files, and keep uploaded programs outside the executable control path.
 - [x] Prepare automatic/manual/dry-run workflow paths with stale-source checks, restore-gated promotion, receipts, and manual recovery.
 - [x] Merge the delivery workflow and observe its first complete automatic publish/promotion (PR #18, deployment run 42567617719).
-- [ ] Add offsite recovery/retention and separately reviewed schema evolution before production.
+- [x] Merge offsite recovery (#19), backup alerts (#20), and protected retention implementation (#21).
+- [ ] Approve/activate retention, accept replacement-server recovery, and separately review schema evolution before production.
+
+## Delivery reliability and build reuse
+
+- [x] Diagnose deployment run 42834374327: CI/preparation passed; the 43.4 MiB SSH transfer failed with `TimeoutError` in `wire_transfer`. The preceding release remained healthy with no pending promotion.
+- [x] Replace full-buffer transfer reads with available-chunk reads, reset a true idle timeout on traffic, and retain an independent total deadline.
+- [x] Add 15-second progress reports, bounded diagnostics, and at most three safe pre-publication attempts with fresh authenticated cache plans.
+- [x] Retain one bounded partial archive across pre-publication failures; require matching source/run/attempt, total digest, offset, and local/server prefix hashes before resuming. Verify the full archive and bundle before caching or publishing.
+- [x] Verify slow-progress/stall/deadline regression tests, retry boundaries, and exact CI artifact reuse/integrity tests locally.
+- [ ] Verify successful trusted-main staging delivery after the receiver repair.
+- [ ] Merge the combined delivery/image-reuse milestone and observe the complete pipeline.
 
 ## Encrypted offsite backups
 
@@ -189,8 +205,9 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Verify idempotent upload, rejection of shell access, HTTPS resumption, and disposable-resource cleanup.
 - [x] Enable the timer and document safe status/recovery commands and capacity limits.
 - [x] Merge encrypted backup milestone PR #19 and verify its automatic staging delivery.
-- [ ] Observe the first scheduled daily backup run.
-- [ ] Review retention/pruning, failure notifications, and full-host disaster-rebuild acceptance before production.
+- [x] Observe the first scheduled daily backup: November 10 at 03:30 Asia/Shanghai, snapshot `20261109T193000Z-8216edf6`; verify its Tencent ciphertext hash/signature.
+- [x] Implement failure notifications in PR #20 and protected retention in PR #21.
+- [ ] Approve/activate retention and complete replacement-server/full-host disaster-rebuild acceptance before production.
 
 ## Backup health alerts
 
@@ -210,7 +227,8 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Add enabled-policy timer/result/freshness checks to existing backup alerts, including Tencent's safe status in verification replies.
 - [x] Verify real dry-run plans keep ten local snapshots plus both encrypted copies, with zero quarantine/purge; exercise cleanup only on isolated synthetic cloud fixtures.
 - [ ] Obtain approval of the exact retention periods and future permanent deletion after quarantine, then enable the daily jobs.
-- [ ] Merge the milestone and observe the first scheduled retention runs.
+- [x] Merge retention implementation in PR #21.
+- [ ] After policy approval/activation, observe the first scheduled retention runs. Both timers/policies remain disabled; no retention deletion is authorized by this backlog update.
 
 
 ## Vivid Home and public navigation
@@ -221,5 +239,6 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Integrate the Home into React with public article data, scoped motion, reduced motion, and useful data states.
 - [x] Preserve existing browsing/search/filter/pagination behavior in Archive/Search and retain legacy homepage-query redirects.
 - [x] Provide actual navigation destinations and preserve existing owner and reading paths.
-- [ ] Merge the milestone and review the integrated site with real staging articles.
+- [x] Merge Vivid Home integration (#22) and continuous scroll/lens interactions (#23).
+- [ ] Review the integrated site with real staging articles.
 - [ ] Refine final owner copy/fonts and separately design Archive, Article, and About.
