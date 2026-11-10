@@ -12,6 +12,8 @@ The initial Home confined its graphics to the opening hero and immediately enter
 
 The article list remains in normal document flow within the shared story, so long summaries and larger lists expand naturally without a nested scroller or cropped content. Existing API data/empty/unavailable behavior is retained. No event videos, stock biography, sample articles, or separate project content type were introduced.
 
+The hero's black backdrop slides completely past the right canvas edge during the introduction transition, rather than fading in place. Individual lenses breathe between 97.5% and 102.5% scale over staggered 5.6–7.2 second cycles. A nearby mouse gently attracts each lens toward the pointer, with an 18-pixel maximum screen displacement and a smooth return. Attraction accounts for the parent loop's rotation and scale, so it remains bounded throughout the scroll sequence. Touch input does not attract the lenses; reduced-motion and linear fallbacks disable both effects. Pointer listeners and animation callbacks are removed when leaving Home or rebuilding its motion settings.
+
 ## Interaction
 
 A native CSS sticky scene stays behind the entire story, including the article list and footer. A viewport-sized track sets the opening sequence length; GSAP ScrollTrigger scrubs the composition through the four scenes in either scroll direction. The reading entrance sets the main timeline endpoint independently of article-list height, and a separate gentle graphic drift continues through the reading section. The horizontal menu stays visible on Home. The graphic groups rotate around their centers so the loops remain in frame as their positions and scale change.

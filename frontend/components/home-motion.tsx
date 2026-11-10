@@ -4,6 +4,69 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+function attractCircles(root: HTMLElement) {
+  const groups = Array.from(root.querySelectorAll<HTMLElement>(".home-orbit"), orbit => ({
+    orbit, circles: Array.from(orbit.querySelectorAll<HTMLElement>("span"), node => ({ node, x: 0, y: 0 })),
+  }));
+  const finePointer = matchMedia("(hover: hover) and (pointer: fine)");
+  let pointer: { x: number; y: number } | undefined;
+  let ticking = false;
+  const tick = (_time: number, delta: number) => {
+    const smoothing = 1 - Math.exp(-Math.min(delta, 64) / 150);
+    // Read geometry before writing transforms. Remove the previous offset so
+    // attraction is measured from each circle's resting center, without drift.
+    const updates = groups.flatMap(({ orbit, circles }) => {
+      const matrix = new DOMMatrix(getComputedStyle(orbit).transform);
+      const inverse = matrix.inverse();
+      const visible = getComputedStyle(orbit).visibility !== "hidden";
+      return circles.map(circle => {
+        const rect = circle.node.getBoundingClientRect();
+        const dx = pointer ? pointer.x - (rect.x + rect.width / 2 - matrix.a * circle.x - matrix.c * circle.y) : 0;
+        const dy = pointer ? pointer.y - (rect.y + rect.height / 2 - matrix.b * circle.x - matrix.d * circle.y) : 0;
+        const distance = Math.hypot(dx, dy);
+        const radius = Math.min(280, Math.max(120, rect.width * 0.65));
+        const strength = pointer && visible ? Math.max(0, 1 - distance / radius) : 0;
+        const amount = Math.min(18, distance * 0.16) * strength;
+        const screenX = distance ? dx / distance * amount : 0;
+        const screenY = distance ? dy / distance * amount : 0;
+        return { circle, x: inverse.a * screenX + inverse.c * screenY, y: inverse.b * screenX + inverse.d * screenY };
+      });
+    });
+    let resting = true;
+    for (const { circle, x, y } of updates) {
+      circle.x += (x - circle.x) * smoothing;
+      circle.y += (y - circle.y) * smoothing;
+      circle.node.style.setProperty("--lens-x", `${circle.x}px`);
+      circle.node.style.setProperty("--lens-y", `${circle.y}px`);
+      if (Math.abs(circle.x) + Math.abs(circle.y) > 0.02) resting = false;
+    }
+    if (!pointer && resting) { gsap.ticker.remove(tick); ticking = false; }
+  };
+  const move = (event: PointerEvent) => {
+    if (!finePointer.matches || event.pointerType !== "mouse") return;
+    pointer = { x: event.clientX, y: event.clientY };
+    if (!ticking) { ticking = true; gsap.ticker.add(tick); }
+  };
+  const leave = () => { pointer = undefined; };
+  const visibility = () => { if (document.hidden) leave(); };
+  root.addEventListener("pointermove", move, { passive: true });
+  root.addEventListener("pointerleave", leave);
+  window.addEventListener("blur", leave);
+  finePointer.addEventListener("change", leave);
+  document.addEventListener("visibilitychange", visibility);
+  return () => {
+    gsap.ticker.remove(tick);
+    root.removeEventListener("pointermove", move);
+    root.removeEventListener("pointerleave", leave);
+    window.removeEventListener("blur", leave);
+    finePointer.removeEventListener("change", leave);
+    document.removeEventListener("visibilitychange", visibility);
+    for (const { circles } of groups) for (const { node } of circles) {
+      node.style.removeProperty("--lens-x"); node.style.removeProperty("--lens-y");
+    }
+  };
+}
+
 export default function HomeMotion({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -32,6 +95,8 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
         context.add(() => {
           story.classList.add("is-animated");
           context?.add(() => () => story.classList.remove("is-animated"));
+          const stopAttraction = attractCircles(element);
+          context?.add(() => stopAttraction);
           if (animateEntrance && !document.hidden && window.scrollY < 100) {
             entrance = gsap.timeline({ defaults: { ease: "power3.out" } });
             entrance.from(".home-orbit--one span", { scale: 0.45, opacity: 0, duration: mobile.matches ? 0.6 : 0.8, stagger: 0.03 }, 0);
@@ -50,9 +115,8 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
           });
           scene.to(".home-hero", { autoAlpha: 0, yPercent: -18, duration: 0.55 }, 0.25)
             .to(".home-warm-pane", { width: "100%", height: "74%", duration: 1 }, 0.2)
-            .to(".home-ink-pane", { left: "50%", top: "52%", width: "40%", height: "48%", duration: 1 }, 0.2)
-            // Hand off the hero's black backdrop to the intro card as it enters.
-            .to(".home-ink-pane", { autoAlpha: 0, duration: 0.6 }, 0.65)
+            // Slide the complete backdrop beyond the clipped canvas edge.
+            .to(".home-ink-pane", { left: "100%", duration: 1.05 }, 0.2)
             .to(".home-orbit--one", { x: () => -element.clientWidth * (mobile.matches ? 0.28 : 0.3), y: () => -innerHeight * 0.06, rotation: -48, scale: 0.9, duration: 1.1 }, 0.15)
             .fromTo(".home-story-intro", { autoAlpha: 0, yPercent: 12 }, { autoAlpha: 1, yPercent: 0, duration: 0.6 }, 0.65)
             .to(".home-story-intro", { autoAlpha: 0, yPercent: -12, duration: 0.5 }, 1.65)
