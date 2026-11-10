@@ -193,7 +193,7 @@ Continue related setup work on one milestone branch; no per-exercise PR cycle is
 - [x] Add 15-second progress reports, bounded diagnostics, and at most three safe pre-publication attempts with fresh authenticated cache plans.
 - [x] Retain one bounded partial archive across pre-publication failures; require matching source/run/attempt, total digest, offset, and local/server prefix hashes before resuming. Verify the full archive and bundle before caching or publishing.
 - [x] Verify slow-progress/stall/deadline regression tests, retry boundaries, and exact CI artifact reuse/integrity tests locally.
-- [ ] Verify successful trusted-main staging delivery after the receiver repair.
+- [x] Verify live interruption/resume through the workspace route, followed by successful automatic cached publication/promotion in run 42834374327; release `baad416` is healthy with no pending promotion. Full-bulk GitHub-route speed is not established by that cache-assisted retry.
 - [ ] Merge the combined delivery/image-reuse milestone and observe the complete pipeline.
 
 ## Encrypted offsite backups

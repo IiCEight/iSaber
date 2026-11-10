@@ -63,6 +63,8 @@ The first scheduled daily run succeeded at **03:30 Asia/Shanghai on November 10*
 
 The November 10 inspection confirmed that Tencent already hosts the restricted encrypted vault under `/var/lib/isaber-backup-vault`, installed `vault.py`/`vault_protocol.py`/`retention.py`, and the restored recovery pin. Retention policy and timer remain disabled. Do not treat this server as a blank replacement host.
 
+All three installed tools' SHA-256 digests match this repository. The vault authorized-key file, forced-command wrapper, and sudo policy are root-owned; the sudo policy is mode 0440. This inventory did not change Tencent configuration or activate retention.
+
 Tencent also runs a private Fieldnotes site, host PostgreSQL, Docker/RSSHub, k3s, feed services, and other workloads. It had about 22 GiB free disk and 2.1 GiB available memory during inspection. Docker is installed, but `docker compose` is unavailable. A rehearsal there must use a separate private directory, uniquely named containers/networks/volumes, resource limits, and an unused loopback port. Preserve the vault, host database, existing containers, services, ports, and retention settings. Installing additional tooling or restoring onto live resources is a separate operation from this read-only inventory. An isolated rehearsal on this shared server does not establish complete host provisioning or production failover acceptance.
 
 ## Capacity and recovery limits
