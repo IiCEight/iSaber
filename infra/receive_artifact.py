@@ -49,7 +49,7 @@ def extract(archive, root):
             target.chmod(0o600)
 
 
-def receive(directory, payload):
+def receive(directory, payload, *, label="JD"):
     url = payload["url"]
     validate_url(url)
     expected = payload["digest"]
@@ -84,7 +84,7 @@ def receive(directory, payload):
         metadata = Path(directory) / "content/bundle.json"
         if metadata.stat().st_size > 2 * 1024**2 or json.loads(metadata.read_text()) != payload["bundle"]:
             raise ValueError("Downloaded bundle differs from trusted metadata")
-    print(f"JD downloaded and verified {total / 1024**2:.1f} MiB in {time.monotonic() - started:.1f}s", flush=True)
+    print(f"{label} downloaded and verified {total / 1024**2:.1f} MiB in {time.monotonic() - started:.1f}s", flush=True)
 
 
 if __name__ == "__main__":
