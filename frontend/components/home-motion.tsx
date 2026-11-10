@@ -51,10 +51,12 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
           scene.to(".home-hero", { autoAlpha: 0, yPercent: -18, duration: 0.55 }, 0.25)
             .to(".home-warm-pane", { width: "100%", height: "74%", duration: 1 }, 0.2)
             .to(".home-ink-pane", { left: "50%", top: "52%", width: "40%", height: "48%", duration: 1 }, 0.2)
+            // Hand off the hero's black backdrop to the intro card as it enters.
+            .to(".home-ink-pane", { autoAlpha: 0, duration: 0.6 }, 0.65)
             .to(".home-orbit--one", { x: () => -element.clientWidth * (mobile.matches ? 0.28 : 0.3), y: () => -innerHeight * 0.06, rotation: -48, scale: 0.9, duration: 1.1 }, 0.15)
             .fromTo(".home-story-intro", { autoAlpha: 0, yPercent: 12 }, { autoAlpha: 1, yPercent: 0, duration: 0.6 }, 0.65)
             .to(".home-story-intro", { autoAlpha: 0, yPercent: -12, duration: 0.5 }, 1.65)
-            .to([".home-warm-pane", ".home-ink-pane"], { autoAlpha: 0, duration: 0.6 }, 1.65)
+            .to(".home-warm-pane", { autoAlpha: 0, duration: 0.6 }, 1.65)
             .to(".home-orbit--one", { left: mobile.matches ? "-34%" : "-3%", top: mobile.matches ? "8%" : "-22%", x: 0, y: 0, rotation: 135, scale: mobile.matches ? 0.62 : 0.67, duration: 1.2 }, 1.45)
             .fromTo(".home-orbit--two", { autoAlpha: 0, scale: 0.45, rotation: 25 }, { autoAlpha: 1, scale: 1, rotation: -90, duration: 1.1 }, 1.55)
             .fromTo(".home-story-invitation", { autoAlpha: 0, yPercent: 12 }, { autoAlpha: 1, yPercent: 0, duration: 0.65 }, 1.95)
