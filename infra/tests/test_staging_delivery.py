@@ -3,6 +3,7 @@ import io
 import json
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import tarfile
 import unittest
@@ -11,6 +12,7 @@ import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "staging"))
 import gateway
+import deliver as client
 from install_gateway import authorized_key
 import test_release_bundle as bundle_fixtures
 
@@ -65,7 +67,7 @@ class DeliveryTests(unittest.TestCase):
             patcher = patch.object(gateway, name, return_value=value) if name == "GitHub" else patch.object(gateway, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
-        for name in ("alarm", "signal"):
+        for name in ("alarm", "signal", "setitimer"):
             patcher = patch.object(gateway.signal, name)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -202,3 +204,133 @@ class DeliveryTests(unittest.TestCase):
             self.assertNotIn("evil", key)
             self.assertEqual(key.count("\n"), 1)
         with self.assertRaises(ValueError): authorized_key('command="evil" ssh-ed25519 AAAA')
+
+    def test_client_replans_after_transfer_timeout_and_reuses_new_cache_plan(self):
+        archive = self.root / "bundle.zip"
+        archive.write_bytes(self.full_zip)
+        directory = self.root / "runner"; directory.mkdir()
+        first_plan = {"status": "plan", "bundle": self.bundle, "missing": list(self.bundle["files"])}
+        warm_plan = {**first_plan, "missing": []}
+        failure = client.DeliveryError("transfer timed out", retryable=True)
+        with patch.object(client, "send", side_effect=[first_plan, failure, warm_plan, {"status": "deployed"}]) as send, patch.object(client.time, "sleep") as sleep:
+            result = client.deliver_bundle(archive, directory, "deliver", 2, "fixture-token", deadline=client.time.monotonic() + 60)
+        self.assertEqual(result["status"], "deployed")
+        self.assertEqual([call.args[1]["operation"] for call in send.call_args_list], ["plan", "deliver", "plan", "deliver"])
+        sleep.assert_called_once_with(5)
+        with tarfile.open(directory / "missing.tar") as thin:
+            self.assertEqual(thin.getnames(), [])
+
+    def test_client_does_not_retry_integrity_or_ambiguous_promotion_failures(self):
+        for failure in (client.DeliveryError("integrity rejection"), client.DeliveryError("promotion result unknown")):
+            with self.subTest(failure=str(failure)), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                archive = directory / "bundle.zip"; archive.write_bytes(self.full_zip)
+                plan = {"status": "plan", "bundle": self.bundle, "missing": []}
+                with patch.object(client, "send", side_effect=[plan, failure]) as send, patch.object(client.time, "sleep") as sleep:
+                    with self.assertRaises(client.DeliveryError):
+                        client.deliver_bundle(archive, directory, "deliver", 2, "fixture-token", deadline=client.time.monotonic() + 60)
+                self.assertEqual(send.call_count, 2)
+                sleep.assert_not_called()
+
+    def test_only_transient_failures_before_mutation_are_retryable(self):
+        for phase in ("source_metadata", "wire_transfer", "bundle_verification"):
+            self.assertTrue(client.transient_result({"phase": phase, "error_type": "TimeoutError"}))
+        for phase in ("registry_publish", "staging_promotion"):
+            self.assertFalse(client.transient_result({"phase": phase, "error_type": "TimeoutError"}))
+        self.assertFalse(client.transient_result({"phase": "wire_transfer", "error_type": "ValueError"}))
+
+    def test_client_stops_after_three_transient_failures(self):
+        archive = self.root / "bundle.zip"; archive.write_bytes(self.full_zip)
+        directory = self.root / "runner"; directory.mkdir()
+        with patch.object(client, "send", side_effect=client.DeliveryError("connection lost", retryable=True)) as send, patch.object(client.time, "sleep") as sleep:
+            with self.assertRaises(client.DeliveryError):
+                client.deliver_bundle(archive, directory, "deliver", 2, "fixture-token", deadline=client.time.monotonic() + 60)
+        self.assertEqual(send.call_count, 3)
+        self.assertEqual(sleep.call_count, 2)
+
+
+class ReceiveTimeoutTests(unittest.TestCase):
+    def exercise(self, mode):
+        # A real buffered pipe reproduces the old full-block-read timeout even
+        # while small chunks keep arriving. Isolate real signal timers in a child.
+        script = r'''
+import hashlib, os, pathlib, signal, sys, tempfile, threading, time
+sys.path.insert(0, sys.argv[1])
+import gateway
+gateway.TRANSFER_IDLE_SECONDS = 0.15
+gateway.TRANSFER_DEADLINE_SECONDS = 0.3 if sys.argv[2] == "deadline" else 3
+signal.signal(signal.SIGALRM, gateway.deadline)
+read_fd, write_fd = os.pipe()
+data = b"x" * 64
+def produce():
+    try:
+        for _ in range(30):
+            os.write(write_fd, data)
+            time.sleep(0.02 if sys.argv[2] != "idle" else 0.4)
+    except BrokenPipeError:
+        pass
+    finally:
+        os.close(write_fd)
+threading.Thread(target=produce, daemon=True).start()
+with tempfile.TemporaryDirectory() as directory, os.fdopen(read_fd, "rb") as stream:
+    try:
+        gateway.receive(stream, pathlib.Path(directory) / "received", len(data) * 30, "sha256:" + hashlib.sha256(data * 30).hexdigest())
+        assert sys.argv[2] == "progress"
+    except TimeoutError:
+        assert sys.argv[2] != "progress"
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+'''
+        result = subprocess.run([sys.executable, "-c", script, str(Path(gateway.__file__).parent), mode], capture_output=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+
+    def test_slow_continuous_progress_does_not_trip_idle_timeout(self):
+        self.exercise("progress")
+
+    def test_stalled_transfer_still_times_out(self):
+        self.exercise("idle")
+
+    def test_total_deadline_bounds_a_transfer_that_keeps_progressing(self):
+        self.exercise("deadline")
+
+
+class SSHClientTests(unittest.TestCase):
+    def exercise(self, *, body=b"payload", response=b"", broken=False, diagnostic=b""):
+        environment = {"STAGING_SSH_KEY": "fixture-private-key", "STAGING_SSH_HOST_KEY": "ssh-ed25519 AAAA",
+                       "STAGING_HOST": "fixture.example", "STAGING_PORT": "22"}
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            archive = directory / "payload"; archive.write_bytes(body)
+            process = Mock(returncode=255)
+            process.poll.return_value = 255
+            process.stdout = io.BytesIO(response)
+            if broken:
+                process.stdin.write.side_effect = [None, BrokenPipeError()]
+            def launch(*args, **kwargs):
+                kwargs["stderr"].write(diagnostic)
+                return process
+            with patch.dict(client.os.environ, environment), patch.object(client.subprocess, "Popen", side_effect=launch), patch.object(client.threading, "Timer"):
+                with self.assertRaises(client.DeliveryError) as raised:
+                    client.send(archive, {"operation": "deliver" if body else "plan"}, directory, timeout=10)
+            self.assertTrue(process.stdout.closed)
+            self.assertNotIn("fixture-private-key", str(raised.exception))
+            return raised.exception
+
+    def test_incomplete_body_disconnect_can_retry_but_missing_promotion_result_cannot(self):
+        self.assertTrue(self.exercise(broken=True).retryable)
+        self.assertFalse(self.exercise().retryable)
+        self.assertTrue(self.exercise(body=b"").retryable)
+
+    def test_host_key_and_authentication_failures_never_retry_or_echo_stderr(self):
+        for message in (b"Permission denied fixture-private-key", b"Host key verification failed"):
+            error = self.exercise(broken=True, diagnostic=message)
+            self.assertFalse(error.retryable)
+            self.assertIn("authentication or pinned host-key", str(error))
+
+    def test_structured_wire_timeout_can_retry_but_publication_timeout_cannot(self):
+        for phase, retryable in (("wire_transfer", True), ("registry_publish", False), ("staging_promotion", False)):
+            result = {"status": "failed", "error_type": "TimeoutError", "phase": phase, "bytes_received": 4}
+            self.assertEqual(self.exercise(response=json.dumps(result).encode()).retryable, retryable)
+
+    def test_invalid_json_is_bounded_failure_without_retry(self):
+        self.assertFalse(self.exercise(response=b"not a result").retryable)

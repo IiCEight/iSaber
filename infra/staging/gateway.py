@@ -29,6 +29,9 @@ from staging import compatible_release, promote, write_private, verify_https as 
 ROOT = Path("/opt/isaber-staging")
 MAX_BYTES = 512 * 1024**2
 PHASE = "header"
+TRANSFER_IDLE_SECONDS = 120
+TRANSFER_DEADLINE_SECONDS = 1800
+TRANSFER_BYTES = 0
 
 
 class StaleRelease(Exception):
@@ -85,21 +88,28 @@ def require_current(api, commit):
 
 
 def receive(stream, path, size, expected):
+    global TRANSFER_BYTES
     started = time.monotonic()
     value = hashlib.sha256()
     remaining = size
+    TRANSFER_BYTES = 0
+    # BufferedReader.read(n) can wait for all n bytes. read1 returns after one
+    # underlying read, so the idle timer resets whenever the wire makes progress.
+    read = getattr(stream, "read1", stream.read)
     with path.open("xb") as output:
         path.chmod(0o600)
         while remaining:
-            if time.monotonic() - started > 1800:
+            available = TRANSFER_DEADLINE_SECONDS - (time.monotonic() - started)
+            if available <= 0:
                 raise TimeoutError("Transfer deadline exceeded")
-            signal.alarm(45)
-            block = stream.read(min(1024 * 1024, remaining))
+            signal.setitimer(signal.ITIMER_REAL, min(TRANSFER_IDLE_SECONDS, available))
+            block = read(min(64 * 1024, remaining))
             if not block:
                 raise ValueError("Incomplete transfer")
             output.write(block)
             value.update(block)
             remaining -= len(block)
+            TRANSFER_BYTES += len(block)
     signal.alarm(180)
     if "sha256:" + value.hexdigest() != expected:
         raise ValueError("Transfer checksum differs from GitHub receipt")
@@ -373,6 +383,8 @@ if __name__ == "__main__":
     except Exception as error:
         # No exception text, request/header, subprocess command, or token is logged.
         result = {"status": "failed", "error_type": type(error).__name__, "phase": PHASE}
+        if PHASE == "wire_transfer":
+            result["bytes_received"] = TRANSFER_BYTES
         if isinstance(error, urllib.error.HTTPError):
             result["http_status"] = error.code
     signal.alarm(0)
