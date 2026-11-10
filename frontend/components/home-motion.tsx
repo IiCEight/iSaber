@@ -24,9 +24,12 @@ function attractCircles(root: HTMLElement) {
         const dx = pointer ? pointer.x - (rect.x + rect.width / 2 - matrix.a * circle.x - matrix.c * circle.y) : 0;
         const dy = pointer ? pointer.y - (rect.y + rect.height / 2 - matrix.b * circle.x - matrix.d * circle.y) : 0;
         const distance = Math.hypot(dx, dy);
-        const radius = Math.min(280, Math.max(120, rect.width * 0.65));
-        const strength = pointer && visible ? Math.max(0, 1 - distance / radius) : 0;
-        const amount = Math.min(18, distance * 0.16) * strength;
+        // Include the visible edge of large lenses, rather than limiting their
+        // response to a small central patch. Smoothly taper the outer range.
+        const radius = Math.max(rect.width, rect.height) / 2 + 180;
+        const proximity = Math.min(1, distance / radius);
+        const strength = pointer && visible ? 1 - proximity * proximity * (3 - 2 * proximity) : 0;
+        const amount = Math.min(28, distance * 0.35) * strength;
         const screenX = distance ? dx / distance * amount : 0;
         const screenY = distance ? dy / distance * amount : 0;
         return { circle, x: inverse.a * screenX + inverse.c * screenY, y: inverse.b * screenX + inverse.d * screenY };
@@ -81,9 +84,13 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
     let context: gsap.Context | undefined;
     let entrance: gsap.core.Timeline | undefined;
     let scene: gsap.core.Timeline | undefined;
+    let stopAttraction: (() => void) | undefined;
+    const clearAttraction = () => { stopAttraction?.(); stopAttraction = undefined; };
 
     function setup(animateEntrance = false) {
       context?.revert();
+      // Clear pointer offsets after GSAP restores its saved inline styles.
+      clearAttraction();
       story?.classList.remove("is-animated");
       entrance = undefined;
       scene = undefined;
@@ -95,8 +102,7 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
         context.add(() => {
           story.classList.add("is-animated");
           context?.add(() => () => story.classList.remove("is-animated"));
-          const stopAttraction = attractCircles(element);
-          context?.add(() => stopAttraction);
+          stopAttraction = attractCircles(element);
           if (animateEntrance && !document.hidden && window.scrollY < 100) {
             entrance = gsap.timeline({ defaults: { ease: "power3.out" } });
             entrance.from(".home-orbit--one span", { scale: 0.45, opacity: 0, duration: mobile.matches ? 0.6 : 0.8, stagger: 0.03 }, 0);
@@ -151,6 +157,7 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
         ScrollTrigger.refresh();
       } catch {
         context?.revert();
+        clearAttraction();
         story.classList.remove("is-animated");
       }
     }
@@ -200,6 +207,7 @@ export default function HomeMotion({ children }: { children: ReactNode }) {
     restoreAnchor();
     return () => {
       context?.revert();
+      clearAttraction();
       story.classList.remove("is-animated");
       textObserver.disconnect();
       preference.removeEventListener("change", rebuild);
