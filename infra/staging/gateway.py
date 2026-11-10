@@ -87,16 +87,22 @@ def require_current(api, commit):
         raise StaleRelease()
 
 
-def receive(stream, path, size, expected):
+def receive(stream, path, size, expected, offset=0):
     global TRANSFER_BYTES
     started = time.monotonic()
     value = hashlib.sha256()
-    remaining = size
-    TRANSFER_BYTES = 0
+    remaining = size - offset
+    TRANSFER_BYTES = offset
+    if offset:
+        if path.is_symlink() or path.stat().st_size != offset:
+            raise ValueError("Partial transfer changed; request a fresh plan")
+        with path.open("rb") as previous:
+            for block in iter(lambda: previous.read(1024 * 1024), b""):
+                value.update(block)
     # BufferedReader.read(n) can wait for all n bytes. read1 returns after one
     # underlying read, so the idle timer resets whenever the wire makes progress.
     read = getattr(stream, "read1", stream.read)
-    with path.open("xb") as output:
+    with path.open("ab" if offset else "xb") as output:
         path.chmod(0o600)
         while remaining:
             available = TRANSFER_DEADLINE_SECONDS - (time.monotonic() - started)
@@ -232,7 +238,26 @@ def plan(header):
     seed_cache()
     require_current(api, bundle["source_commit"])
     missing = [relative for relative, record in bundle["files"].items() if not cached(record)]
-    return {"status": "plan", "bundle": bundle, "missing": missing, "bytes_missing": sum(bundle["files"][name]["size"] for name in missing)}
+    return {"status": "plan", "bundle": bundle, "missing": missing, "bytes_missing": sum(bundle["files"][name]["size"] for name in missing), "partial_transfer": partial_transfer(bundle)}
+
+
+def partial_transfer(bundle):
+    # One bounded root-owned partial, shared under the delivery lock. New trusted
+    # sources replace it; it can never select a path or enter the verified cache.
+    receipt, archive = ROOT / "delivery/transfer.json", ROOT / "delivery/transfer.tar"
+    if receipt.is_symlink() or archive.is_symlink():
+        raise ValueError("Partial transfer must use regular private files")
+    if not receipt.exists() or not archive.exists():
+        return None
+    if receipt.stat().st_size > 2048 or not receipt.is_file() or not archive.is_file():
+        raise ValueError("Invalid partial transfer receipt")
+    record = json.loads(receipt.read_text())
+    if any(str(record.get(key)) != str(bundle[key]) for key in ("source_commit", "bundle_run_id", "bundle_run_attempt")):
+        return None
+    size, offset = record.get("size"), archive.stat().st_size
+    if type(size) is not int or not 0 <= offset <= size <= MAX_BYTES or not re.fullmatch(r"sha256:[0-9a-f]{64}", record.get("digest", "")):
+        raise ValueError("Invalid partial transfer size or digest")
+    return {"size": size, "digest": record["digest"], "offset": offset, "prefix_sha256": file_hash(archive)}
 
 
 def reconstruct(archive, content, bundle):
@@ -291,14 +316,28 @@ def deliver(header, stream, directory, verify_only=False):
     size, expected = header.get("size"), header.get("digest", "")
     if type(size) is not int or not 0 < size <= MAX_BYTES or not re.fullmatch(r"sha256:[0-9a-f]{64}", expected):
         raise ValueError("Invalid bounded thin archive")
-    archive = directory / "missing.tar"
+    archive = ROOT / "delivery/transfer.tar"
+    receipt = ROOT / "delivery/transfer.json"
+    previous = partial_transfer(bundle)
+    offset = header.get("offset", 0)
+    if type(offset) is not int or not 0 <= offset <= size:
+        raise ValueError("Invalid transfer resume offset")
+    if offset:
+        if previous != {"size": size, "digest": expected, "offset": offset, "prefix_sha256": header.get("prefix_sha256")}:
+            raise ValueError("Partial transfer changed; request a fresh plan")
+    else:
+        archive.unlink(missing_ok=True)
+        record = {key: bundle[key] for key in ("source_commit", "bundle_run_id", "bundle_run_attempt")}
+        write_private(receipt, json.dumps({**record, "size": size, "digest": expected}) + "\n")
     if shutil.disk_usage(ROOT).free < size * 3 + 1024**3:
         raise ValueError("Insufficient free delivery/cache disk")
     PHASE = "wire_transfer"
-    seconds = receive(stream, archive, size, expected)
+    seconds = receive(stream, archive, size, expected, offset)
     content = directory / "content"
     PHASE = "bundle_verification"
     reconstruct(archive, content, bundle)
+    archive.unlink()
+    receipt.unlink()
     # Uploaded programs remain hash-bound data. Only installed root-owned tools run.
     commit, run_id, attempt = bundle["source_commit"], bundle["bundle_run_id"], bundle["bundle_run_attempt"]
     candidate = expected_release(bundle)

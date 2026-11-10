@@ -248,6 +248,77 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(send.call_count, 3)
         self.assertEqual(sleep.call_count, 2)
 
+    def retain_partial(self):
+        offset = len(self.data) // 2
+        archive = self.root / "delivery/transfer.tar"
+        archive.write_bytes(self.data[:offset])
+        receipt = {key: self.bundle[key] for key in ("source_commit", "bundle_run_id", "bundle_run_attempt")}
+        (self.root / "delivery/transfer.json").write_text(json.dumps({**receipt, "size": len(self.data), "digest": self.header()["digest"]}))
+        return offset
+
+    def test_interrupted_transfer_retains_a_bounded_partial_and_resumes_before_verification(self):
+        offset = len(self.data) // 2
+        def interrupt(stream, path, size, digest, resumed=0):
+            path.write_bytes(stream.read(offset))
+            raise TimeoutError()
+        with patch.object(gateway, "receive", side_effect=interrupt), self.assertRaises(TimeoutError):
+            self.deliver()
+        self.publish.assert_not_called(); self.promote.assert_not_called()
+        with patch.object(gateway, "seed_cache"):
+            partial = gateway.plan(self.header())["partial_transfer"]
+        self.assertEqual(partial["offset"], offset)
+        self.assertEqual(partial["prefix_sha256"], hashlib.sha256(self.data[:offset]).hexdigest())
+        result = gateway.deliver({**self.header(), "offset": offset, "prefix_sha256": partial["prefix_sha256"]}, io.BytesIO(self.data[offset:]), self.incoming)
+        self.assertEqual(result["status"], "deployed")
+        self.assertFalse((self.root / "delivery/transfer.tar").exists())
+        self.assertFalse((self.root / "delivery/transfer.json").exists())
+
+    def test_changed_prefix_source_attempt_digest_and_offset_cannot_be_resumed(self):
+        offset = self.retain_partial()
+        prefix = hashlib.sha256(self.data[:offset]).hexdigest()
+        for changed in ({"offset": offset + 1}, {"offset": True}, {"prefix_sha256": "f" * 64}, {"digest": "sha256:" + "f" * 64}):
+            with self.subTest(changed=changed), self.assertRaises(ValueError):
+                gateway.deliver({**self.header(), "offset": offset, "prefix_sha256": prefix, **changed}, io.BytesIO(self.data[offset:]), self.incoming)
+        path = self.root / "delivery/transfer.json"
+        receipt = json.loads(path.read_text()); receipt["bundle_run_attempt"] = "9"; path.write_text(json.dumps(receipt))
+        with self.assertRaises(ValueError):
+            gateway.deliver({**self.header(), "offset": offset, "prefix_sha256": prefix}, io.BytesIO(self.data[offset:]), self.incoming)
+        self.publish.assert_not_called(); self.promote.assert_not_called()
+
+    def test_old_clients_can_safely_restart_a_partial_from_zero(self):
+        self.retain_partial()
+        self.assertEqual(self.deliver()["status"], "deployed")
+
+    def test_partial_symlinks_and_oversized_receipts_are_rejected(self):
+        self.retain_partial()
+        path = self.root / "delivery/transfer.json"
+        path.write_bytes(b"x" * 2049)
+        with self.assertRaises(ValueError): gateway.partial_transfer(self.bundle)
+        path.unlink(); path.symlink_to(self.root / "current-release.json")
+        with self.assertRaises(ValueError): gateway.partial_transfer(self.bundle)
+
+    def test_client_rebuilds_identical_tar_and_resumes_only_a_matching_prefix(self):
+        for matching in (True, False):
+            with self.subTest(matching=matching), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                archive = directory / "bundle.zip"; archive.write_bytes(self.full_zip)
+                plan = {"status": "plan", "bundle": self.bundle, "missing": list(self.bundle["files"])}
+                captured = {}
+                def send(path, header, *_args, **_kwargs):
+                    if header["operation"] == "plan":
+                        return {**plan, "partial_transfer": captured.get("partial")}
+                    data = path.read_bytes()
+                    if not captured:
+                        offset = len(data) // 2
+                        captured.update(data=data, partial={"size": len(data), "digest": header["digest"], "offset": offset,
+                                                             "prefix_sha256": hashlib.sha256(data[:offset]).hexdigest() if matching else "f" * 64})
+                        raise client.DeliveryError("interrupted", retryable=True)
+                    self.assertEqual(data, captured["data"])
+                    self.assertEqual(header.get("offset", 0), captured["partial"]["offset"] if matching else 0)
+                    return {"status": "deployed"}
+                with patch.object(client, "send", side_effect=send), patch.object(client.time, "sleep"):
+                    self.assertEqual(client.deliver_bundle(archive, directory, "deliver", 2, "fixture-token", deadline=client.time.monotonic() + 60)["status"], "deployed")
+
 
 class ReceiveTimeoutTests(unittest.TestCase):
     def exercise(self, mode):

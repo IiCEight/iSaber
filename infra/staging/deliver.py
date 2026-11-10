@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from relay_release import REPOSITORY, NoRedirect, check_run
 from receive_artifact import StorageRedirect, validate_url, extract
 
-DELIVERY_DEADLINE_SECONDS = 2400
+DELIVERY_DEADLINE_SECONDS = 2700
 MAX_ATTEMPTS = 3
 
 
@@ -33,7 +33,8 @@ def report_progress(stopped, progress, size, started):
         elapsed = max(time.monotonic() - started, 0.001)
         sent = progress["sent"]
         stage = "uploading" if sent < size else "waiting for server verification/promotion"
-        print(f"SSH {stage}: {sent / 1024**2:.1f}/{size / 1024**2:.1f} MiB submitted, {elapsed:.0f}s elapsed, {sent / 1024 / elapsed:.1f} KiB/s average", flush=True)
+        transferred = sent - progress.get("resumed", 0)
+        print(f"SSH {stage}: {sent / 1024**2:.1f}/{size / 1024**2:.1f} MiB accounted for (resumed + submitted), {elapsed:.0f}s elapsed, {transferred / 1024 / elapsed:.1f} KiB/s average this connection", flush=True)
 
 
 def transient_result(result):
@@ -104,8 +105,11 @@ def send(archive, header, directory, *, timeout=DELIVERY_DEADLINE_SECONDS):
     operation = "probe" if os.environ.get("STAGING_PROBE_ONLY") == "true" else "deliver"
     arguments = ["ssh", "-i", str(key), "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "ForwardAgent=no", "-o", "ClearAllForwardings=yes", "-o", "StrictHostKeyChecking=yes", "-o", "HostKeyAlias=isaber-jd-staging", "-o", "UserKnownHostsFile=" + str(hosts), "-o", "ConnectTimeout=20", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4", "-p", port, "isaber-deploy@" + host, operation]
     started = time.monotonic()
-    progress = {"sent": 0}
     size = archive.stat().st_size
+    offset = header.get("offset", 0)
+    if type(offset) is not int or not 0 <= offset <= size:
+        raise ValueError("Invalid local resume offset")
+    progress = {"sent": offset, "resumed": offset}
     stopped = threading.Event()
     with tempfile.TemporaryFile() as errors:
         process = subprocess.Popen(arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=errors)
@@ -117,6 +121,7 @@ def send(archive, header, directory, *, timeout=DELIVERY_DEADLINE_SECONDS):
             try:
                 process.stdin.write(json.dumps(header).encode() + b"\n")
                 with archive.open("rb") as source:
+                    source.seek(offset)
                     for block in iter(lambda: source.read(64 * 1024), b""):
                         process.stdin.write(block)
                         progress["sent"] += len(block)
@@ -195,6 +200,19 @@ def deliver_bundle(archive, directory, operation, run_id, token, *, deadline):
                 for block in iter(lambda: source.read(1024 * 1024), b""):
                     value.update(block)
             header = {"operation": operation, "run_id": run_id, "token": token, "size": thin.stat().st_size, "digest": "sha256:" + value.hexdigest()}
+            partial = plan.get("partial_transfer")
+            if (isinstance(partial, dict) and partial.get("digest") == header["digest"]
+                    and partial.get("size") == header["size"]
+                    and type(partial.get("offset")) is int and 0 < partial["offset"] <= header["size"]):
+                prefix = hashlib.sha256()
+                remaining = partial["offset"]
+                with thin.open("rb") as source:
+                    while remaining:
+                        block = source.read(min(remaining, 1024 * 1024))
+                        prefix.update(block); remaining -= len(block)
+                if prefix.hexdigest() == partial.get("prefix_sha256"):
+                    header.update(offset=partial["offset"], prefix_sha256=prefix.hexdigest())
+                    print(f"Resuming after {partial['offset'] / 1024**2:.1f} MiB already received; prefix matches the local archive", flush=True)
             return send(thin, header, directory, timeout=deadline - time.monotonic())
         except DeliveryError as error:
             delay = 5 * attempt
