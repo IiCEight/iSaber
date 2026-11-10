@@ -6,7 +6,7 @@ Status: First local design prototype, pending owner review. The live `/archive` 
 
 Help readers find and open an article, with categories and tags organizing all writing. Continue Home's vivid blue, warm gradients, overlapping circular lenses, oversized typography, and horizontal navigation. Give browsing a quieter rhythm: a compact graphic masthead, followed immediately by visible controls and a readable index. No scroll-pinned sequence or forced animation before the articles.
 
-Desktop: a two-column masthead pairs the title/introduction with a circular graphic. Below it, a light filter strip separates the expressive opening from dark article rows. Each row has a publication date, title, summary, category, tags, and language. The arrow and title open the same article. A coral hover accent connects the reading area to Home's warm palette.
+Desktop: a two-column masthead pairs the title/introduction with a circular graphic. Below it, a vivid coral-to-pink filter strip echoes Home’s warm palette above the dark article rows. Navy inputs and a cobalt search button keep the controls distinct and readable. Each row has a publication date, title, summary, category, tags, and language. The arrow and title open the same article. A coral hover accent connects the reading area to Home's warm palette.
 
 Mobile: retain the same reading order with a smaller graphic, stacked filters, date above title, and wrapping metadata. No horizontal scrolling or hidden essential filters. The masthead grows with content and enlarged text.
 
