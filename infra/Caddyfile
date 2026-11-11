@@ -2,12 +2,14 @@
 	default_sni {$BLOG_DOMAIN}
 }
 
-{$BLOG_DOMAIN} {
+{$BLOG_DOMAIN} {$BLOG_ALIASES:} {
 	tls {
 		issuer acme https://acme-v02.api.letsencrypt.org/directory {
 			profile shortlived
 		}
 	}
+	@alias not host {$BLOG_DOMAIN}
+	redir @alias https://{$BLOG_DOMAIN}{uri} permanent
 	encode zstd gzip
 	reverse_proxy frontend:3000
 }

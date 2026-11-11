@@ -14,9 +14,9 @@ Deployment sends two digest lines through a dedicated SSH key. The host's [small
 
 ## Current installation — November 11, 2026
 
-PR #26 is merged. The blog runs at **https://101.42.13.215**; owner sign-in is at [/admin](https://101.42.13.215/admin). The owner chose direct IP access and preservation of the JD account/article. Tencent has one owner, one article, and zero managed images. Owner credentials, article/revision/media row fingerprints and all upload-file checksums matched JD before acceptance; no password reset or article rewrite was performed.
+PR #26 is merged. The canonical address is **https://isaber.top**; owner sign-in is at [/admin](https://isaber.top/admin). `https://www.isaber.top` redirects to the root domain, preserving the path and query. The owner initially used direct IP access and then purchased `isaber.top`; the JD account/article are preserved. Tencent has one owner, one article, and zero managed images. Owner credentials, article/revision/media row fingerprints and all upload-file checksums matched JD before acceptance; no password reset or article rewrite was performed.
 
-Caddy 2.11.9 uses Let's Encrypt's `shortlived` ACME profile for the public IP and renews the certificate automatically. `default_sni` selects this certificate for clients that omit SNI when connecting to an IP. The initial certificate is valid through November 18, 2026; HTTP redirects to HTTPS. The owner opened public TCP 443; port 80 is also available for HTTP challenges. The certificate and both public HTTP/HTTPS were checked from external networks. See [Let's Encrypt IP certificates](https://letsencrypt.org/2026/01/15/6day-and-ip-general-availability) and [Caddy TLS profiles](https://caddyserver.com/docs/caddyfile/directives/tls).
+Caddy 2.11.9 obtains and renews trusted Let's Encrypt certificates for the canonical domain and its configured aliases using the `shortlived` ACME profile. HTTP redirects to HTTPS; alias HTTPS redirects to the canonical origin. Public TCP 80/443 remain open. The initial IP certificate is retained in private certificate storage, but the supported browser and owner-login address is now `https://isaber.top`. See [Caddy TLS profiles](https://caddyserver.com/docs/caddyfile/directives/tls).
 
 The Compose plugin was installed from Tencent's Ubuntu mirror with no package upgrades/removals and no Docker restart. The blog binds `10.2.0.6:80/443`, preserving Tailscale's separate HTTPS listener, Fieldnotes/private Caddy, host PostgreSQL, RSSHub, k3s, Mihomo and feed services. The four blog containers used about 228 MiB combined at inspection, under their configured limits. Database, uploads, certificates and proxy configuration use project-scoped persistent volumes; no database port is published.
 
@@ -25,6 +25,23 @@ GitHub's `production` environment permits only the `main` branch. It holds a ded
 JD's four old staging containers are stopped; original volumes, account/article data, keys and backup archives remain. Its backup/retention timers are disabled, Tencent retention remains disabled, and `STAGING_CD_ENABLED=false`. No scheduled backup transfer or separate staging delivery is part of the new installation.
 
 Public HTTPS, process/database readiness, Home/Archive/Search, static assets, existing article visibility, anonymous owner-route rejection and cross-origin rejection passed. The real deployer also passed a same-release update with CA-verified HTTPS. Interactive owner/browser acceptance uses the preserved JD credentials.
+
+## Domain setup
+
+The DNSPod zone has these records, both on the default line with TTL 600:
+
+| Host | Type | Value |
+| --- | --- | --- |
+| `@` | A | `101.42.13.215` |
+| `www` | A | `101.42.13.215` |
+
+The server-only `.env` uses `BLOG_DOMAIN=isaber.top` and `BLOG_ALIASES=www.isaber.top`. Compose passes aliases only to Caddy; Go's exact `SITE_ORIGIN` remains the canonical `https://BLOG_DOMAIN`. Aliases are optional and space-separated; omit `BLOG_ALIASES` when only one hostname is needed. Configure DNS for every alias before enabling its certificate automation.
+
+For a domain change, serialize against the deployer with `/opt/isaber/.deploy.lock`, preserve the existing private configuration, update the Caddy/Compose files and hostname values, then recreate only the edge and API services. Verify certificates, alias redirects, the canonical login origin, and `/healthz` before accepting the change. Application images, database, uploads and stable secrets do not need replacement. CI continues to deploy by digest and reads the current hostname from the host `.env`.
+
+Public checks returned 200 for Home, Archive, About, Search, owner sign-in, article-list and `/healthz`. Both certificates verified, and the `www` redirect preserved an Archive path/query. A deliberately invalid login from the canonical origin returned 401; an untrusted origin returned 403. The existing deployer completed a same-release update using its new domain health check. PostgreSQL was not restarted by the domain switch.
+
+The old IP cookie does not transfer to the domain. Sign in again at `/admin` using the same owner credentials; do not rerun owner setup. Future owner bookmarks and publishing links should use the canonical domain.
 
 ## First automatic production release
 
@@ -42,7 +59,7 @@ The active containers and `release.env` matched both digests. `previous.env` ret
 The first setup and JD content cutover above are complete. The steps below are a reference for a new empty host; preserve an existing installation and its credentials. Tencent is shared: preserve Fieldnotes, its host PostgreSQL, RSSHub, k3s, Mihomo, Tailscale, and the existing encrypted vault. The new Compose project is named `isaber`; its PostgreSQL has no host port and its volumes are separate from the host database. The pinned official PostgreSQL/Caddy images pull through DaoCloud; NJU’s Docker Hub endpoint returned HTTP 403 from this host. These dependency images are independent of the GHCR application route. Select the host LAN address for `BLOG_BIND_ADDR`, avoiding the existing Tailscale listeners. Do not bind blindly to all interfaces.
 
 1. Inspect capacity/occupied ports and review installation of the Compose v2 plugin (Docker is already installed). Simulate the package change before installing; do not upgrade/remove unrelated runtime packages or restart Docker for registry/proxy configuration. Confirm `docker compose version` works.
-2. Set `BLOG_DOMAIN` to the public IPv4 address or DNS name. The initial choice is `101.42.13.215`. Allow public TCP 80/443. Caddy obtains a publicly trusted short-lived certificate; API authentication uses exactly `https://BLOG_DOMAIN`. A domain can be configured later with matching DNS and origin settings.
+2. Set `BLOG_DOMAIN` to the public IPv4 address or DNS name. The current choice is `isaber.top`, with optional `BLOG_ALIASES=www.isaber.top`. Allow public TCP 80/443. Caddy obtains a publicly trusted short-lived certificate; API authentication uses exactly `https://BLOG_DOMAIN`. Each configured hostname must resolve to this server before HTTPS activation.
 3. Through the existing operator SSH connection, install the reviewed files:
 
    ```text

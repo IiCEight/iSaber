@@ -19,7 +19,7 @@ Requirements from `AGENTS.md`:
 
 The approved core scope and architecture are implemented. Vivid Home and its motion are integrated after owner review; further page design and browser acceptance remain.
 
-The [implementation backlog](docs/product/backlog.md) tracks progress. Core authentication, publishing, images, revisions, organization, search, and comments are merged. Artistic design remains under review. The owner approved replacing the former relay, staging, and backup framework with [one workflow and one Tencent deployment](docs/architecture/decisions/0019-simple-delivery.md). The Tencent blog now runs over trusted IP HTTPS with private persistent volumes and preserved JD content. The owner approved automatic delivery from successful main builds, and it is enabled.
+The [implementation backlog](docs/product/backlog.md) tracks progress. Core authentication, publishing, images, revisions, organization, search, and comments are merged. Artistic design remains under review. The owner approved replacing the former relay, staging, and backup framework with [one workflow and one Tencent deployment](docs/architecture/decisions/0019-simple-delivery.md). The Tencent blog now runs at `https://isaber.top` over trusted HTTPS with private persistent volumes and preserved JD content. The owner approved automatic delivery from successful main builds, and it is enabled.
 
 ## 2. Application separation
 
@@ -75,7 +75,7 @@ The dashboard prioritizes efficient, accessible management; the public blog foll
 
 ```mermaid
 flowchart TD
-    Browser[Readers and owner] --> Proxy[Caddy: trusted IP HTTPS]
+    Browser[Readers and owner] --> Proxy[Caddy: isaber.top HTTPS]
     Proxy --> Frontend[React / Next.js]
     Frontend --> API[Go API: internal network]
     API --> Database[PostgreSQL 16: private persistent volume]
@@ -222,7 +222,7 @@ The owner revised operational scope on November 11, 2026: keep local/CI syntheti
 
 - Build application images once in CI, test them, and push the same images to GHCR on main.
 - Pull public images through NJU by exact digest; send only digests through restricted SSH.
-- Delivery is enabled after accepted Tencent capacity/storage, trusted IP HTTPS, dedicated credentials and the JD content cutover. Adding a DNS name is optional follow-up work.
+- Delivery is enabled after accepted Tencent capacity/storage, trusted IP HTTPS, dedicated credentials and the JD content cutover. The purchased `isaber.top` domain is canonical, with `www` redirected to it.
 - Preserve database, private uploads, and certificate volumes across updates.
 - Apply migrations explicitly with operator credentials; review compatibility with the previous application images.
 - Verify readiness/HTTPS and restore previous application images on failed activation. Data and schema rollback remain separate operator decisions.

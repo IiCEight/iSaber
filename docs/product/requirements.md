@@ -290,7 +290,7 @@ Approval of defaults does not supply values or materials that have not yet been 
 
 - The owner supplied Home references, selected Vivid and positively reviewed its motion; that Home is integrated. Remaining page designs, final branding/copy/fonts, portfolio content and representative English/Chinese articles still need owner review.
 - Numerical performance budgets, test device/network profile, expected content volume, and traffic assumptions must be defined before their respective design or release acceptance checks.
-- Login, sessions, password storage and owner recovery are deployed. Production secrets, private persistent storage, trusted IP HTTPS and automatic delivery are configured. Domain selection is optional; ingress abuse tuning and long-term session/content cleanup remain operational follow-ups.
+- Login, sessions, password storage and owner recovery are deployed. Production secrets, private persistent storage, trusted IP HTTPS and automatic delivery are configured. The domain is `isaber.top`, with `www` redirected to the canonical origin; ingress abuse tuning and long-term session/content cleanup remain operational follow-ups.
 - The logical data model and API contract are owner-approved, the implementation backlog is prepared, and PostgreSQL migrations are merged. Core article features and the first automatic public release are verified; final design/browser review and explicit live rollback rehearsal remain.
 
 ## 10. Review and approval

@@ -2,7 +2,7 @@
 
 Status: Publishing/images/history merged through PR #8, labels/search in PR #9 and guest comments/moderation in PR #10. These features are deployed on Tencent with successful CI/HTTP checks. Real browser acceptance and final page design remain; see the [current backlog](../product/backlog.md#next-priorities).
 
-For the live blog, open [owner sign-in](https://101.42.13.215/admin) and use the preserved JD account. Follow the upload/preview/publish workflows below in that site. The local startup commands are for development; production operator commands are in [deployment](deployment.md).
+For the live blog, open [owner sign-in](https://isaber.top/admin) and use the preserved JD account. Follow the upload/preview/publish workflows below in that site. The local startup commands are for development; production operator commands are in [deployment](deployment.md).
 
 ## Try it locally
 

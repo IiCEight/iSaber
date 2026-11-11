@@ -112,11 +112,13 @@ jobs:
           bash infra/tests/deploy.test.sh
           FRONTEND_IMAGE=isaber-frontend:rehearsal BACKEND_IMAGE=isaber-api:rehearsal \
             docker compose --env-file infra/production.env.example --file infra/compose.yml config --quiet
-          docker run --rm -i --network none --read-only --cap-drop ALL \
-            --security-opt no-new-privileges --tmpfs /data --tmpfs /config \
-            --env BLOG_DOMAIN=203.0.113.10 --entrypoint caddy \
-            caddy@sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424 \
-            validate --config /dev/stdin --adapter caddyfile < infra/Caddyfile
+          for aliases in '' 'www.blog.example.com'; do
+            docker run --rm -i --network none --read-only --cap-drop ALL \
+              --security-opt no-new-privileges --tmpfs /data --tmpfs /config \
+              --env BLOG_DOMAIN=blog.example.com --env BLOG_ALIASES="$aliases" --entrypoint caddy \
+              caddy@sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424 \
+              validate --config /dev/stdin --adapter caddyfile < infra/Caddyfile
+          done
       - name: Build application images once
         run: docker compose build
       - name: Test the built images with a disposable database
