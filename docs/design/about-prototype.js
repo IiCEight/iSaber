@@ -34,15 +34,13 @@
           [4,78],[39,76],[75,83],[100,72],[55,104],[12,109],
         ];
         const scene = gsap.timeline({defaults:{ease:'power1.inOut'},scrollTrigger:{trigger:root,start:'top top+=72',end:'bottom bottom',scrub:.65,invalidateOnRefresh:true}});
-        scene.to('.warm-field',{right:'52%',top:'0%',width:'48%',height:'100%',duration:1},0)
-          .to('.orbit-layout',{left:mobile.matches?'24%':'37%',top:mobile.matches?'6%':'-10%',width:mobile.matches?'115vmin':'105vmin',duration:1},0)
+        // The warm accent stays at the right edge; only the lenses travel.
+        scene.to('.orbit-layout',{left:mobile.matches?'24%':'37%',top:mobile.matches?'6%':'-10%',width:mobile.matches?'115vmin':'105vmin',duration:1},0)
           .to('.orbit-rig',{rotation:72,duration:1},0)
           .to(slots,{left:i=>scatter[i][0]+'%',top:i=>scatter[i][1]+'%',width:mobile.matches?'27%':'28%',duration:1},.1)
-          .to('.warm-field',{right:'-30%',top:'15%',width:'55%',height:'78%',duration:1},1.05)
           .to('.orbit-layout',{left:mobile.matches?'-20%':'-9%',top:mobile.matches?'22%':'4%',width:mobile.matches?'125vmin':'95vmin',duration:1},1.05)
           .to('.orbit-rig',{rotation:148,duration:1},1.05)
           .to(slots,{left:i=>16+(i%4)*24+'%',top:i=>20+Math.floor(i/4)*28+'%',width:'34%',duration:1},1.1)
-          .to('.warm-field',{right:'0%',top:'0%',width:mobile.matches?'32%':'34%',height:'40%',duration:1},2.1)
           .to('.orbit-layout',{left:mobile.matches?'45%':'64%',top:mobile.matches?'7%':'-12%',width:mobile.matches?'115vmin':'88vmin',duration:1},2.1)
           .to('.orbit-rig',{rotation:240,duration:1},2.1)
           .to(slots,{left:i=>50+Math.cos(i*Math.PI/6)*30+'%',top:i=>50+Math.sin(i*Math.PI/6)*30+'%',width:'34%',duration:1},2.1)
