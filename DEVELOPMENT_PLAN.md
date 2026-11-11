@@ -19,7 +19,7 @@ Requirements from `AGENTS.md`:
 
 Implementation begins after review of the scope and architecture. Visual implementation follows review of the design direction.
 
-The [implementation backlog](docs/product/backlog.md) tracks progress. Foundation, authentication, Markdown/ZIP publishing, private local images, and published revision history are merged through PR #8. Category/tag management and search are merged together in PR #9. Guest comments, public reading, moderation, and comment controls are merged in PR #10. Separate application images and a container rehearsal are merged in PR #11. Guided staging preparation is in progress. After direct cross-border registry upload failed, a [verified image bundle relay](docs/operations/image-relay.md) is prepared for review; actual application publication is not yet accepted. Production COS, artistic design, and cloud deployment remain subsequent work.
+The [implementation backlog](docs/product/backlog.md) tracks progress. Core authentication, publishing, images, revisions, organization, search, and comments are merged. Artistic design remains under review. The owner approved replacing the former relay, staging, and backup framework with [one workflow and one Tencent deployment](docs/architecture/decisions/0019-simple-delivery.md). Public HTTPS, production storage acceptance, and the host/data cutover follow review of the simplified implementation.
 
 ## 2. Application separation
 
@@ -27,7 +27,7 @@ Decision: Use one repository with independently buildable, testable, and deploya
 
 ### Application independence requirements
 
-- Each application has its own dependencies, build commands, tests, container image, and deployment pipeline.
+- Each application has its own dependencies, build commands, tests, container image, and versioned release reference. One shared workflow coordinates delivery.
 - Frontend and backend changes run their respective CI checks; API contract changes run checks for both.
 - The frontend uses the documented API and does not access backend implementation files or the database.
 - Each application can be released independently while preserving API compatibility.
@@ -48,7 +48,7 @@ iSaber/
 │   ├── product/             # Requirements and acceptance criteria
 │   ├── architecture/        # Architecture and decision records
 │   ├── design/              # References and interaction specifications
-│   └── operations/          # Deployment, backups, recovery, runbooks
+│   └── operations/          # Deployment and operator runbooks
 ├── infra/                   # Containers and environment configuration
 └── .github/workflows/       # CI and delivery, if hosted on GitHub
 ```
@@ -177,7 +177,7 @@ Privacy must cover article bodies, metadata, images, attachments, revisions, sea
 | 3. Reading experience | Approved design displays real articles, code, math, and responsive layouts |
 | 4. Content organization | Categories, tags, dates, English/Chinese content, and search work |
 | 5. Privacy and comments | Private access rules, comment submission, and moderation work |
-| 6. Release readiness | Staging acceptance, backup restoration, monitoring, and deployment procedures are verified |
+| 6. Release readiness | Container acceptance, public HTTPS, persistent storage, and application rollback are verified |
 
 Integrate early through the first publishing flow. Keep privacy rules in the foundation and every data-access path; milestone 5 completes their user-facing workflows and broader verification.
 
@@ -190,12 +190,12 @@ Issue with acceptance criteria
   → pull request
   → automated checks and review
   → merge to main
-  → staging verification
-  → production release
+  → main checks and image publication
+  → enabled Tencent deployment and HTTPS verification
 ```
 
 - Group related features into one reviewable milestone PR, as requested by the owner. Continue implementation and validation on the same branch with focused local commits; do not require a push/create/review/merge cycle after each small feature.
-- The content-discovery milestone combined category/tag management, public browsing, and English/Chinese search in PR #9. The comments milestone combined guest submission, approved reading, owner moderation, and article controls in PR #10. The next milestone combines application packaging and isolated container CI. Open or update one PR when the milestone is ready for owner review.
+- The content-discovery milestone combined category/tag management, public browsing, and English/Chinese search in PR #9. The comments milestone combined guest submission, approved reading, owner moderation, and article controls in PR #10. The delivery milestone simplifies deployment around the already-tested application images. Open or update one PR when the milestone is ready for owner review.
 - Keep each milestone coherent and reviewable; use the PR summary to describe the final behavior and combined validation evidence.
 - Include the problem, resulting behavior, validation, and relevant migration or operational details in each pull request.
 - Protect `main` with required checks.
@@ -219,18 +219,16 @@ Tests should verify behavior and meaningful failure cases. Prioritize authorizat
 
 ## 10. Environments and releases
 
-The [GitHub CI/CD guided setup](docs/operations/github-cicd.md) records the initial contract workflow, owner exercises, and the proposed use of JD Cloud for staging and Tencent Cloud for production. Server roles require confirmation of existing workloads. The owner will participate in GitHub and server setup with guidance; no cloud deployment pipeline is active yet. The refreshed [staging preparation guide](docs/operations/staging-preparation.md) records shared-host workloads, occupied web ports, registry probes, and the first package-review exercise.
+The owner revised operational scope on November 11, 2026: keep local/CI synthetic testing and one Tencent deployment. Remove separately deployed JD staging, custom image transport, and automated backup/offsite/retention services. [ADR 0019](docs/architecture/decisions/0019-simple-delivery.md) supersedes the earlier operational design. See [CI/CD](docs/operations/github-cicd.md) and [deployment](docs/operations/deployment.md).
 
-Maintain local, staging, and production environments with separate configuration, secrets, databases, and storage. Staging should resemble production and use non-sensitive test content.
-
-- Build versioned artifacts once and promote the tested artifacts.
-- Deploy to staging after merge and release to production after acceptance.
-- Use backward-compatible database migrations so frontend and backend can be released independently.
-- Record application artifact versions, contract compatibility, and migration versions for each release.
-- Document application rollback separately from database recovery. Database migrations are not assumed to be safely reversible.
-- Configure automated database backups and object recovery settings; verify restoration before launch.
-- Add health and readiness checks, structured logs, request identifiers, error reporting, and operational alerts. Avoid logging private article content or credentials.
-- Provide deployment, incident response, backup, and recovery runbooks.
+- Build application images once in CI, test them, and push the same images to GHCR on main.
+- Pull public images through NJU by exact digest; send only digests through restricted SSH.
+- Activate delivery after Tencent capacity, storage, domain/HTTPS, credentials, and any one-time content migration pass review.
+- Preserve database, private uploads, and certificate volumes across updates.
+- Apply migrations explicitly with operator credentials; review compatibility with the previous application images.
+- Verify readiness/HTTPS and restore previous application images on failed activation. Data and schema rollback remain separate operator decisions.
+- Keep operational logs private and retain health/readiness endpoints.
+- Retire installed JD delivery/backup timers after acceptance without deleting stored content or archives.
 
 ## 11. Definition of done
 
@@ -240,8 +238,8 @@ A change is complete when:
 - Relevant automated checks pass.
 - Code and user-visible behavior have been reviewed.
 - Applicable API contracts, generated clients, and documentation are current.
-- Staging verification passes.
-- Required migration, monitoring, rollback, and recovery details are documented.
+- Relevant container acceptance and, for enabled live releases, HTTPS verification pass.
+- Applicable migration, persistent-storage, and application rollback details are documented.
 
 ## 12. Owner review checklist
 

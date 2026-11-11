@@ -2,7 +2,7 @@
 
 Status: Derived from the approved PRD. Ordered for incremental delivery; a checked item indicates local completion, not a production release.
 
-Current CI/CD priorities (November 10): repair SSH transfer timeouts and verify deployment; reuse CI-tested images during preparation; keep scheduled-backup/retention records current; rehearse replacement-server recovery before production storage, public domain/HTTPS, and controlled production releases. Tencent is an existing backup-vault/shared-workload host, not an empty recovery target; see the [inventory](../operations/offsite-backups.md#tencent-recovery-target-inventory).
+Current operational scope (owner decision, November 11): replace the relay/staging/backup framework with one workflow, public GHCR images through NJU, and one Tencent Compose deployment. Prepare and verify the replacement for review before changing the live installation. See [ADR 0019](../architecture/decisions/0019-simple-delivery.md).
 
 | Order | Work item | PRD coverage | Completion evidence |
 | --- | --- | --- | --- |
@@ -14,7 +14,7 @@ Current CI/CD priorities (November 10): repair SSH transfer timeouts and verify 
 | 6 | Public visual direction and implementation | DESIGN-01, READ-01, PORT-01 | Owner-approved reference analysis/prototype; representative English/Chinese content |
 | 7 | Categories, tags, browsing, search | META-01, FIND-01 | Public-only results, label management, English/Chinese search fixtures |
 | 8 | Guest comments and moderation | COMM-01 | Pending/approved visibility, owner moderation, disabled-comment and rate-limit tests |
-| 9 | Staging delivery and production readiness | Operational acceptance | Registry access, guided setup, real deployments, backup restoration, rollback rehearsal |
+| 9 | Simple Tencent delivery and launch | Operational acceptance | Tested images reused through GHCR/NJU, persistent storage, public HTTPS, application rollback |
 
 Visual design discovery can run alongside backend development after the owner provides references. Privacy checks begin with the first authenticated/data endpoints and are expanded in every subsequent slice.
 
@@ -60,7 +60,7 @@ See the [publishing guide](../operations/publishing.md). Local image/ZIP imports
 - [x] Verify Go/PostgreSQL privacy tests, production builds, and real Next.js/Go ZIP/image HTTP acceptance.
 - [x] Merge images in PR #7 and observe successful checks on both the PR and main.
 - [ ] Perform interactive browser acceptance for image imports and reading.
-- [ ] Configure and verify private COS, storage retention/quotas, and coordinated backup/restore before cloud deployment.
+- [ ] Accept private persistent storage for the single Tencent deployment; COS remains a separate storage decision. Automated backups are outside the revised delivery scope.
 
 
 ## Published revision history progress
@@ -109,127 +109,27 @@ Owner preference: continue related implementation on one branch with focused com
 - [x] Merge the combined comments PR (#10) and observe successful PR/main GitHub checks.
 - [ ] Perform interactive browser/keyboard acceptance for comments.
 
-Publishing, organization, search, and moderated feedback are implemented locally after this milestone. Portfolio content and final artistic design still need owner input and approval; private COS, CI/CD deployment, operational backups/restore, and release acceptance remain separate work.
+Publishing, organization, search, and moderated feedback are implemented locally after this milestone. Portfolio content and final artistic design still need owner input and approval; production storage, simplified delivery, and public release acceptance remain separate work.
 
 
-## Container preparation milestone
+## Simplified delivery milestone
 
-- [x] Prepare separate non-root application images, explicit operator tools, and private persistent-volume wiring.
-- [x] Add an isolated container CI rehearsal for migrations, readiness, SSR/static assets, proxy authorization, and restart.
-- [x] Validate separate image builds and full Compose acceptance locally through Podman's Docker-compatible API, including database outage/restart and retained migration state.
-- [x] Merge the container milestone in PR #11 and observe successful PR/main checks, including Containers on GitHub's Docker engine.
-- [ ] Select registry/connectivity and prepare cloud TLS, deployment identities, backups, and private storage with owner guidance.
+- [x] Inspect git history and shared Tencent/JD workloads; identify the custom transfer/backup framework as superseded scope.
+- [x] Verify anonymous NJU pulls of upstream images and four own-account probe versions by original digest/content. DaoCloud does not allow our application namespace.
+- [x] Implement one workflow with four existing checks, one image build/test phase, main-only GHCR publication, and an opt-in Tencent deployment.
+- [x] Replace custom Python delivery/backup services with shell, Compose, and explicit runtime-role SQL.
+- [x] Test invalid input, rollback, failed pull/start, interruption, and locking; pass full container/SQL permissions acceptance in CI.
+- [x] Complete and record full frontend/backend mirror pulls by exact digest, initial timeouts, successful retries, cached timings, and official dependency pulls.
+- [ ] Review and merge the replacement PR; live services/timers stay unchanged before cutover review.
+- [ ] Select public domain/HTTPS and accept Tencent storage/capacity alongside existing workloads.
+- [ ] Install reviewed host files/Compose plugin, dedicated SSH key, stable secrets, and GitHub production configuration.
+- [ ] Choose a fresh blog or one-time JD migration; verify public/private content and media before switching writers.
+- [ ] Enable delivery and verify one complete main-to-Tencent release and application rollback.
+- [ ] Disable obsolete JD delivery/backup/retention timers after acceptance, preserving existing data and archives.
 
-See the [container guide](../operations/containers.md). This is application packaging; no cloud deployment pipeline is active.
+Historical milestones PR #11–24 established containers, private JD staging, the relay, restricted delivery, encrypted backups, monitoring, retention, and CI image reuse. PR #24 merged and its main CI → preparation → staging release succeeded. The first scheduled backup succeeded on November 10; retention merged but was never activated pending policy approval. The owner subsequently removed staging and automated backups from scope, so replacement-server recovery and retention activation are no longer pending delivery requirements. Historical implementation/runbooks remain in [git history at the last legacy main revision](https://github.com/IiCEight/iSaber/tree/174450fe5fa6097727b68b0b55353f2e6de73596/docs/operations).
 
-
-## Guided staging preparation
-
-- [x] Inspect both shared servers and registry connectivity without modifying their configuration.
-- [x] Record port conflicts, package/network constraints, and concrete owner exercise commands in the [staging preparation guide](../operations/staging-preparation.md).
-- [x] Owner delegated execution: refresh JD package metadata, review the zero-removal plan, install Docker/Compose, and recheck existing SSH/relay services.
-- [x] Verify a full GHCR fixture pull and digest-pinned non-root container execution on JD; record poor transfer speed.
-- [x] Owner selected private HTTPS through SSH; verified application/database image delivery and the first dedicated JD deployment.
-- [ ] Benchmark an owner-controlled mainland registry from both servers and CI, following the owner's China-hosting clarification.
-
-Continue related setup work on one milestone branch; no per-exercise PR cycle is needed.
-
-- [x] Confirm Tencent production region (`ap-beijing`) and prepare the [TCR setup proposal](../operations/tencent-registry.md).
-- [ ] Locate or provision the reviewed registry through an authenticated cloud-account session; obtain its non-secret endpoint and agree the CI network path.
-
-- [x] Review free registry alternatives and revise the default to TCR Personal; owner reports obtaining a registry.
-- [x] Confirm Personal endpoint and `isaber` namespace; verify both servers' HTTPS reachability and JD credential-file permissions.
-- [x] Prepare trusted-main publishing, exact-image rehearsal, PostgreSQL mirroring, and digest release manifests with local safeguard tests.
-- [ ] Confirm private repositories, configure GitHub secrets, and observe actual image publishing and cross-cloud digest pulls.
-
-
-## Recover registry delivery
-
-- [x] Confirm direct GitHub-to-TCR upload exceeded 1,200 seconds after successful authentication.
-- [x] Prepare tested image bundles and an operator relay using existing workspace GitHub/SSH access and JD's existing registry login.
-- [x] Validate twenty-one safeguards, real cached image export, a 284 MiB SSH transfer/full verification, and digest-preserving fixture copy.
-- [x] Merge PR #14, observe its real export artifact, and complete three-image publication and digest pulls.
-- [x] Implement unattended delivery with the restricted receiver in PR #18; keep the operator relay for recovery.
-
-
-## Image delivery performance
-
-- [x] Publish the first real frontend/backend/PostgreSQL release after PR #14 and verify exact-digest pulls/configurations on JD.
-- [x] Implement PostgreSQL baseline reuse, configuration-drift guards, and a reduced application bundle.
-- [x] Add optional direct JD artifact receipt with short-lived URLs and archive integrity checks; retain the faster measured workspace route as default.
-- [x] Merge PR #15 and verify its real release: 124.3 MiB transferred in 75.8 seconds with database reuse.
-- [x] Implement reuse of the exact main-CI tested image bundle with source run/attempt and artifact/file/image integrity checks; preparation no longer rebuilds or re-exports images.
-- [x] Automate delivery with the restricted server identity in PR #18.
-- [ ] Merge and verify the image-reuse workflow on a successful main CI → preparation → staging run.
-
-
-## Private JD staging
-
-- [x] Deploy verified application/database images with dedicated secrets, runtime/operator DB roles, persistent storage, private HTTPS, resource limits, and bounded logs.
-- [x] Verify CA/HTTPS, production cookies, owner SSR, origin/CSRF rejection, restart/session/database/CA persistence, logout, and temporary-account removal.
-- [x] Prepare an access/owner-setup runbook and block data-bearing redeployment until recovery/promotion are reviewed.
-- [x] Merge private staging in PR #16.
-- [ ] Complete owner browser acceptance.
-- [x] Verify coordinated snapshots and disposable restores, including nonempty synthetic database/media probes and a clean recovery point.
-- [x] Implement application promotion, explicit rollback, automatic recovery on failed candidate health, and pending-journal recovery for the unchanged reviewed schema/API/database baseline.
-- [x] Add unattended delivery with a restricted identity (PR #18) and verified encrypted offsite recovery (PR #19).
-- [ ] Review schema evolution separately before schema-changing releases.
-
-
-## Restricted GitHub staging delivery
-
-- [x] Install a dedicated fixed-command identity without shell/forwarding/Docker-group privileges, with main-only environment credentials and a pinned host key.
-- [x] Measure real GitHub-hosted SSH throughput and verify a complete 124.3 MiB artifact by transferring 43.3 MiB of cache misses.
-- [x] Authenticate metadata independently on JD, reconstruct/hash-check all files, and keep uploaded programs outside the executable control path.
-- [x] Prepare automatic/manual/dry-run workflow paths with stale-source checks, restore-gated promotion, receipts, and manual recovery.
-- [x] Merge the delivery workflow and observe its first complete automatic publish/promotion (PR #18, deployment run 42567617719).
-- [x] Merge offsite recovery (#19), backup alerts (#20), and protected retention implementation (#21).
-- [ ] Approve/activate retention, accept replacement-server recovery, and separately review schema evolution before production.
-
-## Delivery reliability and build reuse
-
-- [x] Diagnose deployment run 42834374327: CI/preparation passed; the 43.4 MiB SSH transfer failed with `TimeoutError` in `wire_transfer`. The preceding release remained healthy with no pending promotion.
-- [x] Replace full-buffer transfer reads with available-chunk reads, reset a true idle timeout on traffic, and retain an independent total deadline.
-- [x] Add 15-second progress reports, bounded diagnostics, and at most three safe pre-publication attempts with fresh authenticated cache plans.
-- [x] Retain one bounded partial archive across pre-publication failures; require matching source/run/attempt, total digest, offset, and local/server prefix hashes before resuming. Verify the full archive and bundle before caching or publishing.
-- [x] Verify slow-progress/stall/deadline regression tests, retry boundaries, and exact CI artifact reuse/integrity tests locally.
-- [x] Verify live interruption/resume through the workspace route, followed by successful automatic cached publication/promotion in run 42834374327; release `baad416` is healthy with no pending promotion. Full-bulk GitHub-route speed is not established by that cache-assisted retry.
-- [ ] Merge the combined delivery/image-reuse milestone and observe the complete pipeline.
-
-## Encrypted offsite backups
-
-- [x] Owner approved Tencent as the encrypted vault and daily 03:30 China-time scheduling.
-- [x] Install a public-key encrypted sender and signed, immutable vault through restricted SSH; keep the decryption identity off both cloud servers.
-- [x] Confirm the owner saved a protected recovery-key copy outside the workstation.
-- [x] Upload, retrieve, verify, decrypt, and restore a real snapshot into disposable network-isolated database/media resources; preserve the existing owner/article.
-- [x] Verify idempotent upload, rejection of shell access, HTTPS resumption, and disposable-resource cleanup.
-- [x] Enable the timer and document safe status/recovery commands and capacity limits.
-- [x] Merge encrypted backup milestone PR #19 and verify its automatic staging delivery.
-- [x] Observe the first scheduled daily backup: November 10 at 03:30 Asia/Shanghai, snapshot `20261109T193000Z-8216edf6`; verify its Tencent ciphertext hash/signature.
-- [x] Implement failure notifications in PR #20 and protected retention in PR #21.
-- [ ] Approve/activate retention and complete replacement-server/full-host disaster-rebuild acceptance before production.
-
-## Backup health alerts
-
-- [x] Owner selected GitHub Actions notifications and confirmed failures-only email notifications enabled.
-- [x] Implement hourly external checks for unavailable monitoring, timer/service/attempt failure, overdue capture, low disk space, pending work, clock skew, and actual Tencent ciphertext verification.
-- [x] Install a separate fixed-command read-only SSH identity and main-only environment secret; retain deployment/upload key separation.
-- [x] Verify the real check from a GitHub-hosted runner and exercise an intentional synthetic notification failure without changing real data.
-- [x] Verify Tencent rejects altered signed metadata in an isolated fixture; preserve the last success when a new attempt fails.
-- [x] Merge alert milestone PR #20 and verify first main health check 42586391496.
-- [x] Owner confirmed receipt of the intentional GitHub notification drill.
-
-## Backup retention
-
-- [x] Implement proposed seven-day recent-copy protection, Tencent daily/weekly/monthly buckets, JD minimum copies, and restored/pending/release recovery pins.
-- [x] Require healthy/fresh verified backups and matching restored pins before cleanup; preserve upload/monitor privilege boundaries and serialize exports with pruning.
-- [x] Add seven-day quarantine, safe audit events, retired-ID tombstones, and quarantine-aware vault capacity accounting.
-- [x] Add enabled-policy timer/result/freshness checks to existing backup alerts, including Tencent's safe status in verification replies.
-- [x] Verify real dry-run plans keep ten local snapshots plus both encrypted copies, with zero quarantine/purge; exercise cleanup only on isolated synthetic cloud fixtures.
-- [ ] Obtain approval of the exact retention periods and future permanent deletion after quarantine, then enable the daily jobs.
-- [x] Merge retention implementation in PR #21.
-- [ ] After policy approval/activation, observe the first scheduled retention runs. Both timers/policies remain disabled; no retention deletion is authorized by this backlog update.
-
+See [deployment](../operations/deployment.md), [mirror evidence](../operations/ghcr-mirror-evaluation.md), and [local container acceptance](../operations/containers.md). Removing tracked code does not alter installed server copies.
 
 ## Vivid Home and public navigation
 
