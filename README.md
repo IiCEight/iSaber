@@ -17,6 +17,7 @@ As of November 11, 2026, automatic Tencent delivery and private persistent stora
 1. Require Frontend, Backend, and Containers alongside API contract in the main ruleset, then rehearse an explicit live application rollback.
 2. Complete browser acceptance with real Typora Markdown/ZIP uploads, public/private reading, revisions, search, moderation, mobile and keyboard use.
 3. Refine the integrated Vivid Home and finish Archive, Article and About design, owner copy and fonts.
+
 The domain is configured: `https://isaber.top`, with `www` redirected to the root. A COS adapter remains optional future storage work.
 
 See the [backlog](docs/product/backlog.md) for implementation evidence and [deployment](docs/operations/deployment.md) for the accepted release. Automated staging, backup transfers and replacement-server recovery are outside the revised delivery scope.

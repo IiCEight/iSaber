@@ -13,7 +13,6 @@ Current operational scope (owner decision, November 11): replace the relay/stagi
 | 3 | Complete real browser publishing/reading acceptance | HTTP/SSR, database and privacy tests pass; owner browser/mobile/keyboard review is pending |
 | 4 | Finish public page design and owner content | Vivid Home/scroll motion merged; Archive, Article, About, copy and fonts need refinement |
 
-
 Domain setup is complete: `isaber.top` is canonical and `www` redirects to it. Private persistent storage is accepted; COS remains optional.
 
 ## Implementation sequence and evidence
