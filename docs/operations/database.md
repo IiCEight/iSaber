@@ -1,6 +1,6 @@
 # Database setup and migrations
 
-Status: PostgreSQL foundation is merged for local/CI use. Owner authentication follows in its own branch using the existing identity tables. Article APIs and cloud deployment remain subsequent slices; no cloud data has been changed.
+Status: PostgreSQL and migrations are deployed on Tencent in the isolated blog Compose project. Schema version 5, separate runtime/operator roles and private persistent storage are verified. See [deployment](deployment.md) for the accepted installation; the commands below cover local development and deliberate migration operations.
 
 ## Local development
 
@@ -81,16 +81,16 @@ Tests cover upgrade from the identity migration while preserving existing data, 
 1. Add a new sequential SQL file; never edit a migration already released to an environment.
 2. Keep changes transactional and backward-compatible with the currently deployed application. Increase `RequiredVersion` when a new binary depends on the schema change.
 3. Test both a fresh install and upgrading existing data, then validate the old/new application compatibility required for rollout.
-4. Before changing cloud data, verify a restorable backup and select the correct environment's migration credentials.
+4. Before changing live data, review the migration impact and any manual export/recovery plan, and select the correct operator credentials. Automated backups are outside the revised delivery scope.
 5. Run exactly one migration phase per release; the advisory lock prevents overlapping Goose migration processes, but does not replace release coordination.
 6. Start/promote application versions only after migration and health verification. Do not automatically roll back database data if an application rollout fails.
 
 There is no automatic down/reset command. CLI errors deliberately avoid raw SQL row data and connection URLs; use an authorized database console and sanitized logs to diagnose availability, permissions, schema history, or failed constraints.
 
-In staging/production, use a schema-owning migration role and a runtime role with only required table DML and read access to migration version metadata. The runtime role does not need database/schema creation or table alteration privileges. Prefer certificate-verified TLS (`sslmode=verify-full`) for remote connections; configure CA trust for the selected service. Disabling TLS in the examples is for the loopback development service only.
+In production, use a schema-owning migration role and a runtime role with only required table DML and read access to migration version metadata. The runtime role does not need database/schema creation or table alteration privileges. Prefer certificate-verified TLS (`sslmode=verify-full`) for remote connections; configure CA trust for the selected service. The local examples and the single-host Compose private database network use `sslmode=disable`; no database port is published by the production project.
 
 ## Image storage boundary
 
-The SQL schema stores private object keys and revision membership, not image bytes or public COS URLs. The image slice implements authorized Go delivery from local private storage; the private COS adapter remains a deployment step. The Markdown/image implementation stores private uploads and retained image bytes locally (see the [publishing guide](publishing.md)) and does not create buckets, fetch external images, or require Tencent/JD API credentials.
+The SQL schema stores private object keys and revision membership, not image bytes or public COS URLs. The image slice implements authorized Go delivery from local private storage; a private COS adapter remains separate storage work. The Markdown/image implementation stores private uploads and retained image bytes locally (see the [publishing guide](publishing.md)) and does not create buckets, fetch external images, or require Tencent/JD API credentials.
 
-Before enabling image uploads in staging/production, select separate private buckets, define cleanup for abandoned staged uploads, verify database-plus-object restoration, and test article visibility changes against every media access route. Storage readiness can be added when the running application actually depends on that adapter.
+The proposed single-host deployment keeps database and uploads in separate private persistent volumes. Accept their persistence and media authorization before cutover; see [deployment](deployment.md). A future COS adapter needs its own private-bucket and authorization acceptance. Automated backups/retention are outside the revised delivery scope.

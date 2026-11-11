@@ -1,6 +1,6 @@
 # ADR 0013: Private HTTPS staging through the existing SSH connection
 
-Status: Implemented on JD for synthetic-content acceptance; configuration is in the staging milestone PR. Owner explicitly chose private HTTPS through SSH.
+Status: Historical. Superseded by [ADR 0019](0019-simple-delivery.md) on November 11, 2026. Retained to explain the former implementation; do not use it for current setup.
 
 ## Context and decision
 
@@ -16,4 +16,4 @@ Generate dedicated staging secrets only on the server. The API runtime role rece
 
 The initial deployment helper validates schema/platform/repository digests, explicitly migrates, checks private HTTPS, and records completion only after readiness. It preserves secrets and data after failures. Subsequent changes use a separate guarded promotion command with a verified recovery point and an unchanged schema/API/database policy.
 
-This is a concrete first cloud staging deployment with restart/authentication acceptance. It is operator-driven, supports synthetic content, and does not imply automatic CD or production recovery readiness. Local coordinated backup/restore and schema-preserving application promotion/rollback are implemented in [ADR 0014](0014-staging-recovery.md). Restricted deployment identity, unattended delivery, offsite recovery, public ingress, private COS, and final visual design remain subsequent work. See the [staging runbook](../../operations/private-staging.md).
+This is a concrete first cloud staging deployment with restart/authentication acceptance. It is operator-driven, supports synthetic content, and does not imply automatic CD or production recovery readiness. Local coordinated backup/restore and schema-preserving application promotion/rollback are implemented in [ADR 0014](0014-staging-recovery.md). Restricted deployment identity, unattended delivery, offsite recovery, public ingress, private COS, and final visual design remain subsequent work. See the [staging runbook](https://github.com/IiCEight/iSaber/blob/174450fe5fa6097727b68b0b55353f2e6de73596/docs/operations/private-staging.md).

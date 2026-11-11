@@ -230,14 +230,16 @@ Owner-confirmed page refinement during Home design: public pages are Home, Archi
 
 ## 6. Reliability and operational acceptance
 
+Owner scope revision, November 11, 2026: one Tencent deployment and public GHCR images through NJU replace separate cloud staging and automated backup/offsite/retention/recovery infrastructure. [ADR 0019](../architecture/decisions/0019-simple-delivery.md) records this revision. Functional privacy and persistence requirements remain.
+
 - Saved drafts and published articles survive application restarts.
 - Failed operations give the owner a clear next action; errors do not reveal credentials or private content.
 - Preview and publication use the same rendering specification, verified against shared content examples.
-- Backups include article data and managed media. A restoration exercise succeeds before production launch.
-- Staging uses separate data and credentials; real private journals are not required as test fixtures.
+- Database and managed media persist in private volumes across application updates. Automated backup transfers and replacement-server rehearsals are outside the revised scope.
+- Local/CI acceptance uses disposable synthetic data and credentials; real private journals are not test fixtures.
 - Browser coverage: current stable Chrome, Firefox, Safari, and Edge, plus iOS Safari and Android Chrome. Record versions used during release verification.
 - Monitoring can identify failed publication, unavailable dependencies, and application errors without recording article bodies or comment text in logs.
-- Agree on recovery objectives, expected content volume, traffic assumptions, and performance targets before production sizing and release acceptance.
+- Agree on expected content volume, traffic assumptions, and performance targets before production sizing and release acceptance.
 
 ## 7. Explicitly deferred scope
 
@@ -252,7 +254,7 @@ RSS and additional feed formats are optional follow-up features; privacy protect
 3. Approved visual direction applied to real English/Chinese article fixtures and portfolio content.
 4. Categories, tags, language filtering, and search.
 5. Comment submission/moderation and comprehensive privacy regression checks.
-6. Accessibility, performance verification, staging acceptance, backup restoration, and production readiness.
+6. Accessibility, performance verification, container acceptance, persistent production storage, public HTTPS, and application rollback.
 
 The backend and design workstreams can progress independently against agreed contracts and realistic fixtures. Each slice receives acceptance criteria, focused changes, and review under the development plan.
 
@@ -286,10 +288,10 @@ The owner explicitly approved all defaults documented in this PRD, including the
 
 Approval of defaults does not supply values or materials that have not yet been specified:
 
-- Owner-selected design references, branding preferences, portfolio content, and representative articles are needed before visual direction approval.
-- Numerical performance budgets, test device/network profile, recovery objectives, expected content volume, and traffic assumptions must be defined before their respective design or release acceptance checks.
-- Login, sessions, password storage, and recovery are implemented in the authentication branch for review. Production secrets, TLS hosting, ingress abuse controls, and other unselected deployment details remain to be configured.
-- The logical data model and API contract are owner-approved, the implementation backlog is prepared, and PostgreSQL migrations are merged. Article feature implementation, visual prototype review, and release validation remain work to perform.
+- The owner supplied Home references, selected Vivid and positively reviewed its motion; that Home is integrated. Remaining page designs, final branding/copy/fonts, portfolio content and representative English/Chinese articles still need owner review.
+- Numerical performance budgets, test device/network profile, expected content volume, and traffic assumptions must be defined before their respective design or release acceptance checks.
+- Login, sessions, password storage and owner recovery are deployed. Production secrets, private persistent storage, trusted IP HTTPS and automatic delivery are configured. Domain selection is optional; ingress abuse tuning and long-term session/content cleanup remain operational follow-ups.
+- The logical data model and API contract are owner-approved, the implementation backlog is prepared, and PostgreSQL migrations are merged. Core article features and the first automatic public release are verified; final design/browser review and explicit live rollback rehearsal remain.
 
 ## 10. Review and approval
 
@@ -298,6 +300,7 @@ Approval of defaults does not supply values or materials that have not yet been 
 - [x] Owner explicitly approves all documented product defaults and acceptance criteria.
 - [x] Functional requirements are translated into the [prioritized implementation backlog](backlog.md).
 - [x] Owner approves the logical data model and API design, which reference the approved requirements.
-- [ ] Design review uses real content fixtures and the owner-selected references.
+- [x] Owner selects and positively reviews the Vivid Home direction/motion; integration merges in PRs #22–23.
+- [ ] Remaining page and browser review uses representative real English/Chinese content.
 
 Revisions to this PRD should record changed behavior and its impact on scope, contracts, design, and acceptance checks through focused pull requests.

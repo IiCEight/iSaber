@@ -25,11 +25,11 @@ The rate limiter is intentionally process-local. It resets on restart and is not
 
 Expired and revoked session records are inaccessible; automated retention cleanup remains operational follow-up work before long-term production use. Server-side revocation does not erase previously downloaded content from a browser.
 
-## Frontend scope
+## Frontend scope at PR #5
 
 `/admin` checks the current session on the server without caching, renders sign-in for visitors, and includes owner identity only after successful backend authorization. The browser performs login/logout through the same-origin API rewrite. It keeps the CSRF token in memory, while the cookie stays HttpOnly. No session tokens are stored in localStorage.
 
-The authenticated page confirms access and provides sign-out. Article management is not implemented by this slice. The public artistic direction and the eventual dashboard layout remain separate work.
+This original slice provided identity confirmation and sign-out. Article/image/revision management, labels/search and moderation subsequently merged in PRs #6–10; see the [publishing guide](../../operations/publishing.md). Vivid Home is integrated, while final page design and browser acceptance remain.
 
 ## References
 

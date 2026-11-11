@@ -1,6 +1,6 @@
 # Home: continuous scroll study
 
-Status: Local UI iteration in response to the owner's scroll-comparison screenshots. No remote push or CI/CD run is part of this study.
+Status: Continuous scroll/lens interactions merged in PR #23 after Vivid Home in PR #22 and are live on Tencent. The local study and verification notes below record the implementation work; final timing/copy/composition remain open to owner review.
 
 The initial Home confined its graphics to the opening hero and immediately entered the light article area. The reference screenshots instead keep graphics on screen while backgrounds, typography, and content panels change. This iteration carries the visual composition across four connected scenes:
 
@@ -24,7 +24,7 @@ The complete linear content is the default HTML/CSS. Reduced motion, short viewp
 
 ## Local verification
 
-Focused TypeScript/lint and Chromium checks cover the four scenes, persistent scene/menu bounds through a long list, direct article jumps and hash reloads, reduced motion, mobile overflow and keyboard visibility, enlarged-text fallback, route cleanup, and JavaScript-disabled content. Long-list QA uses temporary browser-only content without changing application data. Browser captures were inspected locally. The development server at `http://127.0.0.1:3000/` remains the review surface; no full production build or pipeline is needed for this iteration.
+Focused TypeScript/lint and Chromium checks cover the four scenes, persistent scene/menu bounds through a long list, direct article jumps and hash reloads, reduced motion, mobile overflow and keyboard visibility, enlarged-text fallback, route cleanup, and JavaScript-disabled content. Long-list QA uses temporary browser-only content without changing application data. Browser captures were inspected locally. These were local implementation checks. The merged work subsequently passed production builds and CI; current real-content review uses the [live blog](https://101.42.13.215/), while local development remains available at `http://127.0.0.1:3000/`.
 
 Pointer verification measures rendered bounding-box centers before and after mouse movement, including the first loop after its entrance and all three loops in scene three. Checking custom-property values alone misses transform overrides. The entrance animates a separate CSS variable so GSAP does not flatten the lenses' independent translate, rotation, and breathing scale into an inline transform.
 

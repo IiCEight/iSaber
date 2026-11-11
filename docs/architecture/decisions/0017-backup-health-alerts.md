@@ -1,6 +1,6 @@
 # ADR 0017: Independent backup checks through restricted SSH and GitHub notifications
 
-Status: Implemented for milestone review.
+Status: Historical. Superseded by [ADR 0019](0019-simple-delivery.md) on November 11, 2026. Retained to explain the former implementation; do not use it for current setup.
 
 ## Decision
 
@@ -14,4 +14,4 @@ Persist `last-success.json` separately from the latest attempt so a failed attem
 
 The monitor can detect JD outages independently, with no new public listener or email credential. Native notifications follow the owner's GitHub settings and schedule actor rules. Hourly failed runs may repeat alerts; there is no deduplication or dedicated recovery email.
 
-Scheduled Actions can be delayed or disabled after repository inactivity and cannot monitor their own absence. This is private-staging monitoring, not immediate production paging. Retention, an independent dead-man heartbeat, restore cadence, and replacement-host disaster recovery remain separate work. See the [alert runbook](../../operations/backup-alerts.md).
+Scheduled Actions can be delayed or disabled after repository inactivity and cannot monitor their own absence. This is private-staging monitoring, not immediate production paging. Retention, an independent dead-man heartbeat, restore cadence, and replacement-host disaster recovery remain separate work. See the [alert runbook](https://github.com/IiCEight/iSaber/blob/174450fe5fa6097727b68b0b55353f2e6de73596/docs/operations/backup-alerts.md).

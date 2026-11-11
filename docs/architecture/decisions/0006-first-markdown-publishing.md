@@ -2,6 +2,8 @@
 
 Status: Accepted and merged in PR #6. Subsequent ZIP/image behavior is recorded in ADR 0007.
 
+Operational update, November 11, 2026: [ADR 0019](0019-simple-delivery.md) revises the earlier staging/automated-backup requirements. The initial Tencent deployment uses a private persistent uploads volume; COS remains separate work. The original milestone rationale follows.
+
 ## Decision
 
 Deliver the first complete author workflow with `.md` uploads, metadata correction, a shared preview/reading renderer, and explicit publish/unpublish. Keep the approved full API contract; document this implemented subset rather than claiming ZIP, image storage, search, comments, or revision restoration are complete.

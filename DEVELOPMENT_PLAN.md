@@ -1,6 +1,6 @@
 # Blog system development plan
 
-Status: Development workflow and monorepo approach approved by the owner. Remaining product and technology proposals are tracked in the owner review checklist.
+Status: Updated November 11, 2026. Core features and automatic Tencent delivery are implemented. Merge-check configuration, live rollback rehearsal, browser acceptance and final page design are the next priorities; see the backlog and owner checklist.
 
 ## 1. Product goals
 
@@ -17,9 +17,9 @@ Requirements from `AGENTS.md`:
 - Use React for the frontend and Go for the backend.
 - Target cloud hosting such as Tencent Cloud. Budget is not currently a constraint.
 
-Implementation begins after review of the scope and architecture. Visual implementation follows review of the design direction.
+The approved core scope and architecture are implemented. Vivid Home and its motion are integrated after owner review; further page design and browser acceptance remain.
 
-The [implementation backlog](docs/product/backlog.md) tracks progress. Foundation, authentication, Markdown/ZIP publishing, private local images, and published revision history are merged through PR #8. Category/tag management and search are merged together in PR #9. Guest comments, public reading, moderation, and comment controls are merged in PR #10. Separate application images and a container rehearsal are merged in PR #11. Guided staging preparation is in progress. After direct cross-border registry upload failed, a [verified image bundle relay](docs/operations/image-relay.md) is prepared for review; actual application publication is not yet accepted. Production COS, artistic design, and cloud deployment remain subsequent work.
+The [implementation backlog](docs/product/backlog.md) tracks progress. Core authentication, publishing, images, revisions, organization, search, and comments are merged. Artistic design remains under review. The owner approved replacing the former relay, staging, and backup framework with [one workflow and one Tencent deployment](docs/architecture/decisions/0019-simple-delivery.md). The Tencent blog now runs over trusted IP HTTPS with private persistent volumes and preserved JD content. The owner approved automatic delivery from successful main builds, and it is enabled.
 
 ## 2. Application separation
 
@@ -27,7 +27,7 @@ Decision: Use one repository with independently buildable, testable, and deploya
 
 ### Application independence requirements
 
-- Each application has its own dependencies, build commands, tests, container image, and deployment pipeline.
+- Each application has its own dependencies, build commands, tests, container image, and versioned release reference. One shared workflow coordinates delivery.
 - Frontend and backend changes run their respective CI checks; API contract changes run checks for both.
 - The frontend uses the documented API and does not access backend implementation files or the database.
 - Each application can be released independently while preserving API compatibility.
@@ -48,7 +48,7 @@ iSaber/
 │   ├── product/             # Requirements and acceptance criteria
 │   ├── architecture/        # Architecture and decision records
 │   ├── design/              # References and interaction specifications
-│   └── operations/          # Deployment, backups, recovery, runbooks
+│   └── operations/          # Deployment and operator runbooks
 ├── infra/                   # Containers and environment configuration
 └── .github/workflows/       # CI and delivery, if hosted on GitHub
 ```
@@ -61,42 +61,41 @@ iSaber/
 | Interaction and client-side validation | Authoritative validation and data integrity |
 | Accessibility and page metadata | Search, comments, moderation, audit events |
 
-All application data flows through the Go API. Only the backend accesses the database and storage credentials. If Next.js is selected, its server handles presentation and API consumption; Go retains business rules and access control. Client-side hiding is never an authorization mechanism.
+All application data flows through the Go API. Only the backend accesses the database and storage credentials. Next.js handles presentation and API consumption; Go retains business rules and access control. Client-side hiding is never an authorization mechanism.
 
 ### Owner dashboard and accounts
 
-Confirmed decision: the first release has one owner account and no reader accounts or public registration. Private articles are owner-only. Setup, recovery, and session mechanisms are implemented for review in [ADR 0005](docs/architecture/decisions/0005-owner-authentication.md) and the [owner operations guide](docs/operations/owner-account.md).
+Confirmed decision: the first release has one owner account and no reader accounts or public registration. Private articles are owner-only. Setup, recovery, and session mechanisms merged in PR #5 and are documented in [ADR 0005](docs/architecture/decisions/0005-owner-authentication.md) and the [owner operations guide](docs/operations/owner-account.md).
 
 The React application contains the public blog and a protected `/admin` dashboard for article lists and filters, Markdown uploads, metadata, preview, revisions, publication, categories, tags, and comment moderation. Both sections use the same Go backend and data stores. Each management operation requires backend authorization; route protection alone does not grant security.
 
 The dashboard prioritizes efficient, accessible management; the public blog follows the separately reviewed artistic direction. No separate management service or admin deployment is required. See [ADR 0002](docs/architecture/decisions/0002-owner-dashboard.md).
 
-### Proposed infrastructure
+### Current infrastructure
 
 ```mermaid
 flowchart TD
-    Browser[Readers and owner] --> Proxy[HTTPS reverse proxy]
-    Proxy --> Frontend[React frontend]
-    Proxy --> API[Go API]
-    Frontend --> API
-    API --> Database[PostgreSQL]
-    API --> Storage[Tencent COS]
+    Browser[Readers and owner] --> Proxy[Caddy: trusted IP HTTPS]
+    Proxy --> Frontend[React / Next.js]
+    Frontend --> API[Go API: internal network]
+    API --> Database[PostgreSQL 16: private persistent volume]
+    API --> Storage[Private persistent uploads volume]
 ```
 
-- React with TypeScript and Next.js for server-rendered article pages and page metadata, implemented in the foundation branch for review. This requires a Node.js runtime alongside Go.
+- React with TypeScript and Next.js for server-rendered pages and metadata, merged in PR #3. The deployed frontend uses a separate Node.js container.
 - One modular Go application exposing a REST API.
-- PostgreSQL for Markdown, metadata, revisions, comments, and sessions; pgx/Goose and the initial migrations are selected in [ADR 0004](docs/architecture/decisions/0004-postgresql-and-private-storage.md).
-- Private Tencent COS for images and staged uploads; its adapter will be implemented with the import feature.
-- Containers on Tencent CVM, with managed PostgreSQL proposed.
-- Same-origin routing for the website and API where practical, simplifying session handling.
+- PostgreSQL 16 with pgx/Goose stores Markdown, metadata, revisions, comments and sessions. Five migrations are applied; runtime and operator roles are separate.
+- The Go filesystem adapter stores images and staged uploads in a private persistent volume. COS is unimplemented optional storage work; it is not required by the current single-host deployment.
+- One Docker Compose project on Tencent CVM hosts the proxy, frontend, API and database; host PostgreSQL and other existing workloads remain separate.
+- Caddy forwards to Next.js, which rewrites `/api/*` to Go. Browser traffic stays on the public HTTPS origin.
 
-Record final technology choices and their tradeoffs in architecture decision records before scaffolding.
+The original persistence choice is recorded in [ADR 0004](docs/architecture/decisions/0004-postgresql-and-private-storage.md); [ADR 0019](docs/architecture/decisions/0019-simple-delivery.md) and the deployment guide describe the accepted single-host operation.
 
 ## 3. Requirements and acceptance criteria
 
 The first-release [product requirements document](docs/product/requirements.md) is approved as the product baseline, including its documented defaults, acceptance criteria, and deferred scope. Its Section 9 lists outstanding design inputs and unspecified targets. The logical data model and API contract are also owner-approved; remaining implementation choices require documentation.
 
-Translate product requirements into a prioritized backlog. Each feature must define:
+The [prioritized backlog](docs/product/backlog.md) maps the approved requirements to merged work and remaining acceptance. Each new feature must define:
 
 - User journey and expected outcome.
 - Observable acceptance criteria.
@@ -112,7 +111,7 @@ For Markdown import, define behavior for missing images, invalid files, duplicat
 
 Use OpenAPI as the shared API contract. Specify endpoints, schemas, authentication, pagination, errors, and examples before connecting the applications.
 
-Approved baselines are available in the [data model](docs/architecture/data-model.md), [API design](docs/architecture/api-design.md), and [OpenAPI contract](contracts/openapi.yaml). The [contract guide](contracts/README.md) includes validation instructions. The owner approved these documents and the API contract. Implemented endpoints and remaining work are recorded in the backlog and publishing guide; The API requires PostgreSQL schema version 5.
+Approved baselines are available in the [data model](docs/architecture/data-model.md), [API design](docs/architecture/api-design.md), and [OpenAPI contract](contracts/openapi.yaml). The [contract guide](contracts/README.md) includes validation instructions. The owner approved these documents and the API contract. Implemented endpoints and remaining work are recorded in the backlog and publishing guide. The API requires PostgreSQL schema version 5.
 
 - Generate a TypeScript API client and types from the contract.
 - Provide mock responses so frontend development can proceed independently.
@@ -147,11 +146,11 @@ Analyze which qualities appeal to the owner in each reference, then establish a 
 
 Use realistic long articles and varied content during design review. Agree on accessibility and performance targets, keyboard interaction, reduced-motion behavior, and browser coverage before implementing substantial visual effects.
 
-Backend work can proceed while the design prototype is refined. Frontend work uses API mocks until integration.
+The integrated frontend uses the real Go API. Mocks remain useful for isolated tests and design studies; remaining page design can proceed alongside browser acceptance.
 
 **Review gate:** Owner approves the visual direction and representative interactive prototype before the design is extended across the site.
 
-## 6. Proposed content and publishing behavior
+## 6. Implemented content and publishing behavior
 
 These behaviors are approved in the PRD:
 
@@ -177,7 +176,7 @@ Privacy must cover article bodies, metadata, images, attachments, revisions, sea
 | 3. Reading experience | Approved design displays real articles, code, math, and responsive layouts |
 | 4. Content organization | Categories, tags, dates, English/Chinese content, and search work |
 | 5. Privacy and comments | Private access rules, comment submission, and moderation work |
-| 6. Release readiness | Staging acceptance, backup restoration, monitoring, and deployment procedures are verified |
+| 6. Release readiness | Container acceptance, public HTTPS, persistent storage, and application rollback are verified |
 
 Integrate early through the first publishing flow. Keep privacy rules in the foundation and every data-access path; milestone 5 completes their user-facing workflows and broader verification.
 
@@ -190,12 +189,12 @@ Issue with acceptance criteria
   → pull request
   → automated checks and review
   → merge to main
-  → staging verification
-  → production release
+  → main checks and image publication
+  → enabled Tencent deployment and HTTPS verification
 ```
 
 - Group related features into one reviewable milestone PR, as requested by the owner. Continue implementation and validation on the same branch with focused local commits; do not require a push/create/review/merge cycle after each small feature.
-- The content-discovery milestone combined category/tag management, public browsing, and English/Chinese search in PR #9. The comments milestone combined guest submission, approved reading, owner moderation, and article controls in PR #10. The next milestone combines application packaging and isolated container CI. Open or update one PR when the milestone is ready for owner review.
+- The content-discovery milestone combined category/tag management, public browsing, and English/Chinese search in PR #9. The comments milestone combined guest submission, approved reading, owner moderation, and article controls in PR #10. The delivery milestone simplifies deployment around the already-tested application images. Open or update one PR when the milestone is ready for owner review.
 - Keep each milestone coherent and reviewable; use the PR summary to describe the final behavior and combined validation evidence.
 - Include the problem, resulting behavior, validation, and relevant migration or operational details in each pull request.
 - Protect `main` with required checks.
@@ -207,30 +206,28 @@ Issue with acceptance criteria
 
 | Area | Checks |
 | --- | --- |
-| Frontend | Type checking, linting, production build, critical interaction tests |
-| Backend | Formatting, static analysis, unit tests, database integration tests |
-| API | Contract validation, generated-client consistency, compatibility checks |
-| Integration | Upload → preview → publish → read; important failure and recovery paths |
-| Privacy | Unauthorized users cannot retrieve private articles, metadata, revisions, or media |
-| UI | Responsive behavior, keyboard access, and visual regression checks for stable screens |
-| Dependencies | Secret detection and vulnerability scanning with actionable findings reviewed |
+| API contract | OpenAPI structure/references, examples and declared owner security requirements |
+| Frontend | Type checking, linting, production build and HTTP smoke tests |
+| Backend | Formatting, static analysis, race/unit tests and real PostgreSQL integration tests |
+| Containers | Native Caddy/config validation, deployer failure tests, image builds, runtime-role grants, readiness, SSR/assets, authorization, outage and restart |
+| Live release | Main publishes the same tested images; restricted SSH deployment verifies HTTPS and retains previous references |
+
+Browser/mobile/keyboard and final visual acceptance remain separate from these checks. Generated-client consistency, automated visual regression and a dedicated dependency/secret-scanning CI job are future quality work; they are not reported as existing checks.
 
 Tests should verify behavior and meaningful failure cases. Prioritize authorization, Markdown import, persistence, and publishing integrity. Define representative content fixtures covering English, Chinese, math, code, and local images.
 
 ## 10. Environments and releases
 
-The [GitHub CI/CD guided setup](docs/operations/github-cicd.md) records the initial contract workflow, owner exercises, and the proposed use of JD Cloud for staging and Tencent Cloud for production. Server roles require confirmation of existing workloads. The owner will participate in GitHub and server setup with guidance; no cloud deployment pipeline is active yet. The refreshed [staging preparation guide](docs/operations/staging-preparation.md) records shared-host workloads, occupied web ports, registry probes, and the first package-review exercise.
+The owner revised operational scope on November 11, 2026: keep local/CI synthetic testing and one Tencent deployment. Remove separately deployed JD staging, custom image transport, and automated backup/offsite/retention services. [ADR 0019](docs/architecture/decisions/0019-simple-delivery.md) supersedes the earlier operational design. See [CI/CD](docs/operations/github-cicd.md) and [deployment](docs/operations/deployment.md).
 
-Maintain local, staging, and production environments with separate configuration, secrets, databases, and storage. Staging should resemble production and use non-sensitive test content.
-
-- Build versioned artifacts once and promote the tested artifacts.
-- Deploy to staging after merge and release to production after acceptance.
-- Use backward-compatible database migrations so frontend and backend can be released independently.
-- Record application artifact versions, contract compatibility, and migration versions for each release.
-- Document application rollback separately from database recovery. Database migrations are not assumed to be safely reversible.
-- Configure automated database backups and object recovery settings; verify restoration before launch.
-- Add health and readiness checks, structured logs, request identifiers, error reporting, and operational alerts. Avoid logging private article content or credentials.
-- Provide deployment, incident response, backup, and recovery runbooks.
+- Build application images once in CI, test them, and push the same images to GHCR on main.
+- Pull public images through NJU by exact digest; send only digests through restricted SSH.
+- Delivery is enabled after accepted Tencent capacity/storage, trusted IP HTTPS, dedicated credentials and the JD content cutover. Adding a DNS name is optional follow-up work.
+- Preserve database, private uploads, and certificate volumes across updates.
+- Apply migrations explicitly with operator credentials; review compatibility with the previous application images.
+- Verify readiness/HTTPS and restore previous application images on failed activation. Data and schema rollback remain separate operator decisions.
+- Keep operational logs private and retain health/readiness endpoints.
+- JD staging containers and obsolete schedules are stopped; their stored content and archives remain. Automated staging/backups are outside the revised scope.
 
 ## 11. Definition of done
 
@@ -240,24 +237,27 @@ A change is complete when:
 - Relevant automated checks pass.
 - Code and user-visible behavior have been reviewed.
 - Applicable API contracts, generated clients, and documentation are current.
-- Staging verification passes.
-- Required migration, monitoring, rollback, and recovery details are documented.
+- Relevant container acceptance and, for enabled live releases, HTTPS verification pass.
+- Applicable migration, persistent-storage, and application rollback details are documented.
 
 ## 12. Owner review checklist
 
 - [x] Use one repository with independently buildable, testable, and deployable frontend and backend projects.
 - [x] Approve the logical data model, API design, and OpenAPI contract.
-- [ ] Translate the approved requirements into a prioritized implementation backlog.
-- [ ] Review the React + TypeScript + Next.js foundation implementation and its CI checks.
-- [ ] Review the PostgreSQL/pgx/Goose persistence foundation and private COS storage boundary.
+- [x] Translate the approved requirements into the implementation backlog and maintain completion evidence.
+- [x] Merge the React/TypeScript/Next.js foundation and successful CI checks in PR #3.
+- [x] Merge the PostgreSQL/pgx/Goose foundation in PR #4 and accept private persistent volumes for the initial Tencent deployment; defer COS.
 - [x] Use one owner account with owner-only private articles; defer reader accounts and public registration.
 - [x] Manage content through `/admin` in the React application and the same Go backend; provision the owner through a setup command.
 - [x] Use guest comments with a display name and plain text, owner moderation, and no email or reader accounts.
 - [x] Use draft-first Markdown/image import and explicit revision updates with stable URLs and history, as defined in the PRD.
 - [x] Use the PRD search scope, including literal substring matching for Chinese.
-- [ ] Supply design references and review the prototype before visual implementation.
+- [x] Supply Home references, select Vivid and positively review the motion prototype before integration.
+- [ ] Review the remaining page designs, final copy/fonts and real browser/mobile/keyboard behavior.
 - [x] Use GitHub for source hosting and GitHub Actions for CI/CD, with guided owner participation.
-- [ ] Confirm target hosting region and operational requirements before deployment design is finalized.
+- [x] Select Tencent CVM, direct-IP HTTPS and the revised single-host operational scope; verify the live automatic release.
+- [ ] Require Frontend, Backend and Containers alongside API contract in the main ruleset.
+- [ ] Rehearse an explicit live application rollback.
 - [x] Approve the documented milestone order and first-release product scope.
 
 ## References

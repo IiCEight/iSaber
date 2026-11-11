@@ -2,6 +2,8 @@
 
 Status: Accepted and merged in PR #7.
 
+Operational update, November 11, 2026: [ADR 0019](0019-simple-delivery.md) revises the earlier staging/automated-backup requirements. The initial Tencent deployment uses a private persistent uploads volume; COS remains separate work. The original milestone rationale follows.
+
 ## Decision
 
 Accept one Markdown file or a standard ZIP containing one article and its PNG/JPEG/GIF/WebP images. Validate archive names, size/count limits, CRCs, image formats/extensions, and decoded pixel bounds before changing article state. Never extract archive paths to disk. The parser locates image destinations, including reference definitions, and rewrites only their source spans to article/asset API URLs. Code examples and unrelated Markdown formatting remain intact.

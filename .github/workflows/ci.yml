@@ -1,78 +1,32 @@
-# GitHub Actions discovers YAML workflows in .github/workflows/.
-# When an event matches "on", GitHub schedules the jobs below on runners.
-# "ci.yml" is our filename; the directory and YAML keys give it meaning.
-# This workflow checks the API contract and both applications; it does not deploy.
-
-# Display name in the repository's Actions tab; the name itself adds no behavior.
 name: CI
-
-# Any one of these events can start a separate workflow run.
 on:
-  # Run when a PR is opened, reopened, or updated with new commits.
   pull_request:
-  # Run when main changes, including when a PR is merged into main.
   push:
-    branches:
-      - main
-  # Allow a manual run; this trigger requires the workflow on the default branch.
+    branches: [main]
   workflow_dispatch:
-
-# Limit the automatic GITHUB_TOKEN to reading repository contents.
-# This controls GitHub API/repository access, not shell permissions on the runner.
 permissions:
   contents: read
-
-# Avoid spending time validating an outdated commit for the same PR or branch.
 concurrency:
-  # ${{ ... }} evaluates a GitHub expression. Use the PR number when present;
-  # otherwise use the Git ref (for example, refs/heads/main).
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  # A newer run in the same group cancels the older run. This is CI, not deployment.
-  cancel-in-progress: true
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  # Let main finish deployment/rollback; superseded PR checks can be canceled.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Jobs run independently, so frontend and backend checks can run in parallel.
 jobs:
-  # Internal job identifier; "name" below is its human-readable check name.
   contract:
     name: API contract
-    # Request a fresh GitHub-hosted Ubuntu machine, not Tencent or JD Cloud.
     runs-on: ubuntu-24.04
-    # Stop the job if it takes more than ten minutes.
     timeout-minutes: 10
-    # Steps normally run sequentially on this job's runner.
     steps:
-      - name: Check out source
-        # "uses" executes a reusable action. Checkout fetches our code so later
-        # commands can read files from this repository. The full SHA pins the
-        # action implementation to an exact commit; the v6 comment is a label.
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        # "with" passes inputs defined by this particular action.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          # Do not retain checkout authentication for subsequent Git commands.
           persist-credentials: false
-
-      - name: Set up Python
-        # Make the requested Python version available to subsequent steps.
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
-          # Cache pip downloads to speed up later runs. Installation is still needed.
           cache: pip
-          # Include this file's contents when computing the dependency cache key.
           cache-dependency-path: contracts/requirements.txt
-
-      - name: Install contract validation dependencies
-        # "run" executes a shell command in the checked-out repository.
-        # Install the libraries listed in requirements.txt using the selected Python.
-        run: python -m pip install --disable-pip-version-check -r contracts/requirements.txt
-
-      - name: Validate API contract and examples
-        # Our Python script defines validation; GitHub does not interpret the API.
-        # It checks schemas, references, examples, selected invalid requests, and
-        # declared owner security requirements. It does not test a running server.
-        # Exit status 0 means success; a nonzero status normally fails the job.
-        # Branch protection separately decides whether this check must pass to merge.
-        run: python contracts/check_contract.py
+      - run: python -m pip install --disable-pip-version-check -r contracts/requirements.txt
+      - run: python contracts/check_contract.py
 
   frontend:
     name: Frontend
@@ -84,29 +38,19 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
-      - name: Check out source
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: frontend/.nvmrc
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install locked dependencies
-        # npm ci fails if package.json and the committed lockfile disagree.
-        run: npm ci
-      - name: Check TypeScript
-        run: npm run typecheck
-      - name: Lint frontend
-        run: npm run lint
-      - name: Build production frontend
-        # Next.js builds do not replace the separate lint/type checks above.
-        run: npm run build
-      - name: Test production frontend routes
-        # Start the built server and check real HTTP responses without a Go server.
-        run: npm run test:smoke
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run test:smoke
 
   backend:
     name: Backend
@@ -115,7 +59,6 @@ jobs:
     defaults:
       run:
         working-directory: backend
-    # A fresh disposable database on the GitHub runner, not either cloud server.
     services:
       postgres:
         image: postgres:16
@@ -123,91 +66,120 @@ jobs:
           POSTGRES_USER: isaber_test
           POSTGRES_PASSWORD: isaber_ci_only
           POSTGRES_DB: isaber_test
-        ports:
-          - 5432:5432
+        ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U isaber_test -d isaber_test"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
+          --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       TEST_DATABASE_URL: postgres://isaber_test:isaber_ci_only@127.0.0.1:5432/isaber_test?sslmode=disable
     steps:
-      - name: Check out source
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: backend/go.mod
-          cache: true
           cache-dependency-path: backend/go.sum
-      - name: Check Go formatting
-        run: test -z "$(gofmt -l .)"
-      - name: Analyze Go source
-        run: go vet ./...
-      - name: Test backend with race detection
-        run: go test -race ./...
-      - name: Test PostgreSQL migrations and owner authentication
-        # Isolated schemas verify upgrades, ownership, sessions, CSRF, and recovery.
-        run: go test -race -tags=integration ./internal/...
-      - name: Build backend binary
-        run: go build -trimpath -o bin/isaber-api ./cmd/api
-      - name: Build migration command
-        run: go build -trimpath -o bin/isaber-migrate ./cmd/migrate
-      - name: Build owner setup and recovery command
-        run: go build -trimpath -o bin/isaber-owner ./cmd/owner
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test -race ./...
+      - run: go test -race -tags=integration ./internal/...
+      - run: go build -trimpath -o bin/isaber-api ./cmd/api
+      - run: go build -trimpath -o bin/isaber-migrate ./cmd/migrate
+      - run: go build -trimpath -o bin/isaber-owner ./cmd/owner
 
   containers:
     name: Containers
+    needs: [contract, frontend, backend]
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      frontend: ${{ steps.publish.outputs.frontend }}
+      backend: ${{ steps.publish.outputs.backend }}
     env:
       COMPOSE_FILE: infra/compose.rehearsal.yml
       COMPOSE_PROJECT_NAME: isaber-ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - name: Check out source
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      # Build on the runner. No registry publishing or cloud credentials are used.
-      - name: Test release manifest and credential safeguards
-        run: python3 -m unittest discover -s infra/tests -p 'test_*.py'
-      - name: Build separate application images
-        run: docker compose build
-      - name: Start disposable database
-        run: docker compose up -d --wait postgres
-      # Migrations are an explicit operator step, never an API startup side effect.
-      - name: Apply database migrations
-        run: docker compose run --rm --no-deps migrate up
-      - name: Start applications and await health checks
-        run: docker compose up -d --wait api frontend
-      - name: Test real container routes and API proxy
-        run: docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
-      - name: Verify database outage fails readiness
+      - name: Check deployment scripts
         run: |
+          bash -n infra/deploy.sh infra/ssh-entry.sh infra/publish.sh
+          bash infra/tests/deploy.test.sh
+          FRONTEND_IMAGE=isaber-frontend:rehearsal BACKEND_IMAGE=isaber-api:rehearsal \
+            docker compose --env-file infra/production.env.example --file infra/compose.yml config --quiet
+          docker run --rm -i --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges --tmpfs /data --tmpfs /config \
+            --env BLOG_DOMAIN=203.0.113.10 --entrypoint caddy \
+            caddy@sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424 \
+            validate --config /dev/stdin --adapter caddyfile < infra/Caddyfile
+      - name: Build application images once
+        run: docker compose build
+      - name: Test the built images with a disposable database
+        run: |
+          docker compose up -d --wait postgres
+          docker compose run --rm --no-deps migrate up
+          docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U rehearsal -d rehearsal < infra/grant-runtime.sql
+          rights=$(docker compose exec -T postgres psql -X -U rehearsal -d rehearsal -Atc "SELECT has_column_privilege('isaber_runtime','owners','password_hash','UPDATE'),has_table_privilege('isaber_runtime','owners','INSERT'),has_table_privilege('isaber_runtime','goose_db_version','UPDATE'),has_schema_privilege('isaber_runtime','public','CREATE');")
+          test "$rights" = 'f|f|f|f'
+          docker compose up -d --wait api frontend
+          docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
           docker compose stop postgres
           docker compose exec -T frontend node -e "fetch('http://api:8080/readyz',{signal:AbortSignal.timeout(10000)}).then(r=>process.exit(r.status===503?0:1)).catch(()=>process.exit(1))"
-      - name: Verify restart with retained volumes
-        run: |
           docker compose restart postgres api frontend
           docker compose up -d --wait api frontend
           test "$(docker compose run --rm --no-deps -T migrate up)" = "Applied 0 migrations"
           docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
-      - name: Verify platform image identities with the real Docker engine
-        run: python3 infra/publish_images.py --check-images
-      - name: Verify real image bundle export without registry credentials
+      - name: Publish the tested images to GHCR
+        id: publish
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
-          RELEASE_SHA: ${{ github.sha }}
-          VERIFIED_CI_RUN_ID: ${{ github.run_id }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends skopeo
-          python3 infra/release_bundle.py export "$RUNNER_TEMP/isaber-validation-bundle"
-      - name: Show service logs on failure
+          GH_TOKEN: ${{ github.token }}
+        run: bash infra/publish.sh
+      - name: Show synthetic container logs on failure
         if: failure()
-        run: docker compose logs --tail 100
-      - name: Remove only this run's disposable stack and volumes
+        run: docker compose logs --tail 80
+      - name: Remove this run's disposable resources
         if: always()
         run: docker compose down --volumes --remove-orphans
+
+  deploy:
+    name: Deploy blog
+    needs: containers
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      vars.BLOG_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 20
+    steps:
+      - name: Ask the host to pull and deploy the exact tested digests
+        env:
+          FRONTEND_DIGEST: ${{ needs.containers.outputs.frontend }}
+          BACKEND_DIGEST: ${{ needs.containers.outputs.backend }}
+          BLOG_SSH_KEY: ${{ secrets.BLOG_SSH_KEY }}
+          BLOG_SSH_HOST_KEY: ${{ vars.BLOG_SSH_HOST_KEY }}
+          BLOG_SSH_HOST: ${{ vars.BLOG_SSH_HOST }}
+          BLOG_SSH_USER: ${{ vars.BLOG_SSH_USER }}
+        run: |
+          set -euo pipefail
+          [[ "$BLOG_SSH_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$BLOG_SSH_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          [[ "$FRONTEND_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$BACKEND_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$BLOG_SSH_HOST_KEY" != *$'\n'* ]]
+          umask 077
+          printf '%s\n' "$BLOG_SSH_KEY" > "$RUNNER_TEMP/blog-key"
+          printf 'isaber-production %s\n' "$BLOG_SSH_HOST_KEY" > "$RUNNER_TEMP/blog-hosts"
+          ssh-keygen -l -f "$RUNNER_TEMP/blog-hosts" >/dev/null
+          printf '%s\n%s\n' "$FRONTEND_DIGEST" "$BACKEND_DIGEST" |
+            ssh -i "$RUNNER_TEMP/blog-key" -o IdentitiesOnly=yes -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes -o HostKeyAlias=isaber-production \
+              -o UserKnownHostsFile="$RUNNER_TEMP/blog-hosts" -o ConnectTimeout=20 \
+              -o ForwardAgent=no -o ClearAllForwardings=yes \
+              -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+              "$BLOG_SSH_USER@$BLOG_SSH_HOST" deploy

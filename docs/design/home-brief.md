@@ -1,6 +1,6 @@
 # Home page design brief
 
-Status: Owner approved the purpose, content hierarchy, full-screen hero composition, horizontal top navigation, and **A · Vivid** visual direction, then positively reviewed the motion. The [React integration](home-integration.md) is implemented for milestone review.
+Status: The owner approved the Home hierarchy, full-screen hero, horizontal navigation and **A · Vivid** direction/motion. The [React integration](home-integration.md) merged and is live. Final owner copy/fonts and the other public page designs remain open.
 
 ## Agreed foundation
 
@@ -52,7 +52,7 @@ See the [motion plan](home-motion.md) for interaction rules and the limits of th
 
 ## Implementation boundaries
 
-The current `/` page also implements browsing, filtering, search, and pagination. When introducing the new Home, preserve those journeys through Archive/Search and maintain existing article links. Route migration is a separately verified implementation task; the prototype must not silently remove those capabilities or introduce dead navigation.
+The integrated `/` is dedicated Home. Browsing, filtering and pagination live in Archive; search has its own page. Legacy homepage query links redirect to the corresponding routes, preserving existing journeys and article links. Final design work must retain those implemented paths and the owner dashboard.
 
 Keep the admin dashboard and article reading styles stable while exploring Home. Animation code should be scoped to the relevant client components, with content/data fetching staying in the existing server-rendered structure where practical.
 

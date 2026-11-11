@@ -1,6 +1,8 @@
 # ADR 0004: PostgreSQL persistence and private object storage
 
-Status: Selected for implementation in the persistence foundation branch; pending code review and merge.
+Status: Persistence foundation merged in PR #4. Private COS remains unimplemented; the operational update below revises the earlier launch requirements.
+
+Operational update, November 11, 2026: [ADR 0019](0019-simple-delivery.md) revises the earlier staging/automated-backup requirements. The initial Tencent deployment uses a private persistent uploads volume; COS remains separate work. The original milestone rationale follows.
 
 ## Context
 

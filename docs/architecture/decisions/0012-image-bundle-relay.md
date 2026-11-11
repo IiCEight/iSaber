@@ -1,6 +1,6 @@
 # ADR 0012: Verified image bundles and an operator relay
 
-Status: Implemented in PR #14; first release published and pulled successfully on JD. Updated to reuse a pinned database baseline and offer optional direct artifact receipt.
+Status: Historical. Superseded by [ADR 0019](0019-simple-delivery.md) on November 11, 2026. Retained to explain the former implementation; do not use it for current setup.
 
 ## Evidence
 

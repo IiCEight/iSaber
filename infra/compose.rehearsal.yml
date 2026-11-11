@@ -1,12 +1,13 @@
 # Disposable local/CI rehearsal only. No cloud deployment or public TLS endpoint.
 services:
   postgres:
-    # Upgrade together with postgres-baseline.json after mirroring and verifying.
+    # Keep the production PostgreSQL pin in compose.yml aligned on upgrades.
     image: postgres:16@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
     environment:
       POSTGRES_USER: rehearsal
       POSTGRES_PASSWORD: synthetic_rehearsal_only
       POSTGRES_DB: rehearsal
+      ISABER_RUNTIME_PASSWORD: synthetic_runtime_only
     volumes:
       - database:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +19,7 @@ services:
     image: isaber-api:rehearsal
     build: ../backend
     environment:
-      DATABASE_URL: postgres://rehearsal:synthetic_rehearsal_only@postgres:5432/rehearsal?sslmode=disable
+      DATABASE_URL: postgres://isaber_runtime:synthetic_runtime_only@postgres:5432/rehearsal?sslmode=disable
       SITE_ORIGIN: https://localhost
       # Synthetic 32-byte key; this file must never configure a real environment.
       CSRF_SECRET: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=

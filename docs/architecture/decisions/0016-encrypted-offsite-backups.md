@@ -1,6 +1,6 @@
 # ADR 0016: Public-key encrypted backups in an append-only Tencent vault
 
-Status: Implemented and cloud-tested for review.
+Status: Historical. Superseded by [ADR 0019](0019-simple-delivery.md) on November 11, 2026. Retained to explain the former implementation; do not use it for current setup.
 
 ## Decision
 
@@ -12,7 +12,7 @@ Use the existing Tencent server as a root-controlled ciphertext vault over restr
 
 Retrieve ciphertext through operator SSH, authenticate it against the offline pinned signer, decrypt locally, and stream the signed-digest-bound plaintext into a disposable JD recovery check. Restore SQL only into a fresh network-isolated, resource-constrained PostgreSQL container with fresh volumes and a trusted installed image. Compare all table content hashes and media bytes, then remove disposable resources. Never execute copied control programs or overwrite live data during rehearsal.
 
-The actual Tencent round trip passed on November 9 with an existing owner and article. The owner confirmed a protected copy of the recovery identity. See the [runbook](../../operations/offsite-backups.md) for evidence and commands.
+The actual Tencent round trip passed on November 9 with an existing owner and article. The owner confirmed a protected copy of the recovery identity. See the [runbook](https://github.com/IiCEight/iSaber/blob/174450fe5fa6097727b68b0b55353f2e6de73596/docs/operations/offsite-backups.md) for evidence and commands.
 
 ## Consequences
 
