@@ -1,6 +1,6 @@
 # Article design review
 
-Status: First local prototype, pending owner review. The production Article route is unchanged. No push or CI/CD is part of this iteration.
+Status: Design approved and [integrated locally](article-integration.md). The standalone prototype remains a visual reference. No push or CI/CD is part of this iteration.
 
 ## Reading experience
 
