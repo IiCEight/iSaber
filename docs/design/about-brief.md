@@ -21,7 +21,7 @@ The horizontal navigation matches the other prototypes. Search links to Archiveâ
 
 A scoped GSAP/ScrollTrigger timeline transforms the shared decorative canvas through the normal-flow chapters. No scroll hijacking or nested scroller is used. Lenses breathe independently while their outer slots rearrange and their overall rig rotates. A separate pointer layer adds a capped, mouse-only parallax without competing with scroll transforms. Interest rows get a restrained reveal and warm hover/focus treatment. Opening text enters once; content is never left hidden if animation setup fails.
 
-The pink background accent remains anchored to the right edge at a fixed size for each responsive breakpoint. It does not travel across the composition or expand between scenes; the lenses carry the movement.
+The pink accent keeps a fixed size at each responsive breakpoint and follows a shallow path along the right edge. Soft vertical drift and small sideways shifts accompany the lenses, without expanding or sweeping through the center. Transform-based motion keeps its geometry consistent in every intermediate state.
 
 The default document is a complete static layout. Reduced motion, short viewports, or enlarged root text disable sticky choreography and preserve the linear colored sections. A manual Reduce motion control helps compare the fallback; the OS preference cannot be overridden by the prototype. Preference changes revert GSAP context and clean up pointer listeners. Hidden documents pause decorative breathing; the continuous motion can also be disabled from the review control. No animation is required to discover a link or read a paragraph.
 
