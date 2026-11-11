@@ -35,7 +35,7 @@
         ];
         const scene = gsap.timeline({defaults:{ease:'power1.inOut'},scrollTrigger:{trigger:root,start:'top top+=72',end:'bottom bottom',scrub:.65,invalidateOnRefresh:true}});
         // Expand from the viewport edge into a full background, then hold it.
-        scene.to('.warm-field',{top:'0%',width:'100%',height:'100%',duration:1.1,ease:'sine.inOut'},.05)
+        scene.to('.warm-field',{width:'100%',duration:1.1,ease:'sine.inOut'},.05)
           .to('.orbit-layout',{left:mobile.matches?'24%':'37%',top:mobile.matches?'6%':'-10%',width:mobile.matches?'115vmin':'105vmin',duration:1},0)
           .to('.orbit-rig',{rotation:72,duration:1},0)
           .to(slots,{left:i=>scatter[i][0]+'%',top:i=>scatter[i][1]+'%',width:mobile.matches?'27%':'28%',duration:1},.1)
