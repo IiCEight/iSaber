@@ -12,6 +12,7 @@ p { max-width: 65ch; }
 .skip-link:focus { top: 0.5rem; }
 .site-header { position: relative; z-index: 10; width: 100%; min-height: 72px; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 12px 28px; margin: 0; background: #121215; color: white; font-family: Arial,sans-serif; }
 .site-header--home { position: fixed; left: 0; top: 0; }
+.site-header--about { position: sticky; top: 0; }
 .site-brand { font-size: 1.25rem; letter-spacing: -.06em; }
 .site-nav { display: flex; flex-wrap: wrap; gap: 24px; }
 .site-nav a { display: inline-flex; min-height: 44px; align-items: center; font-weight: 400; text-underline-offset: .25em; }

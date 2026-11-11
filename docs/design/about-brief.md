@@ -1,6 +1,6 @@
 # About design review
 
-Status: First local prototype, pending owner review. The live `/about` route is unchanged. No remote push or CI/CD is part of this iteration.
+Status: Design approved and [integrated locally](about-integration.md). The standalone prototype remains a reference. No remote push or CI/CD is part of this iteration.
 
 ## Direction
 

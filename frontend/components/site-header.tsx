@@ -18,7 +18,7 @@ export default function SiteHeader() {
       window.dispatchEvent(new Event("isaber:open-archive-search"));
     }
   }}>{label}</Link>);
-  return <header className={`site-header${pathname === "/" ? " site-header--home" : ""}`}>
+  return <header className={`site-header${pathname === "/" ? " site-header--home" : pathname === "/about" ? " site-header--about" : ""}`}>
     <Link className="site-brand" href="/" aria-label="iSaber home">iSaber</Link>
     <nav className="site-nav" aria-label="Main">{navigation}</nav>
     <details className="site-mobile-nav" ref={menu} onKeyDown={(event) => {
