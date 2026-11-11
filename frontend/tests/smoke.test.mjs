@@ -96,9 +96,29 @@ test("production frontend handles unavailable and older backend capabilities", a
   });
   await t.test("archive preserves filters and pagination", async () => {
     const html = await (await fetch(`${origin}/archive?category=notes&tag=go&language=zh`)).text();
-    assert.match(html, /<h1>Archive<\/h1>/);
+    assert.match(html, /id="archive-title">Archive\.<\/h1>/);
     assert.ok(html.includes('/archive?category=notes&amp;tag=go&amp;language=zh&amp;cursor=fixture-next'));
-    assert.match(html, /action="\/search"/);
+    assert.match(html, /action="\/archive#archive-writing"/);
+    assert.match(html, /Applied search conditions/);
+    assert.match(html, /Remove Category: notes|Remove Category: Notes/);
+  });
+  await t.test("Archive search retains applied conditions and drops pagination when removing one", async () => {
+    publicRequests.length = 0;
+    const html = await (await fetch(`${origin}/archive?q=Go&category=notes&language=en&cursor=fixture-next`, { headers: { Cookie: "reader-session=fixture" } })).text();
+    assert.match(html, /Best match first/);
+    assert.match(html, /Remove Search: Go/);
+    assert.ok(html.includes('/archive?language=en&amp;q=Go#archive-writing'));
+    const request = publicRequests.find(request => request.path === "/api/v1/articles/search");
+    assert.equal(request.query.get("q"), "Go");
+    assert.equal(request.query.get("category"), "notes");
+    assert.equal(request.cookie, undefined);
+  });
+  await t.test("a blank Archive search field still browses the selected category", async () => {
+    publicRequests.length = 0;
+    const html = await (await fetch(`${origin}/archive?q=&category=notes`)).text();
+    assert.match(html, /Public article 0/);
+    assert.doesNotMatch(html, /Enter a word or phrase/);
+    assert.ok(publicRequests.some(request => request.path === "/api/v1/articles" && request.query.get("category") === "notes"));
   });
   await t.test("legacy homepage URLs redirect internally with their complete query", async () => {
     const filtered = await fetch(`${origin}/?category=notes&tag=go`, { redirect: "manual" });

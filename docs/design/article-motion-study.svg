@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+<title id="title">A small pull toward curiosity</title><desc id="desc">Overlapping coral and pink lenses on a blue background, with a dotted resting circle, a pointer, and an arrow showing a short movement toward it.</desc>
+<defs><linearGradient id="blue"><stop stop-color="#4520d7"/><stop offset="1" stop-color="#176fe4"/></linearGradient><linearGradient id="warm"><stop stop-color="#ed5827"/><stop offset="1" stop-color="#ee0696"/></linearGradient><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 10 5 0 10" fill="#fff"/></marker></defs>
+<path fill="url(#blue)" d="M0 0h1200v560H0z"/>
+<g fill="url(#warm)" opacity=".85"><circle cx="125" cy="400" r="210"/><circle cx="220" cy="200" r="210"/><circle cx="420" cy="100" r="210"/></g>
+<circle cx="720" cy="280" r="154" fill="none" stroke="#fff" stroke-dasharray="5 8" opacity=".65"/><circle cx="752" cy="264" r="154" fill="#f76048" opacity=".9"/><circle cx="752" cy="264" r="12" fill="#fff"/>
+<path d="m766 258 190-90" stroke="#fff" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="m1000 125 4 62 18-21 29 6z" fill="#fff"/>
+<g fill="#fff" font-family="Arial,sans-serif"><text x="48" y="62" font-size="16" letter-spacing="3">01 / A GENTLE ATTRACTION</text><text x="652" y="474" font-size="20">A small move. A clear limit.</text><text x="48" y="516" font-size="14" letter-spacing="2">ILLUSTRATIVE MOTION STUDY</text></g></svg>
