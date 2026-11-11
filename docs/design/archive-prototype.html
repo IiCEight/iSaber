@@ -11,11 +11,14 @@
 @media(prefers-reduced-motion:reduce){.lens{animation:none}.article-row,.arrow{transition:none}}
 
 .search-toggle{position:relative;display:grid;place-items:center;width:48px;height:48px;padding:0;border:1px solid rgb(255 255 255 / .4);background:transparent;color:#fff;border-radius:50%;flex-shrink:0}.search-toggle:hover{background:#ffb4d0;color:#1d2857;border-color:#ffb4d0}.filter-dot{position:absolute;right:0;top:0;width:10px;height:10px;border-radius:50%;background:#ff9b8a;border:2px solid #1d2857}
-#browse-panel{width:min(1264px,calc(100% - 36px));max-height:calc(100dvh - 48px);overflow-y:auto;inset:0;margin:auto;padding:0;background:#29386e;border:1px solid #7a8ab7;border-top:2px solid #f78eaa}
-#browse-panel::backdrop{background:rgb(15 21 51 / .66);backdrop-filter:blur(5px)}
-.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 28px 0}.panel-heading h2{margin:0;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:500;letter-spacing:-.05em}.panel-heading button{padding:0;width:44px;min-height:44px;background:transparent;color:#fff;border:1px solid rgb(255 255 255 / .4);font-size:28px;line-height:1}
-#browse-panel .tools{border:0;padding:24px 28px 28px}.panel-actions{display:flex;justify-content:space-between;align-items:center;gap:20px;border-top:1px solid var(--line);padding-top:22px;margin-top:22px}.panel-actions span{font-size:13px;color:#d4ddf3}body:has(#browse-panel[open]){overflow:hidden}
+#browse-panel{grid-column:1/-1;display:grid;grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .25s ease}
+#browse-panel.is-open{grid-template-rows:1fr;visibility:visible}.search-inner{overflow:hidden;min-height:0}.search-surface{background:#29386e;border-top:2px solid #f78eaa}
+.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px max(28px,calc((100% - 1264px)/2)) 0}.panel-heading h2{margin:0;font-size:clamp(1.5rem,3vw,2rem);font-weight:500;letter-spacing:-.04em}.panel-heading button{padding:0;width:44px;min-height:44px;background:transparent;color:#fff;border:1px solid rgb(255 255 255 / .4);font-size:28px;line-height:1}
+#browse-panel .tools{border:0;padding:24px max(28px,calc((100% - 1264px)/2)) 28px}.panel-actions{display:flex;justify-content:space-between;align-items:center;gap:20px;border-top:1px solid var(--line);padding-top:22px;margin-top:22px}.panel-actions span{font-size:13px;color:#d4ddf3}
+.active-conditions{display:flex;align-items:center;flex-wrap:wrap;gap:10px 18px;margin:18px 0 0}.active-conditions>div{display:flex;flex-wrap:wrap;gap:10px;min-width:0}.condition-chip{display:inline-flex;align-items:center;gap:12px;max-width:100%;min-height:44px;padding:8px 12px;background:#303e75;border:1px solid #8b98bc;color:#fff;text-align:left;font-size:13px}.condition-chip span:first-child{overflow-wrap:anywhere;min-width:0}.condition-chip span:last-child{font-size:20px;color:#ffb4d0}.condition-chip:hover{border-color:#ffb4d0;background:#394984}
 @media(max-width:560px){.panel-heading{padding:18px 18px 0}#browse-panel .tools{padding:20px 18px}.panel-actions{gap:12px}.panel-actions .solid{padding-inline:14px}.index-top{align-items:center;margin-bottom:6px}}
+@media(prefers-reduced-motion:reduce){#browse-panel{transition:none}}
+
 </style>
 </head>
 <body>
@@ -26,8 +29,9 @@
 <section class="masthead" aria-labelledby="archive-title"><div class="masthead-copy"><p class="eyebrow">01 / The collection</p><h1 id="archive-title">Archive.</h1><p>Notes, explorations, and things made along the way.</p></div>
 <div class="lens-art" aria-hidden="true"><span class="lens" style="left:80%;top:50%"></span><span class="lens" style="left:74.3%;top:67.6%"></span><span class="lens" style="left:59.3%;top:78.5%"></span><span class="lens" style="left:40.7%;top:78.5%"></span><span class="lens" style="left:25.7%;top:67.6%"></span><span class="lens" style="left:20%;top:50%"></span><span class="lens" style="left:25.7%;top:32.4%"></span><span class="lens" style="left:40.7%;top:21.5%"></span><span class="lens" style="left:59.3%;top:21.5%"></span><span class="lens" style="left:74.3%;top:32.4%"></span><div class="lens-label"><span>↘</span>Follow a thread</div></div>
 <div class="masthead-foot"><span>Personal notes &amp; technical writing</span><span>English &amp; <span lang="zh-CN">中文</span></span></div></section>
-<section class="index" id="content" aria-labelledby="index-title"><div class="index-top"><h2 id="index-title">All writing</h2><button class="search-toggle" id="open-search" type="button" aria-label="Search and filters" aria-haspopup="dialog" aria-controls="browse-panel" hidden><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><span class="filter-dot" hidden aria-hidden="true"></span></button></div>
-
+<section class="index" id="content" aria-labelledby="index-title"><div class="index-top"><h2 id="index-title">All writing</h2><button class="search-toggle" id="open-search" type="button" aria-label="Search and filters" aria-expanded="false" aria-controls="browse-panel" hidden><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><span class="filter-dot" hidden aria-hidden="true"></span></button></div>
+<div class="search-expansion" id="browse-panel" role="region" aria-labelledby="browse-title" aria-hidden="true" inert><div class="search-inner"><div class="search-surface"><div class="panel-heading"><h2 id="browse-title">Search &amp; filter</h2><button type="button" id="close-search" aria-label="Collapse search">×</button></div><form class="tools" id="browse-form"><search aria-label="Search sample articles"><div class="tools-search"><label for="article-search">Search articles<input id="article-search" name="q" type="search" placeholder="Search the collection…" maxlength="200"></label><button class="solid" type="submit">Search ↗</button></div></search><div class="filter-row"><label for="category">Category<select id="category" name="category"><option value="">All categories</option><option>Technology</option><option>Personal</option><option>Making</option></select></label><label for="tag">Tag<select id="tag" name="tag"><option value="">All tags</option><option>Go</option><option>Design</option><option>Learning</option><option>Writing</option></select></label><label for="language">Language<select id="language" name="language"><option value="">English &amp; 中文</option><option value="en">English</option><option value="zh">中文</option></select></label><button class="clear" type="reset">Clear filters</button></div><div class="panel-actions"><span id="panel-count" role="status" aria-live="polite">6 sample articles</span><button class="solid" type="submit">View results ↗</button></div></form></div></div></div>
+<div class="active-conditions" id="active-conditions" role="group" aria-label="Applied search conditions" hidden><div id="condition-chips"></div><button class="clear" id="clear-all" type="button">Clear all</button></div>
 <noscript><p class="noscript">This is a design prototype with sample articles. Enable JavaScript to try filters and sample previews.</p></noscript>
 <div class="results-note"><p id="result-count" role="status" aria-live="polite">6 sample articles</p><p>Published date · Newest first ↓</p></div>
 <ol class="article-list" id="article-list">
@@ -43,11 +47,61 @@
 <div class="collection-end"><p id="end-note">You’ve reached the beginning of this sample collection.</p><a href="#archive-title">Back to the top ↑</a></div>
 </section></main>
 <footer class="footer"><a class="brand" href="http://127.0.0.1:3000/">iSaber</a><nav aria-label="Footer"><a href="http://127.0.0.1:3000/">Home ↗</a><a href="http://127.0.0.1:3000/about">About ↗</a></nav></footer>
-<dialog id="browse-panel" aria-labelledby="browse-title"><div class="panel-heading"><h2 id="browse-title">Find a thread.</h2><button type="button" id="close-search" aria-label="Close search">×</button></div><form class="tools" id="browse-form"><search aria-label="Search sample articles"><div class="tools-search"><label for="article-search">Search articles<input autofocus id="article-search" name="q" type="search" placeholder="Search the collection…" maxlength="200"></label><button class="solid" type="submit">Search ↗</button></div></search><div class="filter-row"><label for="category">Category<select id="category" name="category"><option value="">All categories</option><option>Technology</option><option>Personal</option><option>Making</option></select></label><label for="tag">Tag<select id="tag" name="tag"><option value="">All tags</option><option>Go</option><option>Design</option><option>Learning</option><option>Writing</option></select></label><label for="language">Language<select id="language" name="language"><option value="">English &amp; 中文</option><option value="en">English</option><option value="zh">中文</option></select></label><button class="clear" type="reset">Clear filters</button></div><div class="panel-actions"><span id="panel-count" role="status" aria-live="polite">6 sample articles</span><button class="solid" type="submit">View results ↗</button></div></form></dialog>
+
 <dialog id="sample-preview" aria-labelledby="sample-title"><p class="eyebrow">Sample article · Design preview</p><h2 id="sample-title"></h2><p id="sample-summary"></p><p>This sample illustrates the Archive layout. In the finished site, this link opens the full article.</p><form method="dialog"><button>Back to the collection</button></form></dialog>
 <script>
-const form=document.querySelector('#browse-form'),rows=[...document.querySelectorAll('.article-row')],mode=document.querySelector('#preview-state'),empty=document.querySelector('#empty-state'),error=document.querySelector('#error-state'),dialog=document.querySelector('#sample-preview'),panel=document.querySelector('#browse-panel'),opener=document.querySelector('#open-search');
-function render(){const q=form.q.value.trim().toLocaleLowerCase(),category=form.category.value,tag=form.tag.value,language=form.language.value;let count=0;for(const row of rows){const match=mode.value==='sample'&&(!category||row.dataset.category===category)&&(!tag||row.dataset.tags.split(' ').includes(tag))&&(!language||row.dataset.language===language)&&(!q||row.textContent.toLocaleLowerCase().includes(q));row.hidden=!match;if(match)count++;}empty.hidden=mode.value==='error'||count>0;error.hidden=mode.value!=='error';document.querySelector('#empty-label').textContent=mode.value==='empty'?'The first chapter':'A different thread';document.querySelector('#empty-title').textContent=mode.value==='empty'?'The first chapter is on its way.':'No articles on this thread.';document.querySelector('#empty-copy').textContent=mode.value==='empty'?'There are no published articles yet. Come back for the first entry.':'Try another word, or widen your filters.';document.querySelector('#empty-reset').hidden=mode.value==='empty';document.querySelector('#result-count').textContent=mode.value==='error'?'Collection unavailable':count+' sample article'+(count===1?'':'s');document.querySelector('#end-note').hidden=!count;const active=[form.q.value.trim(),form.category.value,form.tag.value,form.language.value].filter(Boolean);document.querySelector('.filter-dot').hidden=!active.length;document.querySelector('#panel-count').textContent=count+' sample article'+(count===1?' matches':'s match');if(active.length)document.querySelector('#result-count').textContent+=' · '+active.join(' / ');}
-form.addEventListener('submit',e=>{e.preventDefault();render();panel.close()});form.addEventListener('change',render);form.addEventListener('reset',()=>setTimeout(render));mode.addEventListener('change',render);document.querySelector('#empty-reset').addEventListener('click',()=>form.reset());document.querySelector('#retry').addEventListener('click',()=>{mode.value='sample';render()});for(const row of rows)row.querySelector('a').addEventListener('click',e=>{e.preventDefault();document.querySelector('#sample-title').textContent=row.querySelector('h3').textContent;document.querySelector('#sample-summary').textContent=row.querySelector('.summary').textContent;dialog.showModal()});opener.hidden=false;const openSearch=()=>panel.showModal();opener.addEventListener('click',openSearch);document.querySelector('a[href="#article-search"]').addEventListener('click',e=>{e.preventDefault();openSearch()});document.querySelector('#close-search').addEventListener('click',()=>panel.close());panel.addEventListener('click',e=>{if(e.target===panel){const r=panel.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)panel.close()}});render();
+const form=document.querySelector('#browse-form'), rows=[...document.querySelectorAll('.article-row')];
+const mode=document.querySelector('#preview-state'), empty=document.querySelector('#empty-state'), error=document.querySelector('#error-state');
+const dialog=document.querySelector('#sample-preview'), panel=document.querySelector('#browse-panel'), opener=document.querySelector('#open-search');
+const conditionRow=document.querySelector('#active-conditions'), chips=document.querySelector('#condition-chips');
+const fields=['q','category','tag','language'];
+let applied={q:'',category:'',tag:'',language:''};
+const readForm=()=>Object.fromEntries(fields.map(key=>[key,form.elements.namedItem(key).value.trim()]));
+const matches=(row,state)=>(!state.category||row.dataset.category===state.category)&&(!state.tag||row.dataset.tags.split(' ').includes(state.tag))&&(!state.language||row.dataset.language===state.language)&&(!state.q||row.textContent.toLocaleLowerCase().includes(state.q.toLocaleLowerCase()));
+function previewCount(){const count=mode.value==='sample'?rows.filter(row=>matches(row,readForm())).length:0;document.querySelector('#panel-count').textContent=count+' sample article'+(count===1?' matches':'s match');}
+function render(){
+ let count=0;
+ for(const row of rows){const match=mode.value==='sample'&&matches(row,applied);row.hidden=!match;if(match)count++;}
+ empty.hidden=mode.value==='error'||count>0;error.hidden=mode.value!=='error';
+ document.querySelector('#empty-label').textContent=mode.value==='empty'?'The first chapter':'A different thread';
+ document.querySelector('#empty-title').textContent=mode.value==='empty'?'The first chapter is on its way.':'No articles on this thread.';
+ document.querySelector('#empty-copy').textContent=mode.value==='empty'?'There are no published articles yet. Come back for the first entry.':'Try another word, or widen your filters.';
+ document.querySelector('#empty-reset').hidden=mode.value==='empty';
+ document.querySelector('#result-count').textContent=mode.value==='error'?'Collection unavailable':count+' sample article'+(count===1?'':'s');
+ document.querySelector('#end-note').hidden=!count;
+ const active=fields.filter(key=>applied[key]);conditionRow.hidden=!active.length;document.querySelector('.filter-dot').hidden=!active.length;
+ chips.replaceChildren();
+ const labels={q:'Search',category:'Category',tag:'Tag',language:'Language'};
+ for(const key of active){
+  const value=key==='language'?(applied[key]==='en'?'English':'中文'):applied[key];
+  const label=labels[key]+': '+value,button=document.createElement('button');
+  button.type='button';button.className='condition-chip';button.dataset.key=key;button.setAttribute('aria-label','Remove '+label);
+  const text=document.createElement('span'),cross=document.createElement('span');text.textContent=label;cross.textContent='×';cross.setAttribute('aria-hidden','true');button.append(text,cross);chips.append(button);
+ }
+ previewCount();
+}
+function setOpen(open){
+ if(open){for(const key of fields)form.elements.namedItem(key).value=applied[key];previewCount();}
+ panel.inert=!open;panel.setAttribute('aria-hidden',String(!open));panel.classList.toggle('is-open',open);opener.setAttribute('aria-expanded',String(open));
+ if(open)form.q.focus({preventScroll:true});else opener.focus({preventScroll:true});
+}
+function clearAll(){applied={q:'',category:'',tag:'',language:''};for(const key of fields)form.elements.namedItem(key).value='';render();}
+form.addEventListener('submit',event=>{event.preventDefault();applied=readForm();render();setOpen(false);opener.scrollIntoView({block:'nearest'});});
+form.addEventListener('input',previewCount);form.addEventListener('change',previewCount);
+form.addEventListener('reset',event=>{event.preventDefault();clearAll();});
+opener.hidden=false;opener.addEventListener('click',()=>setOpen(opener.getAttribute('aria-expanded')!=='true'));
+ document.querySelector('a[href="#article-search"]').addEventListener('click',event=>{event.preventDefault();setOpen(true);panel.scrollIntoView({block:'nearest'});});
+document.querySelector('#close-search').addEventListener('click',()=>setOpen(false));
+panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();setOpen(false);}});
+chips.addEventListener('click',event=>{
+ const button=event.target.closest('button[data-key]');if(!button)return;
+ const index=[...chips.children].indexOf(button);applied[button.dataset.key]='';form.elements.namedItem(button.dataset.key).value='';render();
+ (chips.children[Math.min(index,chips.children.length-1)]||opener).focus({preventScroll:true});
+});
+document.querySelector('#clear-all').addEventListener('click',()=>{clearAll();opener.focus({preventScroll:true});});
+document.querySelector('#empty-reset').addEventListener('click',clearAll);
+mode.addEventListener('change',render);document.querySelector('#retry').addEventListener('click',()=>{mode.value='sample';render();});
+for(const row of rows)row.querySelector('a').addEventListener('click',event=>{event.preventDefault();document.querySelector('#sample-title').textContent=row.querySelector('h3').textContent;document.querySelector('#sample-summary').textContent=row.querySelector('.summary').textContent;dialog.showModal();});
+render();
 </script>
 </body></html>
