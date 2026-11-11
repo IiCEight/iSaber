@@ -20,11 +20,22 @@ Caddy 2.11.9 uses Let's Encrypt's `shortlived` ACME profile for the public IP an
 
 The Compose plugin was installed from Tencent's Ubuntu mirror with no package upgrades/removals and no Docker restart. The blog binds `10.2.0.6:80/443`, preserving Tailscale's separate HTTPS listener, Fieldnotes/private Caddy, host PostgreSQL, RSSHub, k3s, Mihomo and feed services. The four blog containers used about 228 MiB combined at inspection, under their configured limits. Database, uploads, certificates and proxy configuration use project-scoped persistent volumes; no database port is published.
 
-GitHub's `production` environment permits only the `main` branch. It holds a dedicated forced-command SSH key and the pinned host key. Arbitrary commands through that key were rejected. `BLOG_DEPLOY_ENABLED` is currently false pending explicit activation approval; the live server was installed and verified through the operator connection.
+GitHub's `production` environment permits only the `main` branch. It holds a dedicated forced-command SSH key and the pinned host key. Arbitrary commands through that key were rejected. `BLOG_DEPLOY_ENABLED=true` with explicit owner approval. The initial installation was verified through the operator connection; automatic CI-to-Tencent delivery then passed on the PR #27 main merge.
 
 JD's four old staging containers are stopped; original volumes, account/article data, keys and backup archives remain. Its backup/retention timers are disabled, Tencent retention remains disabled, and `STAGING_CD_ENABLED=false`. No scheduled backup transfer or separate staging delivery is part of the new installation.
 
 Public HTTPS, process/database readiness, Home/Archive/Search, static assets, existing article visibility, anonymous owner-route rejection and cross-origin rejection passed. The real deployer also passed a same-release update with CA-verified HTTPS. Interactive owner/browser acceptance uses the preserved JD credentials.
+
+## First automatic production release
+
+The owner explicitly enabled ongoing automatic delivery on November 11. [Main run 43019383308](https://github.com/IiCEight/iSaber/actions/runs/43019383308), from PR #27 merge `0d340ee3386211d3782915e1cdfcbe6fcdc61dc6`, passed all four checks and **Deploy blog**. The deploy job took 3 minutes 17 seconds. GitHub published the already-tested images, sent only their digests through the restricted SSH key, and Tencent pulled them through NJU and passed its verified HTTPS health check.
+
+| Component | CI-published and running digest |
+| --- | --- |
+| Frontend | `sha256:a563814bde707f17ace12a8e35d736ec9ecc2985034751c3e1bc5fe232320194` |
+| Backend | `sha256:13824e5d451ddc6f45cec9d4b13b7986323187d6a119694aa90f46ba4bddd2e9` |
+
+The active containers and `release.env` matched both digests. `previous.env` retained the preceding release references. PostgreSQL was not restarted; one owner, one article and zero managed images remained. Public Home/Archive/Search, article-list and HTTPS health requests returned 200 afterward, and RSSHub remained running. These are observed timings for this release, not a cold-pull performance guarantee. Explicit live rollback rehearsal remains separate from the already-passing rollback failure-path tests.
 
 ## One-time Tencent setup
 
