@@ -18,7 +18,30 @@ export default function ArchiveFilters({ query, categories, tags, labelsUnavaila
   const input = useRef<HTMLInputElement>(null);
   const applied = new URLSearchParams(query);
   // Server HTML exposes the complete GET form even without JavaScript.
-  useEffect(() => setEnhanced(true), []);
+  useEffect(() => {
+    setEnhanced(true);
+    let frame = 0;
+    const reveal = () => {
+      form.current?.reset();
+      setOpen(true);
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        opener.current?.scrollIntoView({ block: "start" });
+        input.current?.focus({ preventScroll: true });
+      });
+    };
+    const followFragment = () => { if (location.hash === "#archive-search-panel") reveal(); };
+    window.addEventListener("isaber:open-archive-search", reveal);
+    window.addEventListener("hashchange", followFragment);
+    window.addEventListener("popstate", followFragment);
+    followFragment();
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("isaber:open-archive-search", reveal);
+      window.removeEventListener("hashchange", followFragment);
+      window.removeEventListener("popstate", followFragment);
+    };
+  }, []);
   const close = () => { setOpen(false); opener.current?.focus({ preventScroll: true }); };
   const expand = () => {
     form.current?.reset();
