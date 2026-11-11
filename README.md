@@ -6,7 +6,7 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 The React/Go blog implements owner authentication, Markdown and Typora ZIP/image uploads, private drafts, preview/publication, revision history, categories/tags, English/Chinese search, and moderated guest comments. See the [publishing guide](docs/operations/publishing.md).
 
-The [simplified CI/CD workflow](docs/operations/github-cicd.md) validates changes, builds and tests application images once, and publishes them to GHCR on main. One Tencent Compose deployment pulls exact digests through NJU. [Deployment setup](docs/operations/deployment.md) covers public HTTPS, persistent database/uploads, restricted SSH, and application rollback. The blog is live at [https://101.42.13.215](https://101.42.13.215), with the JD owner account and article preserved. Automatic delivery from successful main builds is enabled with owner approval. Separate JD staging, custom image relays, and automated backup/retention are retired from the new design. Old JD containers are stopped and obsolete schedules disabled; their data/archives are retained.
+The [simplified CI/CD workflow](docs/operations/github-cicd.md) validates changes, builds and tests application images once, and publishes them to GHCR on main. One Tencent Compose deployment pulls exact digests through NJU. [Deployment setup](docs/operations/deployment.md) covers public HTTPS, persistent database/uploads, restricted SSH, and application rollback. The blog is live at [https://isaber.top](https://isaber.top), with the JD owner account and article preserved. Automatic delivery from successful main builds is enabled with owner approval. Separate JD staging, custom image relays, and automated backup/retention are retired from the new design. Old JD containers are stopped and obsolete schedules disabled; their data/archives are retained.
 
 The owner-approved [Vivid Home design](docs/design/home-integration.md) is integrated for review, with real public article data and preserved Archive/Search behavior.
 
@@ -17,7 +17,7 @@ As of November 11, 2026, automatic Tencent delivery and private persistent stora
 1. Require Frontend, Backend, and Containers alongside API contract in the main ruleset, then rehearse an explicit live application rollback.
 2. Complete browser acceptance with real Typora Markdown/ZIP uploads, public/private reading, revisions, search, moderation, mobile and keyboard use.
 3. Refine the integrated Vivid Home and finish Archive, Article and About design, owner copy and fonts.
-4. Add a domain when chosen. Trusted IP HTTPS already works; a COS adapter is optional future storage work.
+The domain is configured: `https://isaber.top`, with `www` redirected to the root. A COS adapter remains optional future storage work.
 
 See the [backlog](docs/product/backlog.md) for implementation evidence and [deployment](docs/operations/deployment.md) for the accepted release. Automated staging, backup transfers and replacement-server recovery are outside the revised delivery scope.
 
@@ -83,7 +83,7 @@ Both development servers bind to loopback. Development authentication uses an is
 
 ## Container rehearsal
 
-Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). The disposable rehearsal validates images before publication; the Tencent installation uses trusted IP HTTPS and persistent volumes.
+Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). The disposable rehearsal validates images before publication; the Tencent installation uses trusted domain HTTPS and persistent volumes.
 
 ## Checks
 

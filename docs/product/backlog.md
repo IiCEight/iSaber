@@ -2,7 +2,7 @@
 
 Status: Reconciled with merged PRs and live deployment evidence on November 11, 2026. Checked feature items record implementation/automated verification; live acceptance is identified separately. Browser and final design acceptance remain open.
 
-Current operational scope (owner decision, November 11): replace the relay/staging/backup framework with one workflow, public GHCR images through NJU, and one Tencent Compose deployment. PR #26 is merged and the Tencent blog is live over trusted IP HTTPS, preserving the JD account/article. Ongoing automatic main delivery is enabled with explicit owner approval; the full CI-to-Tencent pipeline has passed. See [ADR 0019](../architecture/decisions/0019-simple-delivery.md).
+Current operational scope (owner decision, November 11): replace the relay/staging/backup framework with one workflow, public GHCR images through NJU, and one Tencent Compose deployment. PR #26 is merged and the Tencent blog is live at `https://isaber.top` over trusted HTTPS, preserving the JD account/article. Ongoing automatic main delivery is enabled with explicit owner approval; the full CI-to-Tencent pipeline has passed. See [ADR 0019](../architecture/decisions/0019-simple-delivery.md).
 
 ## Next priorities
 
@@ -12,7 +12,9 @@ Current operational scope (owner decision, November 11): replace the relay/stagi
 | 2 | Rehearse explicit live application rollback | Failure-path tests pass and the first automatic release retained previous image references |
 | 3 | Complete real browser publishing/reading acceptance | HTTP/SSR, database and privacy tests pass; owner browser/mobile/keyboard review is pending |
 | 4 | Finish public page design and owner content | Vivid Home/scroll motion merged; Archive, Article, About, copy and fonts need refinement |
-| 5 | Add a domain when chosen | Trusted public-IP HTTPS works; private persistent storage is accepted, with COS optional |
+
+
+Domain setup is complete: `isaber.top` is canonical and `www` redirects to it. Private persistent storage is accepted; COS remains optional.
 
 ## Implementation sequence and evidence
 
@@ -133,7 +135,7 @@ Publishing, organization, search and moderated feedback are implemented and depl
 - [x] Test invalid input, rollback, failed pull/start, interruption, and locking; pass full container/SQL permissions acceptance in CI.
 - [x] Complete and record full frontend/backend mirror pulls by exact digest, initial timeouts, successful retries, cached timings, and official dependency pulls.
 - [x] Merge replacement PR #26 and verify main CI/image publication; pull the resulting frontend/backend digests on Tencent in 17.13s/31.41s.
-- [x] Owner selects direct public-IP access; obtain trusted IP HTTPS, accept private persistent storage and verify shared Tencent workloads remain running.
+- [x] Establish initial IP HTTPS, then configure the purchased `isaber.top` domain and `www` redirect; preserve private storage and shared Tencent workloads.
 - [x] Install reviewed host files/Compose plugin, private stable secrets, a restricted deployment key and a main-only GitHub production environment.
 - [x] Owner selects JD preservation; copy account/article/database/uploads once, compare row fingerprints and file checksums, and verify existing article visibility over public HTTPS.
 - [x] Enable ongoing delivery with owner approval and verify full main CI → GHCR → NJU → Tencent in [run 43019383308](https://github.com/IiCEight/iSaber/actions/runs/43019383308), with unchanged database/content and retained previous release references.
