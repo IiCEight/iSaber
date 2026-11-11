@@ -1,6 +1,6 @@
 # ADR 0019: One workflow and one blog deployment
 
-Status: Accepted and merged in PR #26. Full-image mirror acceptance passed, and the Tencent IP HTTPS installation preserved the JD account/article on November 11, 2026. Automatic release activation awaits explicit owner approval.
+Status: Accepted and merged in PR #26. Full-image mirror acceptance passed, and the Tencent IP HTTPS installation preserved the JD account/article on November 11, 2026. The owner explicitly approved automatic main delivery; the production activation flag is enabled.
 
 ## Decision
 

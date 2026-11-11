@@ -19,7 +19,7 @@ Requirements from `AGENTS.md`:
 
 Implementation begins after review of the scope and architecture. Visual implementation follows review of the design direction.
 
-The [implementation backlog](docs/product/backlog.md) tracks progress. Core authentication, publishing, images, revisions, organization, search, and comments are merged. Artistic design remains under review. The owner approved replacing the former relay, staging, and backup framework with [one workflow and one Tencent deployment](docs/architecture/decisions/0019-simple-delivery.md). The Tencent blog now runs over trusted IP HTTPS with private persistent volumes and preserved JD content. Automatic release activation awaits explicit approval.
+The [implementation backlog](docs/product/backlog.md) tracks progress. Core authentication, publishing, images, revisions, organization, search, and comments are merged. Artistic design remains under review. The owner approved replacing the former relay, staging, and backup framework with [one workflow and one Tencent deployment](docs/architecture/decisions/0019-simple-delivery.md). The Tencent blog now runs over trusted IP HTTPS with private persistent volumes and preserved JD content. The owner approved automatic delivery from successful main builds, and it is enabled.
 
 ## 2. Application separation
 
