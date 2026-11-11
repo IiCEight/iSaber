@@ -22,4 +22,5 @@
 /* The expanding background keeps text on its own high-contrast color fields. */
 .chapter-label > span,.hero-bottom > span { background: #1d2857; padding: 6px 8px; }
 .eyebrow { width: fit-content; background: #1d2857; padding: 6px 10px; }
-.about-story:not(.is-motion) .chapter:not(.chapter-hero) { background: linear-gradient(110deg,#f16b3b,#f65cad); }
+.about-story:not(.is-motion) .chapter-note { background: linear-gradient(110deg,#f16b3b,#f65cad); }
+.about-story:not(.is-motion) .chapter-interests { background: linear-gradient(90deg,#f4778d 0 52%,#1a65d9 52% 100%); }

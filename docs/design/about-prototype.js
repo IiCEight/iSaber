@@ -34,14 +34,17 @@
           [4,78],[39,76],[75,83],[100,72],[55,104],[12,109],
         ];
         const scene = gsap.timeline({defaults:{ease:'power1.inOut'},scrollTrigger:{trigger:root,start:'top top+=72',end:'bottom bottom',scrub:.65,invalidateOnRefresh:true}});
-        // Expand from the viewport edge into a full background, then hold it.
-        scene.to('.warm-field',{width:'100%',duration:1.1,ease:'sine.inOut'},.05)
+        // Fill scene two, then keep the full-height field moving left until it exits.
+        scene.to('.warm-field',{width:'100%',duration:.95,ease:'sine.inOut'},.05)
           .to('.orbit-layout',{left:mobile.matches?'24%':'37%',top:mobile.matches?'6%':'-10%',width:mobile.matches?'115vmin':'105vmin',duration:1},0)
           .to('.orbit-rig',{rotation:72,duration:1},0)
           .to(slots,{left:i=>scatter[i][0]+'%',top:i=>scatter[i][1]+'%',width:mobile.matches?'27%':'28%',duration:1},.1)
+          .to('.warm-field',{xPercent:-48,duration:.7,ease:'sine.inOut'},1.6)
           .to('.orbit-layout',{left:mobile.matches?'-20%':'-9%',top:mobile.matches?'22%':'4%',width:mobile.matches?'125vmin':'95vmin',duration:1},1.05)
           .to('.orbit-rig',{rotation:148,duration:1},1.05)
           .to(slots,{left:i=>16+(i%4)*24+'%',top:i=>20+Math.floor(i/4)*28+'%',width:'34%',duration:1},1.1)
+          .to('.warm-field',{xPercent:-102,duration:.75,ease:'sine.inOut'},2.3)
+          .set('.warm-field',{autoAlpha:0},3.05)
           .to('.orbit-layout',{left:mobile.matches?'45%':'64%',top:mobile.matches?'7%':'-12%',width:mobile.matches?'115vmin':'88vmin',duration:1},2.1)
           .to('.orbit-rig',{rotation:240,duration:1},2.1)
           .to(slots,{left:i=>50+Math.cos(i*Math.PI/6)*30+'%',top:i=>50+Math.sin(i*Math.PI/6)*30+'%',width:'34%',duration:1},2.1)
