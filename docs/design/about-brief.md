@@ -30,3 +30,7 @@ Preview: `http://127.0.0.1:8765/about-prototype.html`.
 ## Local verification
 
 Chromium checks passed for opening and scrolled graphic states, sticky canvas bounds, reverse scrolling, native section links and reloads, focus visibility, 1440/768/390/360-pixel layouts, system/manual reduced motion, enlarged text, short viewports, and JavaScript-disabled reading. Separate checks measured actual bounded pointer-layer displacement and return to rest, and verified that individual lens breathing remains live. Desktop/mobile captures were visually inspected; a decorative marker that overlapped the small-screen scroll cue was removed. These are local browser checks, not a physical-device performance acceptance test.
+
+## Reliable local preview
+
+Run `python3 docs/design/serve.py` from the repository root. The local-only server disables cache storage and conditional 304 responses, so ordinary reloads fetch the latest study files. About’s CSS and script URLs also carry content versions to bypass assets cached by the previous server. This avoids mixing the old top/right offsets with the new full-height, full-width expansion.
