@@ -1,0 +1,33 @@
+# Temporary evaluation only; do not merge into the blog release pipeline.
+name: GHCR mirror probe
+on:
+  pull_request:
+    paths: ['.github/workflows/ghcr-mirror-probe.yml']
+permissions:
+  contents: read
+  packages: write
+jobs:
+  publish-probe:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Publish two disposable marker images
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/isaber-mirror-probe"
+          context="$RUNNER_TEMP/isaber-mirror-probe"
+          mkdir "$context"
+          printf 'FROM scratch\nCOPY marker.txt /marker.txt\n' > "$context/Dockerfile"
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          for version in v1 v2; do
+            tag="$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$version"
+            printf 'Disposable iSaber mirror probe: %s\n' "$tag" > "$context/marker.txt"
+            docker build --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" --tag "$image:$tag" "$context"
+            docker push "$image:$tag"
+            printf '%s\n' "$image:$tag" >> "$GITHUB_STEP_SUMMARY"
+          done
+          docker logout ghcr.io
+          printf '%s\n' 'These images contain only a test marker. Package visibility must be public before anonymous mirror tests.' >> "$GITHUB_STEP_SUMMARY"
