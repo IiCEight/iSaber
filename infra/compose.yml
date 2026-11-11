@@ -1,26 +1,23 @@
-# Private, synthetic-content staging. Images come from a verified release.
-name: isaber-staging
-x-logging: &logging
-  driver: json-file
-  options:
-    max-size: 5m
-    max-file: "3"
+name: isaber
 x-runtime: &runtime
   restart: unless-stopped
   read_only: true
   cap_drop: [ALL]
   security_opt: [no-new-privileges:true]
-  logging: *logging
+  logging:
+    driver: json-file
+    options: {max-size: 5m, max-file: '3'}
 services:
   postgres:
     <<: *runtime
-    image: ${POSTGRES_IMAGE:?release required}
+    image: docker.nju.edu.cn/library/postgres@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
     platform: linux/amd64
     cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
     environment:
       POSTGRES_USER: isaber_operator
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?initialize staging first}
-      POSTGRES_DB: isaber_staging
+      POSTGRES_DB: isaber
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      ISABER_RUNTIME_PASSWORD: ${RUNTIME_PASSWORD:?set in .env}
     command: [postgres, -c, shared_buffers=64MB, -c, max_connections=20]
     volumes: [database:/var/lib/postgresql/data]
     tmpfs: [/tmp, /var/run/postgresql]
@@ -28,76 +25,76 @@ services:
     mem_limit: 384m
     cpus: 0.5
     healthcheck:
-      test: [CMD, pg_isready, -U, isaber_operator, -d, isaber_staging]
+      test: [CMD, pg_isready, -U, isaber_operator, -d, isaber]
       interval: 5s
       timeout: 3s
       retries: 20
   api:
     <<: *runtime
-    image: ${BACKEND_IMAGE:?release required}
+    image: ${BACKEND_IMAGE:?set in release.env}
     platform: linux/amd64
     environment:
       APP_ENV: production
-      SITE_ORIGIN: https://localhost:3443
-      DATABASE_URL: ${DATABASE_URL:?initialize staging first}
-      CSRF_SECRET: ${CSRF_SECRET:?initialize staging first}
+      SITE_ORIGIN: https://${BLOG_DOMAIN:?set in .env}
+      DATABASE_URL: postgres://isaber_runtime:${RUNTIME_PASSWORD:?set in .env}@postgres:5432/isaber?sslmode=disable
+      CSRF_SECRET: ${CSRF_SECRET:?set in .env}
     volumes: [uploads:/data/uploads]
     networks: [database, application]
+    depends_on:
+      postgres: {condition: service_healthy}
     mem_limit: 256m
     cpus: 0.5
     stop_grace_period: 20s
-    depends_on:
-      postgres: {condition: service_healthy}
   frontend:
     <<: *runtime
-    image: ${FRONTEND_IMAGE:?release required}
+    image: ${FRONTEND_IMAGE:?set in release.env}
     platform: linux/amd64
     tmpfs: [/tmp]
     networks: [application, web]
-    mem_limit: 512m
-    cpus: 0.75
     depends_on:
       api: {condition: service_healthy}
+    mem_limit: 512m
+    cpus: 0.75
   edge:
     <<: *runtime
-    # Offline-loaded, config-digest-verified official image; no mutable tag pull.
-    image: ${CADDY_IMAGE:?verified proxy image required}
-    pull_policy: never
-    ports: ["127.0.0.1:3443:8443"]
+    image: docker.nju.edu.cn/library/caddy@sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424
+    platform: linux/amd64
+    cap_add: [NET_BIND_SERVICE]
+    environment:
+      BLOG_DOMAIN: ${BLOG_DOMAIN:?set in .env}
+    ports:
+      - '${BLOG_BIND_ADDR:?set the host LAN address}:80:80'
+      - '${BLOG_BIND_ADDR:?set the host LAN address}:443:443'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - certificates:/data
       - proxy_config:/config
     networks: [web]
-    mem_limit: 128m
-    cpus: 0.25
     depends_on:
       frontend: {condition: service_healthy}
+    mem_limit: 128m
+    cpus: 0.25
   migrate:
     <<: *runtime
-    restart: "no"
+    restart: 'no'
     profiles: [tools]
-    image: ${BACKEND_IMAGE:?release required}
+    image: ${BACKEND_IMAGE:?set in release.env}
     platform: linux/amd64
     entrypoint: [/app/isaber-migrate]
     command: [up]
     environment:
-      MIGRATION_DATABASE_URL: ${OPERATOR_DATABASE_URL:?initialize staging first}
+      MIGRATION_DATABASE_URL: postgres://isaber_operator:${POSTGRES_PASSWORD:?set in .env}@postgres:5432/isaber?sslmode=disable
     networks: [database]
-    mem_limit: 256m
-    cpus: 0.5
   owner:
     <<: *runtime
-    restart: "no"
+    restart: 'no'
     profiles: [tools]
-    image: ${BACKEND_IMAGE:?release required}
+    image: ${BACKEND_IMAGE:?set in release.env}
     platform: linux/amd64
     entrypoint: [/app/isaber-owner]
     environment:
-      OWNER_DATABASE_URL: ${OPERATOR_DATABASE_URL:?initialize staging first}
+      OWNER_DATABASE_URL: postgres://isaber_operator:${POSTGRES_PASSWORD:?set in .env}@postgres:5432/isaber?sslmode=disable
     networks: [database]
-    mem_limit: 256m
-    cpus: 0.5
 networks:
   database: {internal: true}
   application: {internal: true}

@@ -11,6 +11,7 @@ RUN CGO_ENABLED=0 go build -trimpath -o /out/isaber-api ./cmd/api \
  && mkdir -p /out/data/uploads && chmod 0700 /out/data/uploads
 
 FROM scratch
+LABEL org.opencontainers.image.source="https://github.com/IiCEight/iSaber"
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /out/isaber-* /app/
 # Copy the parent so uploads remains a child with its source mode preserved.
