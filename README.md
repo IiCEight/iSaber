@@ -6,7 +6,7 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 The React/Go blog implements owner authentication, Markdown and Typora ZIP/image uploads, private drafts, preview/publication, revision history, categories/tags, English/Chinese search, and moderated guest comments. See the [publishing guide](docs/operations/publishing.md).
 
-The [simplified CI/CD workflow](docs/operations/github-cicd.md) validates changes, builds and tests application images once, and publishes them to GHCR on main. One Tencent Compose deployment pulls exact digests through NJU. [Deployment setup](docs/operations/deployment.md) covers public HTTPS, persistent database/uploads, restricted SSH, and application rollback. Host/domain/data cutover awaits review; live settings remain unchanged. Separate JD staging, custom image relays, and automated backup/retention are retired from the new design. Installed legacy services require the documented retirement steps after acceptance.
+The [simplified CI/CD workflow](docs/operations/github-cicd.md) validates changes, builds and tests application images once, and publishes them to GHCR on main. One Tencent Compose deployment pulls exact digests through NJU. [Deployment setup](docs/operations/deployment.md) covers public HTTPS, persistent database/uploads, restricted SSH, and application rollback. The blog is live at [https://101.42.13.215](https://101.42.13.215), with the JD owner account and article preserved. Automatic release activation is awaiting final approval. Separate JD staging, custom image relays, and automated backup/retention are retired from the new design. Old JD containers are stopped and obsolete schedules disabled; their data/archives are retained.
 
 The owner-approved [Vivid Home design](docs/design/home-integration.md) is integrated for review, with real public article data and preserved Archive/Search behavior.
 
@@ -72,7 +72,7 @@ Both development servers bind to loopback. Development authentication uses an is
 
 ## Container rehearsal
 
-Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). The disposable rehearsal validates images before publication; public Tencent activation remains pending review.
+Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). The disposable rehearsal validates images before publication; the Tencent installation uses trusted IP HTTPS and persistent volumes.
 
 ## Checks
 
