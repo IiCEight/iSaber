@@ -288,10 +288,10 @@ The owner explicitly approved all defaults documented in this PRD, including the
 
 Approval of defaults does not supply values or materials that have not yet been specified:
 
-- Owner-selected design references, branding preferences, portfolio content, and representative articles are needed before visual direction approval.
+- The owner supplied Home references, selected Vivid and positively reviewed its motion; that Home is integrated. Remaining page designs, final branding/copy/fonts, portfolio content and representative English/Chinese articles still need owner review.
 - Numerical performance budgets, test device/network profile, expected content volume, and traffic assumptions must be defined before their respective design or release acceptance checks.
-- Login, sessions, password storage, and owner recovery are merged. Production secrets, TLS hosting, ingress abuse controls, and other unselected deployment details remain to be configured.
-- The logical data model and API contract are owner-approved, the implementation backlog is prepared, and PostgreSQL migrations are merged. Core article features are merged; final design/browser review and public release acceptance remain.
+- Login, sessions, password storage and owner recovery are deployed. Production secrets, private persistent storage, trusted IP HTTPS and automatic delivery are configured. Domain selection is optional; ingress abuse tuning and long-term session/content cleanup remain operational follow-ups.
+- The logical data model and API contract are owner-approved, the implementation backlog is prepared, and PostgreSQL migrations are merged. Core article features and the first automatic public release are verified; final design/browser review and explicit live rollback rehearsal remain.
 
 ## 10. Review and approval
 
@@ -300,6 +300,7 @@ Approval of defaults does not supply values or materials that have not yet been 
 - [x] Owner explicitly approves all documented product defaults and acceptance criteria.
 - [x] Functional requirements are translated into the [prioritized implementation backlog](backlog.md).
 - [x] Owner approves the logical data model and API design, which reference the approved requirements.
-- [ ] Design review uses real content fixtures and the owner-selected references.
+- [x] Owner selects and positively reviews the Vivid Home direction/motion; integration merges in PRs #22–23.
+- [ ] Remaining page and browser review uses representative real English/Chinese content.
 
 Revisions to this PRD should record changed behavior and its impact on scope, contracts, design, and acceptance checks through focused pull requests.

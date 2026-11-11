@@ -1,6 +1,6 @@
 # API contract
 
-Status: Approved API contract baseline. Owner authentication is merged. Publishing/images/history are merged. Public search and labels are merged in PR #9; the comments branch adds guest submission, approved public reading, and owner list/moderation alongside published revision list/detail/restore, `.md`/ZIP import/status, authorized managed image delivery, owner article list/detail/preview/metadata/controls/publish/unpublish, and public list/detail. Private COS storage remains subsequent work; see the [implementation guide](../docs/operations/publishing.md). Start with the [API design](../docs/architecture/api-design.md) and [data model](../docs/architecture/data-model.md).
+Status: Approved API contract baseline. Owner authentication, publishing/images/history, labels/search (PR #9) and guest comments/moderation (PR #10) are merged and deployed. The contract covers those public/owner workflows; runtime behavior is exercised by separate tests. Private persistent uploads are deployed; COS is optional future storage work. See the [publishing guide](../docs/operations/publishing.md), [API design](../docs/architecture/api-design.md) and [data model](../docs/architecture/data-model.md).
 
 - `openapi.yaml`: OpenAPI 3.1.1 contract for the public blog and owner dashboard.
 - `examples.json`: synthetic response/request fixtures for review and initial mocks. These do not represent real owner content or credentials.

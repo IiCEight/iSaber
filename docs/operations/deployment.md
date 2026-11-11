@@ -106,6 +106,8 @@ Configure GitHub's `production` environment with a branch policy allowing only m
 | Variable `BLOG_SSH_HOST_KEY` | Tencent's Ed25519 public host key, verified through the existing trusted connection |
 | Repository variable `BLOG_DEPLOY_ENABLED` | `true` only after host/data/HTTPS acceptance and approval to activate ongoing releases |
 
+As of November 11, the main ruleset requires pull requests and API contract. Frontend, Backend and Containers run and gate delivery; requiring those three before merge is still pending. An explicit live rollback rehearsal is also pending; see the [next priorities](../product/backlog.md#next-priorities).
+
 Main runs are serialized and allowed to finish deployment/rollback. SSH verifies the pinned host key. Deployment logs stay private at `/opt/isaber/deploy.log`; GitHub receives a short success/failure message. The deployment lock prevents simultaneous operator/CI updates. A sudden host power loss or forced kill can require the manual rollback command; this is not a general disaster-recovery framework.
 
 ## Operations

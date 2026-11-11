@@ -10,6 +10,17 @@ The [simplified CI/CD workflow](docs/operations/github-cicd.md) validates change
 
 The owner-approved [Vivid Home design](docs/design/home-integration.md) is integrated for review, with real public article data and preserved Archive/Search behavior.
 
+## Next work
+
+As of November 11, 2026, automatic Tencent delivery and private persistent storage are verified. The remaining priorities are:
+
+1. Require Frontend, Backend, and Containers alongside API contract in the main ruleset, then rehearse an explicit live application rollback.
+2. Complete browser acceptance with real Typora Markdown/ZIP uploads, public/private reading, revisions, search, moderation, mobile and keyboard use.
+3. Refine the integrated Vivid Home and finish Archive, Article and About design, owner copy and fonts.
+4. Add a domain when chosen. Trusted IP HTTPS already works; a COS adapter is optional future storage work.
+
+See the [backlog](docs/product/backlog.md) for implementation evidence and [deployment](docs/operations/deployment.md) for the accepted release. Automated staging, backup transfers and replacement-server recovery are outside the revised delivery scope.
+
 ## Local development
 
 Prerequisites: Node.js **24.22.2** with npm, Go **1.27.3**, and PostgreSQL **16** (Docker Compose is provided). Version pins are recorded in `frontend/.nvmrc` and `backend/go.mod`. On WSL, use Linux Node.js/npm rather than Windows npm from a mounted drive.
@@ -100,7 +111,7 @@ go build -trimpath -o bin/isaber-owner ./cmd/owner
 
 `gofmt -l` should print nothing. Go dependency versions/checksums are committed in `go.mod` and `go.sum`. See the [database guide](docs/operations/database.md) for real PostgreSQL integration tests and migration operations, and the [contract guide](contracts/README.md) for API specification checks.
 
-GitHub Actions runs **API contract**, **Frontend**, and **Backend** in parallel, then **Containers**. Main publishes the tested images and, when explicitly enabled, deploys them to the single Tencent blog. PRs validate only. Branch-protection settings must be checked on GitHub separately.
+GitHub Actions runs **API contract**, **Frontend**, and **Backend** in parallel, then **Containers**. Main publishes the tested images and, when explicitly enabled, deploys them to the single Tencent blog. PRs validate only. The main ruleset currently requires pull requests and API contract. Frontend, Backend, and Containers run and gate deployment; adding them as required merge checks is still pending.
 
 ## Project documents
 

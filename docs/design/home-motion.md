@@ -1,6 +1,6 @@
 # Home page reference and motion plan
 
-Status: Owner selected **A · Vivid** and positively reviewed the [local GSAP motion prototype](home-prototype.md). The [React integration](home-integration.md) now uses the pinned package dependency and real public articles, with existing browse/search URLs preserved through dedicated routes and redirects.
+Status: Owner selected **A · Vivid** and positively reviewed the [GSAP prototype](home-prototype.md). The [React integration](home-integration.md) and [continuous scroll work](home-scroll-sequence.md) merged in PRs #22–23 and are live, with real public articles and preserved Archive/Search routes. Final visual/browser acceptance remains open.
 
 ## Reference evidence
 

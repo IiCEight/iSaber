@@ -1,6 +1,6 @@
 # Database setup and migrations
 
-Status: PostgreSQL foundation is merged for local/CI use. Owner authentication follows in its own branch using the existing identity tables. Article APIs and cloud deployment remain subsequent slices; no cloud data has been changed.
+Status: PostgreSQL and migrations are deployed on Tencent in the isolated blog Compose project. Schema version 5, separate runtime/operator roles and private persistent storage are verified. See [deployment](deployment.md) for the accepted installation; the commands below cover local development and deliberate migration operations.
 
 ## Local development
 
