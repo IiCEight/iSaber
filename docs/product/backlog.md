@@ -119,7 +119,7 @@ Publishing, organization, search, and moderated feedback are implemented locally
 - [x] Implement one workflow with four existing checks, one image build/test phase, main-only GHCR publication, and an opt-in Tencent deployment.
 - [x] Replace custom Python delivery/backup services with shell, Compose, and explicit runtime-role SQL.
 - [x] Test invalid input, rollback, failed pull/start, interruption, and locking; pass full container/SQL permissions acceptance in CI.
-- [ ] Complete and record the full application-image mirror benchmark.
+- [x] Complete and record full frontend/backend mirror pulls by exact digest, initial timeouts, successful retries, cached timings, and official dependency pulls.
 - [ ] Review and merge the replacement PR; live services/timers stay unchanged before cutover review.
 - [ ] Select public domain/HTTPS and accept Tencent storage/capacity alongside existing workloads.
 - [ ] Install reviewed host files/Compose plugin, dedicated SSH key, stable secrets, and GitHub production configuration.

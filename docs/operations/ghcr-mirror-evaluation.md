@@ -7,7 +7,7 @@ Date: November 11, 2026. Target: the existing Tencent server, using its direct c
 | Public `astral-sh/uv` image | Complete Docker pull succeeded | Complete Docker pull succeeded |
 | Original manifest digest | Preserved | Preserved |
 | Uncached transfer measured independently of Docker's cache | Not timed separately | 19,338,545 bytes of config/layers in about two seconds; every SHA-256 and size verified |
-| `iiceight/isaber-frontend` | Explicitly rejected: repository not in allowlist | HTTP 404; the proposed image is not published, so this is inconclusive |
+| Full `iiceight` frontend/backend images | Our namespace is rejected by allowlist | Both native digest-pinned pulls succeeded; initial short limits timed out (details below) |
 | Public image actually published under our account | Explicitly rejected by allowlist | Four versions pulled successfully; tags and digests matched CI, and marker contents matched |
 | Versions published after the first successful mirror pulls | Ineligible | Both new versions passed; complete pull/digest/content checks took 14 and 10 seconds |
 
@@ -32,8 +32,34 @@ After those first successful mirror pulls, the workflow was rerun to publish two
 
 The temporary publishing workflow is removed after evaluation and the draft PR closed without merging. The public marker-only package and small Docker image cache remain available for reproducing the checks.
 
-## Decision so far
+## Full application images
 
-NJU passes this evaluation for public images from our own account, including fresh versions and original digests. DaoCloud's current allowlist prevents using it for our own application images. The proposed simplified route is GitHub Actions → GHCR → NJU mirror → the single blog host, using ordinary Docker pulls and no custom transport. A full frontend/backend image benchmark is still required before migrating production; tiny marker images and a popular cached upstream image do not establish full application cold-pull performance or long-term availability.
+[CI run 42973863483](https://github.com/IiCEight/iSaber/actions/runs/42973863483) passed contract/frontend/backend checks, built both images once, exercised migrations/runtime-role permissions and real container acceptance, then pushed those existing local images to GHCR. The tag is `sha-130fd632f8447c569fa266c94fac4ac7dbcf9155` (the PR merge commit). Publication used a temporary allowance for this internal PR only; that allowance was removed before review. [Run 43006223325](https://github.com/IiCEight/iSaber/actions/runs/43006223325) passed all four checks with publication correctly skipped.
+
+The owner reports both application packages are public. Anonymous native Docker pulls on Tencent confirmed this without any registry credentials, proxy change, or image archive transport. Neither full application image was present in Tencent's Docker cache before its first attempt.
+
+| Image | Compressed layer bytes from manifest | Initial bounded attempt | Successful retry | Subsequent cached pull |
+| --- | ---: | --- | ---: | ---: |
+| Frontend | 95,722,572 | Timed out after 240 seconds on the 51,082,654-byte Node layer | 272.88 seconds | 0.28 seconds |
+| Backend | 30,681,801 | Timed out after 180 seconds on the 30,553,299-byte binary layer | 212.46 seconds | 0.20 seconds |
+
+Retry times exclude the initial attempts and intervening diagnostics; they are **not** fresh-cache end-to-end measurements. Earlier attempts retained completed layers. A second backend client joined the same daemon pull for its final 111.33 seconds; it is not another independent success. Registry compressed sizes are manifest metadata, not measured wire-byte counts. The sample does not establish long-term availability or a maximum cold-pull time.
+
+Both Docker pulls and subsequent image inspection matched the original CI-published manifest digests:
+
+- Frontend: `sha256:7a3fae43fba6180bdab7d9d1229760c17cf982327a95b873652578a22379359b`.
+- Backend: `sha256:9b60683fbc7d6390ddcd6446acfb5948d6686776fadcf1eeb73bbb650e908101`.
+
+The frontend ran only `node --version` in a temporary container with no network/host mounts, a read-only filesystem, dropped capabilities, and memory/process limits; it returned v24.22.2. Backend image inspection confirmed UID/GID 65532 and the expected API entrypoint; CI already exercised its real runtime. The temporary frontend container removed itself. RSSHub remained running. No blog stack, host files, DNS, Docker daemon configuration, timers, or article data were changed. Downloaded test/application/dependency images remain in the Docker cache.
+
+A subsequent one-byte range request for the full Node layer returned HTTP 206 directly from NJU (`210.28.130.20`), with zero redirects. This confirms the tested cached large-layer request stays on NJU; it does not explain the earlier cold-transfer delay.
+
+Official dependency pins were also tested using native Docker pulls. NJU's **Docker Hub** endpoint returned HTTP 403 on this host, so the Compose file uses DaoCloud's allowed official `docker.io/library` repositories: PostgreSQL digest `sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657` pulled in 22.84 seconds; Caddy digest `sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424` in 10.34 seconds. These are dependency pulls, separate from our GHCR application namespace.
+
+## Decision
+
+Use ordinary Docker pulls through NJU for the public GHCR application images. This route has passed exact-digest full-image acceptance and cached repeats, alongside the earlier fresh-version probes. DaoCloud cannot serve our namespace, but can serve the pinned official database/proxy dependencies.
+
+Keep cold-pull limitations explicit: pre-pull and verify all images during first host setup, before enabling delivery. Routine deployment bounds native Compose pulls at eight minutes and leaves current services running if pulling fails; a failed pull can be retried without a new transport framework. Docker reuses completed content. A cached pull of the same release is not evidence of a new release's transfer speed. Public HTTPS, data cutover, and a complete live main-to-Tencent deployment remain activation acceptance steps in [deployment](deployment.md).
 
 Sources: [DaoCloud usage](https://github.com/DaoCloud/public-image-mirror), [DaoCloud allowlist policy](https://github.com/DaoCloud/public-image-mirror/issues/2328), [GitHub package visibility](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility).

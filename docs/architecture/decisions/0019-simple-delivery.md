@@ -1,6 +1,6 @@
 # ADR 0019: One workflow and one blog deployment
 
-Status: Owner approved the simplification plan on November 11, 2026; implementation and full-image acceptance are under review. Live cutover is not activated by this branch.
+Status: Owner approved the simplification plan on November 11, 2026; implementation is under review; full-image mirror acceptance passed with cold-pull limitations recorded. Live cutover is not activated by this branch.
 
 ## Decision
 
