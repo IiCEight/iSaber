@@ -1,6 +1,6 @@
 # ADR 0011: Separate application images and an isolated delivery rehearsal
 
-Status: Accepted; merged in PR #11 with successful PR/main CI, including Containers. Cloud deployment remains pending.
+Status: Accepted; merged in PR #11 with successful PR/main CI, including Containers. The deployment design and runtime-role separation are updated by [ADR 0019](0019-simple-delivery.md); the text below records the original packaging milestone.
 
 ## Context
 

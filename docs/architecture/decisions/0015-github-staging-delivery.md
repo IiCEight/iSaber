@@ -1,6 +1,6 @@
 # ADR 0015: Restricted GitHub delivery with authenticated metadata and a file cache
 
-Status: Implemented for review. GitHub-hosted probe and full artifact verification passed; the first complete automatic publish/promotion waits for the workflow merge.
+Status: Historical. Superseded by [ADR 0019](0019-simple-delivery.md) on November 11, 2026. Retained to explain the former implementation; do not use it for current setup.
 
 ## Context and decision
 

@@ -4,9 +4,9 @@ A personal blog for journals, technical articles, and selected work. React and G
 
 ## Current state
 
-The PRD and logical API/data model are approved. The React/Go foundation, PostgreSQL migrations, CI, and owner authentication are merged. Markdown upload → private draft → preview → publish → public reading is merged. Typora ZIP/image imports and authorized image delivery are merged. Published revision history/restoration is merged. Category/tag management, public browsing, and English/Chinese search are merged in PR #9. Guest comments, owner moderation, and article comment controls are merged in PR #10. Separate application images and the container CI rehearsal are merged in PR #11. Private HTTPS [staging on JD](docs/operations/private-staging.md) is running through SSH for synthetic-content acceptance. Direct registry upload timed out; the [image bundle relay](docs/operations/image-relay.md) published and verified the first release. Delivery optimizations reuse the verified PostgreSQL baseline. [Automatic staging delivery](docs/operations/automatic-staging.md) is merged in PR #18 and has completed verified publish/promotion through the restricted receiver. Transfer reliability and reuse of CI-tested images are the current CI/CD milestone; see the [backlog](docs/product/backlog.md). See the [publishing guide](docs/operations/publishing.md). Private COS, production delivery, and the remaining artistic design remain subsequent work.
+The React/Go blog implements owner authentication, Markdown and Typora ZIP/image uploads, private drafts, preview/publication, revision history, categories/tags, English/Chinese search, and moderated guest comments. See the [publishing guide](docs/operations/publishing.md).
 
-JD staging has [daily encrypted offsite backups to Tencent](docs/operations/offsite-backups.md), scheduled for 03:30 China time, with [hourly external health checks and GitHub alerts](docs/operations/backup-alerts.md). The first scheduled backup succeeded on November 10. A retrieved copy passed isolated database/media recovery. [Retention with recovery pins and quarantine](docs/operations/backup-retention.md) is merged in PR #21 but disabled pending policy approval and activation; replacement-server/full-host rebuild acceptance remains pending.
+The [simplified CI/CD workflow](docs/operations/github-cicd.md) validates changes, builds and tests application images once, and publishes them to GHCR on main. One Tencent Compose deployment pulls exact digests through NJU. [Deployment setup](docs/operations/deployment.md) covers public HTTPS, persistent database/uploads, restricted SSH, and application rollback. Host/domain/data cutover awaits review; live settings remain unchanged. Separate JD staging, custom image relays, and automated backup/retention are retired from the new design. Installed legacy services require the documented retirement steps after acceptance.
 
 The owner-approved [Vivid Home design](docs/design/home-integration.md) is integrated for review, with real public article data and preserved Archive/Search behavior.
 
@@ -72,7 +72,7 @@ Both development servers bind to loopback. Development authentication uses an is
 
 ## Container rehearsal
 
-Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). Private cloud staging and automatic delivery are implemented; public production deployment remains pending.
+Separate application images, explicit migration commands, private persistent volumes, and an isolated CI stack are described in the [container guide](docs/operations/containers.md). The disposable rehearsal validates images before publication; public Tencent activation remains pending review.
 
 ## Checks
 
@@ -100,7 +100,7 @@ go build -trimpath -o bin/isaber-owner ./cmd/owner
 
 `gofmt -l` should print nothing. Go dependency versions/checksums are committed in `go.mod` and `go.sum`. See the [database guide](docs/operations/database.md) for real PostgreSQL integration tests and migration operations, and the [contract guide](contracts/README.md) for API specification checks.
 
-GitHub Actions runs **API contract**, **Frontend**, **Backend**, and **Containers** independently. CI itself does not deploy. Successful push-to-main CI triggers image preparation and then the separate guarded staging delivery workflow. Branch-protection settings must be checked on GitHub separately.
+GitHub Actions runs **API contract**, **Frontend**, and **Backend** in parallel, then **Containers**. Main publishes the tested images and, when explicitly enabled, deploys them to the single Tencent blog. PRs validate only. Branch-protection settings must be checked on GitHub separately.
 
 ## Project documents
 
@@ -119,4 +119,4 @@ GitHub Actions runs **API contract**, **Frontend**, **Backend**, and **Container
 - [Category/tag rename coordination](docs/architecture/decisions/0008-label-renames.md)
 - [English/Chinese public search](docs/architecture/decisions/0009-public-search.md)
 - [Guest comments and moderation](docs/architecture/decisions/0010-guest-comments.md)
-- [Guided GitHub CI/CD setup](docs/operations/github-cicd.md)
+- [GitHub CI/CD](docs/operations/github-cicd.md)

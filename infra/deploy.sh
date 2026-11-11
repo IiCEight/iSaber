@@ -70,11 +70,13 @@ mapfile -t refs < .candidate.env
 [[ ${#refs[@]} == 2 ]]
 [[ "${refs[0]}" =~ ^FRONTEND_IMAGE=ghcr\.nju\.edu\.cn/iiceight/isaber-frontend@sha256:[0-9a-f]{64}$ ]]
 [[ "${refs[1]}" =~ ^BACKEND_IMAGE=ghcr\.nju\.edu\.cn/iiceight/isaber-backend@sha256:[0-9a-f]{64}$ ]]
+printf 'Pulling tested application images (up to eight minutes).\n' >&3
 timeout --kill-after=10s 8m bash -c 'exec docker compose --project-name isaber --env-file .env --env-file .candidate.env --file compose.yml pull api frontend'
 if [[ -f release.env ]]; then
   cp release.env .before.env
   restore=.before.env
 fi
+printf 'Starting application images and checking HTTPS.\n' >&3
 changed=1
 activate .candidate.env
 if [[ -n "$restore" ]] && ! cmp -s "$restore" .candidate.env; then cp "$restore" previous.env; fi

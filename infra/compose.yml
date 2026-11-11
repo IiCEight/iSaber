@@ -10,7 +10,7 @@ x-runtime: &runtime
 services:
   postgres:
     <<: *runtime
-    image: docker.nju.edu.cn/library/postgres@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
+    image: m.daocloud.io/docker.io/library/postgres@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
     platform: linux/amd64
     cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
     environment:
@@ -57,7 +57,7 @@ services:
     cpus: 0.75
   edge:
     <<: *runtime
-    image: docker.nju.edu.cn/library/caddy@sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424
+    image: m.daocloud.io/docker.io/library/caddy@sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424
     platform: linux/amd64
     cap_add: [NET_BIND_SERVICE]
     environment:

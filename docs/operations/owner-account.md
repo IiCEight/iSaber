@@ -1,6 +1,6 @@
 # Owner setup, sign-in, and recovery
 
-Status: Authentication merged in PR #5. No real owner has been created for you and no cloud server has been changed. Verification uses synthetic accounts in disposable local schemas.
+Status: Authentication merged in PR #5. This guide covers local commands and owner credential recovery. See [deployment](deployment.md) for the current production Compose/operator commands.
 
 ## Local development
 
@@ -31,7 +31,7 @@ In another terminal, start the frontend from `frontend/`:
 npm run dev
 ```
 
-Visit `http://127.0.0.1:3000/admin`. Use that exact origin with the example configuration; `localhost` is a different origin and would need a matching `SITE_ORIGIN`. The publishing branch adds article-management tools; see the [publishing walkthrough](publishing.md).
+Visit `http://127.0.0.1:3000/admin`. Use that exact origin with the example configuration; `localhost` is a different origin and would need a matching `SITE_ORIGIN`. Article-management tools are merged; see the [publishing walkthrough](publishing.md).
 
 Five validated login attempts are allowed per minute per API process. If you see a rate-limit message, wait a minute before retrying. Repeated incorrect attempts and successful logins both count. Invalid cross-origin or malformed requests do not consume the password-check budget.
 
@@ -74,4 +74,4 @@ The hidden terminal setup prompt and stdin recovery were also exercised with syn
 
 Frontend HTTP checks verify the rendered sign-in page, POST form fallback, uncached responses, and absence of owner data for visitors. A full local proxy check verifies cookie forwarding and server-rendered authenticated state. Interactive browser and final visual/accessibility review remain separate verification steps.
 
-Article management, private article delivery, comment moderation, automated session retention cleanup, and production ingress abuse controls are subsequent work. Authentication middleware is a prerequisite, not a substitute for those features' own access tests.
+Article management, private article/media delivery, and comment moderation are merged and have their own access tests. Automated session cleanup and production ingress abuse controls remain separate work.

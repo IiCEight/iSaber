@@ -20,9 +20,14 @@ fi
 DOCKER
 cat > "$temporary/bin/curl" <<'CURL'
 #!/usr/bin/env bash
+if [[ -f "$ISABER_ROOT/fail-health" ]] && grep -q 'bbbbbbbb' "$ISABER_ROOT/release.env"; then exit 22; fi
 exit 0
 CURL
-chmod +x "$temporary/bin/docker" "$temporary/bin/curl"
+cat > "$temporary/bin/sleep" <<'SLEEP'
+#!/usr/bin/env bash
+exit 0
+SLEEP
+chmod +x "$temporary/bin/docker" "$temporary/bin/curl" "$temporary/bin/sleep"
 old="sha256:$(printf 'a%.0s' {1..64})"
 new="sha256:$(printf 'b%.0s' {1..64})"
 setup() {
@@ -43,9 +48,12 @@ deploy
 grep -q "$new" "$ISABER_ROOT/release.env"
 cmp "$ISABER_ROOT/original-release" "$ISABER_ROOT/previous.env"
 cmp "$ISABER_ROOT/original-secrets" "$ISABER_ROOT/.env"
+# Repeating the current release must preserve the older rollback target.
+deploy
+cmp "$ISABER_ROOT/original-release" "$ISABER_ROOT/previous.env"
 bash "$script" rollback
 cmp "$ISABER_ROOT/original-release" "$ISABER_ROOT/release.env"
-for failure in fail-pull fail-start interrupt-start; do
+for failure in fail-pull fail-start fail-health interrupt-start; do
   setup "$failure"
   touch "$ISABER_ROOT/$failure"
   if deploy; then printf 'Expected failure: %s\n' "$failure" >&2; exit 1; fi
@@ -56,4 +64,4 @@ done
 setup locked
 if printf '%s\n%s\n' "$new" "$new" | flock "$ISABER_ROOT/.deploy.lock" bash "$script" deploy; then exit 1; fi
 test ! -e "$ISABER_ROOT/calls"
-printf 'Deployment input, success, rollback, pull/start failure, interruption, and locking checks passed.\n'
+printf 'Deployment input, success, rollback, pull/start/HTTPS failure, interruption, and locking checks passed.\n'

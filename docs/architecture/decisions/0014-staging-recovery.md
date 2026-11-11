@@ -1,6 +1,6 @@
 # ADR 0014: Coordinated staging snapshots and schema-preserving application releases
 
-Status: Implemented for the private staging milestone, with local guards and cloud recovery rehearsals.
+Status: Historical. Superseded by [ADR 0019](0019-simple-delivery.md) on November 11, 2026. Retained to explain the former implementation; do not use it for current setup.
 
 ## Decision
 
@@ -18,4 +18,4 @@ The shared 2 GiB server uses a single application instance with brief maintenanc
 
 Cloud acceptance includes nonempty database/media restore probes, a clean restored snapshot, application promotion between two existing verified releases, explicit rollback, and recovery from an injected failing candidate health gate. The intended final application release remains `8cca5a4310627f9585bef4c845db278007729754`.
 
-This is operator-driven private staging. Offsite encrypted recovery, scheduling/retention, full-host rebuild acceptance, schema-evolution rollout policy, a restricted deployment identity, and unattended GitHub delivery remain subsequent work. See the [snapshot runbook](../../operations/staging-backups.md) and [release runbook](../../operations/staging-releases.md).
+This is operator-driven private staging. Offsite encrypted recovery, scheduling/retention, full-host rebuild acceptance, schema-evolution rollout policy, a restricted deployment identity, and unattended GitHub delivery remain subsequent work. See the [snapshot runbook](https://github.com/IiCEight/iSaber/blob/174450fe5fa6097727b68b0b55353f2e6de73596/docs/operations/staging-backups.md) and [release runbook](https://github.com/IiCEight/iSaber/blob/174450fe5fa6097727b68b0b55353f2e6de73596/docs/operations/staging-releases.md).

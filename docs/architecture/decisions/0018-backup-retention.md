@@ -1,6 +1,6 @@
 # ADR 0018: Operator-only retention with recovery pins and quarantine
 
-Status: Implemented for review; activation awaits owner approval of the retention periods.
+Status: Historical. Superseded by [ADR 0019](0019-simple-delivery.md) on November 11, 2026. Retained to explain the former implementation; do not use it for current setup.
 
 ## Decision
 
@@ -14,4 +14,4 @@ The upload and monitoring identities gain no cleanup operation or policy authori
 
 Quarantine permits operator recovery during its grace period but does not free space immediately. Retention cannot guarantee fitting arbitrarily large backups within current capacity. Existing backup alerts remain necessary. The initial actual plans keep all ten local snapshots and both encrypted copies, with no quarantine or deletion.
 
-The successfully decrypted/restored snapshot is pinned on both servers. Current code does not remove that pin automatically or replace restore acceptance with a ciphertext checksum. Extend hourly health checks with safe enabled-policy timer/result/freshness alerts, using the existing verification reply for Tencent; no new upload operation is added. Audit/tombstone maintenance and production recovery objectives remain separate work. See the [retention runbook](../../operations/backup-retention.md).
+The successfully decrypted/restored snapshot is pinned on both servers. Current code does not remove that pin automatically or replace restore acceptance with a ciphertext checksum. Extend hourly health checks with safe enabled-policy timer/result/freshness alerts, using the existing verification reply for Tencent; no new upload operation is added. Audit/tombstone maintenance and production recovery objectives remain separate work. See the [retention runbook](https://github.com/IiCEight/iSaber/blob/174450fe5fa6097727b68b0b55353f2e6de73596/docs/operations/backup-retention.md).
