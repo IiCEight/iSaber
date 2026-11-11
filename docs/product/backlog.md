@@ -2,7 +2,7 @@
 
 Status: Derived from the approved PRD. Ordered for incremental delivery; a checked item indicates local completion, not a production release.
 
-Current operational scope (owner decision, November 11): replace the relay/staging/backup framework with one workflow, public GHCR images through NJU, and one Tencent Compose deployment. Prepare and verify the replacement for review before changing the live installation. See [ADR 0019](../architecture/decisions/0019-simple-delivery.md).
+Current operational scope (owner decision, November 11): replace the relay/staging/backup framework with one workflow, public GHCR images through NJU, and one Tencent Compose deployment. PR #26 is merged and the Tencent blog is live over trusted IP HTTPS, preserving the JD account/article. Ongoing automatic release activation is awaiting approval. See [ADR 0019](../architecture/decisions/0019-simple-delivery.md).
 
 | Order | Work item | PRD coverage | Completion evidence |
 | --- | --- | --- | --- |
@@ -120,12 +120,12 @@ Publishing, organization, search, and moderated feedback are implemented locally
 - [x] Replace custom Python delivery/backup services with shell, Compose, and explicit runtime-role SQL.
 - [x] Test invalid input, rollback, failed pull/start, interruption, and locking; pass full container/SQL permissions acceptance in CI.
 - [x] Complete and record full frontend/backend mirror pulls by exact digest, initial timeouts, successful retries, cached timings, and official dependency pulls.
-- [ ] Review and merge the replacement PR; live services/timers stay unchanged before cutover review.
-- [ ] Select public domain/HTTPS and accept Tencent storage/capacity alongside existing workloads.
-- [ ] Install reviewed host files/Compose plugin, dedicated SSH key, stable secrets, and GitHub production configuration.
-- [ ] Choose a fresh blog or one-time JD migration; verify public/private content and media before switching writers.
+- [x] Merge replacement PR #26 and verify main CI/image publication; pull the resulting frontend/backend digests on Tencent in 17.13s/31.41s.
+- [x] Owner selects direct public-IP access; obtain trusted IP HTTPS, accept private persistent storage and verify shared Tencent workloads remain running.
+- [x] Install reviewed host files/Compose plugin, private stable secrets, a restricted deployment key and a main-only GitHub production environment.
+- [x] Owner selects JD preservation; copy account/article/database/uploads once, compare row fingerprints and file checksums, and verify existing article visibility over public HTTPS.
 - [ ] Enable delivery and verify one complete main-to-Tencent release and application rollback.
-- [ ] Disable obsolete JD delivery/backup/retention timers after acceptance, preserving existing data and archives.
+- [x] Disable obsolete JD delivery/backup/retention schedules and stop old staging containers; preserve original data/archives.
 
 Historical milestones PR #11–24 established containers, private JD staging, the relay, restricted delivery, encrypted backups, monitoring, retention, and CI image reuse. PR #24 merged and its main CI → preparation → staging release succeeded. The first scheduled backup succeeded on November 10; retention merged but was never activated pending policy approval. The owner subsequently removed staging and automated backups from scope, so replacement-server recovery and retention activation are no longer pending delivery requirements. Historical implementation/runbooks remain in [git history at the last legacy main revision](https://github.com/IiCEight/iSaber/tree/174450fe5fa6097727b68b0b55353f2e6de73596/docs/operations).
 

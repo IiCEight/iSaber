@@ -12,16 +12,26 @@ GHCR packages are `ghcr.io/iiceight/isaber-frontend` and `ghcr.io/iiceight/isabe
 
 Deployment sends two digest lines through a dedicated SSH key. The host's [small deployer](../../infra/deploy.sh) validates them, pulls images through NJU, starts the application services, and checks CA-verified HTTPS. `previous.env` retains the previous application references. Failed activation attempts restore the preceding images; rollback never rewinds the database or uploads. No release performs database migrations, backup transfers, registry mirroring, or volume cleanup.
 
-## Current activation boundary
+## Current installation — November 11, 2026
 
-This branch prepares the replacement for review. It does not install production files, alter DNS, disable live timers, or move existing content. `BLOG_DEPLOY_ENABLED` remains unset/false until the owner accepts the host/domain/data cutover. Removing old repository code does not uninstall the copies already installed on JD/Tencent.
+PR #26 is merged. The blog runs at **https://101.42.13.215**; owner sign-in is at [/admin](https://101.42.13.215/admin). The owner chose direct IP access and preservation of the JD account/article. Tencent has one owner, one article, and zero managed images. Owner credentials, article/revision/media row fingerprints and all upload-file checksums matched JD before acceptance; no password reset or article rewrite was performed.
+
+Caddy 2.11.9 uses Let's Encrypt's `shortlived` ACME profile for the public IP and renews the certificate automatically. `default_sni` selects this certificate for clients that omit SNI when connecting to an IP. The initial certificate is valid through November 18, 2026; HTTP redirects to HTTPS. The owner opened public TCP 443; port 80 is also available for HTTP challenges. The certificate and both public HTTP/HTTPS were checked from external networks. See [Let's Encrypt IP certificates](https://letsencrypt.org/2026/01/15/6day-and-ip-general-availability) and [Caddy TLS profiles](https://caddyserver.com/docs/caddyfile/directives/tls).
+
+The Compose plugin was installed from Tencent's Ubuntu mirror with no package upgrades/removals and no Docker restart. The blog binds `10.2.0.6:80/443`, preserving Tailscale's separate HTTPS listener, Fieldnotes/private Caddy, host PostgreSQL, RSSHub, k3s, Mihomo and feed services. The four blog containers used about 228 MiB combined at inspection, under their configured limits. Database, uploads, certificates and proxy configuration use project-scoped persistent volumes; no database port is published.
+
+GitHub's `production` environment permits only the `main` branch. It holds a dedicated forced-command SSH key and the pinned host key. Arbitrary commands through that key were rejected. `BLOG_DEPLOY_ENABLED` is currently false pending explicit activation approval; the live server was installed and verified through the operator connection.
+
+JD's four old staging containers are stopped; original volumes, account/article data, keys and backup archives remain. Its backup/retention timers are disabled, Tencent retention remains disabled, and `STAGING_CD_ENABLED=false`. No scheduled backup transfer or separate staging delivery is part of the new installation.
+
+Public HTTPS, process/database readiness, Home/Archive/Search, static assets, existing article visibility, anonymous owner-route rejection and cross-origin rejection passed. The real deployer also passed a same-release update with CA-verified HTTPS. Interactive owner/browser acceptance uses the preserved JD credentials.
 
 ## One-time Tencent setup
 
-Run these steps only after cutover review. Tencent is shared: preserve Fieldnotes, its host PostgreSQL, RSSHub, k3s, Mihomo, Tailscale, and the existing encrypted vault. The new Compose project is named `isaber`; its PostgreSQL has no host port and its volumes are separate from the host database. The pinned official PostgreSQL/Caddy images pull through DaoCloud; NJU’s Docker Hub endpoint returned HTTP 403 from this host. These dependency images are independent of the GHCR application route. Select the host LAN address for `BLOG_BIND_ADDR`, avoiding the existing Tailscale listeners. Do not bind blindly to all interfaces.
+The first setup and JD content cutover above are complete. The steps below are a reference for a new empty host; preserve an existing installation and its credentials. Tencent is shared: preserve Fieldnotes, its host PostgreSQL, RSSHub, k3s, Mihomo, Tailscale, and the existing encrypted vault. The new Compose project is named `isaber`; its PostgreSQL has no host port and its volumes are separate from the host database. The pinned official PostgreSQL/Caddy images pull through DaoCloud; NJU’s Docker Hub endpoint returned HTTP 403 from this host. These dependency images are independent of the GHCR application route. Select the host LAN address for `BLOG_BIND_ADDR`, avoiding the existing Tailscale listeners. Do not bind blindly to all interfaces.
 
 1. Inspect capacity/occupied ports and review installation of the Compose v2 plugin (Docker is already installed). Simulate the package change before installing; do not upgrade/remove unrelated runtime packages or restart Docker for registry/proxy configuration. Confirm `docker compose version` works.
-2. Choose the public blog domain and its DNS/security-group configuration. Caddy obtains public HTTPS certificates; API authentication uses exactly `https://BLOG_DOMAIN`.
+2. Set `BLOG_DOMAIN` to the public IPv4 address or DNS name. The initial choice is `101.42.13.215`. Allow public TCP 80/443. Caddy obtains a publicly trusted short-lived certificate; API authentication uses exactly `https://BLOG_DOMAIN`. A domain can be configured later with matching DNS and origin settings.
 3. Through the existing operator SSH connection, install the reviewed files:
 
    ```text
@@ -53,7 +63,7 @@ Run these steps only after cutover review. Tencent is shared: preserve Fieldnote
    ```
 
 7. Choose the data path before starting application writers:
-   - **New empty blog:** run `dc run --rm --no-deps migrate up`, then the grants below. Provision the owner afterward with `dc run --rm --no-deps owner setup --username owner` at a private terminal prompt.
+   - **New empty blog:** run `dc run --rm --no-deps -T migrate up </dev/null`, then the grants below. Provision the owner afterward with `dc run --rm --no-deps owner setup --username owner` at a private terminal prompt.
    - **Preserve JD content:** coordinate one final stop of JD's blog writers, then transfer its logical database dump and uploads once into the new empty project's database/uploads volume. Use `pg_restore --no-owner --no-privileges --exit-on-error`; do not restore into Tencent's host PostgreSQL or any existing populated database. Preserve article/asset identifiers and permissions. Check row/media counts and migration status before starting writers. The restored owner remains; do not rerun setup over it. This is the cutover, not a recurring backup service.
 
    Apply the reviewed runtime grants after migration/restoration:
@@ -83,7 +93,7 @@ Configure GitHub's `production` environment with a branch policy allowing only m
 | Variable `BLOG_SSH_HOST` | Tencent SSH hostname/IP |
 | Variable `BLOG_SSH_USER` | `ubuntu` |
 | Variable `BLOG_SSH_HOST_KEY` | Tencent's Ed25519 public host key, verified through the existing trusted connection |
-| Repository variable `BLOG_DEPLOY_ENABLED` | `true` only after host/data/HTTPS acceptance |
+| Repository variable `BLOG_DEPLOY_ENABLED` | `true` only after host/data/HTTPS acceptance and approval to activate ongoing releases |
 
 Main runs are serialized and allowed to finish deployment/rollback. SSH verifies the pinned host key. Deployment logs stay private at `/opt/isaber/deploy.log`; GitHub receives a short success/failure message. The deployment lock prevents simultaneous operator/CI updates. A sudden host power loss or forced kill can require the manual rollback command; this is not a general disaster-recovery framework.
 
@@ -93,11 +103,13 @@ Run normal inspection commands through the operator account, scoped with `dc` as
 
 - Status: `dc ps`.
 - Application rollback: `sudo /opt/isaber/deploy.sh rollback` or `ssh -i DEPLOY_KEY ubuntu@HOST rollback` through the restricted key.
-- Migration: explicitly select the reviewed candidate backend digest in `release.env`, run `dc run --rm --no-deps migrate up`, then `dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U isaber_operator -d isaber < grant-runtime.sql`. Review backward compatibility before applying schema changes; switching image references cannot undo a schema migration.
+- Migration: explicitly select the reviewed candidate backend digest in `release.env`, run `dc run --rm --no-deps -T migrate up </dev/null`, then `dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U isaber_operator -d isaber < grant-runtime.sql`. Review backward compatibility before applying schema changes; switching image references cannot undo a schema migration.
 - Owner recovery: use `dc run --rm --no-deps owner recover --username owner` at the operator terminal. See the [owner guide](owner-account.md).
 - No automatic backup/retention job is part of this deployment. Any manual export is a separate owner operation. Do not use `down --volumes` or global pruning on the live project.
 
-## Retire the legacy installation after acceptance
+## Legacy retirement record and procedure
+
+The November 11 cutover completed these retirement steps. Stored JD/Tencent data and archives were retained. Use the list below when reconciling an older installed copy.
 
 1. Disable new JD deliveries with repository variable `STAGING_CD_ENABLED=false`; let active delivery/rollback finish. The replacement removes the three legacy workflows from main.
 2. On JD, disable future captures/retention: `systemctl disable --now isaber-offsite.timer isaber-retention-jd.timer`. Let any already-running backup service finish its cleanup; do not kill it while writers are paused.

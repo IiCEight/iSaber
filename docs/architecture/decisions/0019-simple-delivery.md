@@ -1,6 +1,6 @@
 # ADR 0019: One workflow and one blog deployment
 
-Status: Owner approved the simplification plan on November 11, 2026; implementation is under review; full-image mirror acceptance passed with cold-pull limitations recorded. Live cutover is not activated by this branch.
+Status: Accepted and merged in PR #26. Full-image mirror acceptance passed, and the Tencent IP HTTPS installation preserved the JD account/article on November 11, 2026. Automatic release activation awaits explicit owner approval.
 
 ## Decision
 

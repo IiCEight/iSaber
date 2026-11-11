@@ -1,6 +1,6 @@
 # GitHub CI/CD
 
-One workflow, [ci.yml](../../.github/workflows/ci.yml), validates changes and delivers the same tested images to one Tencent deployment. [ADR 0019](../architecture/decisions/0019-simple-delivery.md) replaces the former staging/relay/backup design. Host activation remains pending review; see [deployment setup](deployment.md).
+One workflow, [ci.yml](../../.github/workflows/ci.yml), validates changes and delivers the same tested images to one Tencent deployment. [ADR 0019](../architecture/decisions/0019-simple-delivery.md) replaces the former staging/relay/backup design. The Tencent blog is live over trusted IP HTTPS; automatic delivery awaits explicit activation approval; see [deployment setup](deployment.md).
 
 ```mermaid
 flowchart LR

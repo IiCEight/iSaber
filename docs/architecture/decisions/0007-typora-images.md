@@ -2,7 +2,7 @@
 
 Status: Accepted and merged in PR #7.
 
-Operational update, November 11, 2026: [ADR 0019](0019-simple-delivery.md) revises the earlier staging/automated-backup requirements. The proposed single-host private uploads volume is pending production storage acceptance; COS remains separate work. The original milestone rationale follows.
+Operational update, November 11, 2026: [ADR 0019](0019-simple-delivery.md) revises the earlier staging/automated-backup requirements. The initial Tencent deployment uses a private persistent uploads volume; COS remains separate work. The original milestone rationale follows.
 
 ## Decision
 

@@ -56,10 +56,21 @@ A subsequent one-byte range request for the full Node layer returned HTTP 206 di
 
 Official dependency pins were also tested using native Docker pulls. NJU's **Docker Hub** endpoint returned HTTP 403 on this host, so the Compose file uses DaoCloud's allowed official `docker.io/library` repositories: PostgreSQL digest `sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657` pulled in 22.84 seconds; Caddy digest `sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424` in 10.34 seconds. These are dependency pulls, separate from our GHCR application namespace.
 
+## First merged main release
+
+After PR #26 merged as `2440b19dfb4f11a48ae7d0b4586d15a0d2b17557`, [main CI 43011545816](https://github.com/IiCEight/iSaber/actions/runs/43011545816) passed all four checks and published the tested images. Native Tencent pulls through NJU completed without retry:
+
+| Image | Main CI digest | Pull time |
+| --- | --- | ---: |
+| Frontend | `sha256:12a482b4dca475cf5f24d334286e2960aa34f40924590fc3bb40f341daae61b6` | 17.13 seconds |
+| Backend | `sha256:b88638849b09d5804c8fe3565869f96a9726e4fe02b6596eff2abe5285d9a712` | 31.41 seconds |
+
+Docker downloaded the changed application layers and reused existing base content. Both resulting repository digests matched CI. This is a new-release test with a populated host cache; it does not replace the initial cold-pull measurements. The application was subsequently installed on Tencent with preserved JD data and trusted public-IP HTTPS.
+
 ## Decision
 
 Use ordinary Docker pulls through NJU for the public GHCR application images. This route has passed exact-digest full-image acceptance and cached repeats, alongside the earlier fresh-version probes. DaoCloud cannot serve our namespace, but can serve the pinned official database/proxy dependencies.
 
-Keep cold-pull limitations explicit: pre-pull and verify all images during first host setup, before enabling delivery. Routine deployment bounds native Compose pulls at eight minutes and leaves current services running if pulling fails; a failed pull can be retried without a new transport framework. Docker reuses completed content. A cached pull of the same release is not evidence of a new release's transfer speed. Public HTTPS, data cutover, and a complete live main-to-Tencent deployment remain activation acceptance steps in [deployment](deployment.md).
+Keep cold-pull limitations explicit: pre-pull and verify all images during first host setup, before enabling delivery. Routine deployment bounds native Compose pulls at eight minutes and leaves current services running if pulling fails; a failed pull can be retried without a new transport framework. Docker reuses completed content. A cached pull of the same release is not evidence of a new release's transfer speed. Public IP HTTPS and the JD data cutover have passed. Automated main-to-Tencent release activation remains tracked in [deployment](deployment.md).
 
 Sources: [DaoCloud usage](https://github.com/DaoCloud/public-image-mirror), [DaoCloud allowlist policy](https://github.com/DaoCloud/public-image-mirror/issues/2328), [GitHub package visibility](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility).
