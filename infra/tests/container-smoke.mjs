@@ -12,7 +12,7 @@ assert.deepEqual(await (await check("/healthz", 200)).json(), { status: "ok" });
 const home = await (await check("/", 200)).text();
 assert.match(home, /id="home-title"/);
 assert.match(home, /The first chapter is on its way/);
-assert.match(await (await check("/archive", 200)).text(), /<h1>Archive<\/h1>/);
+assert.match(await (await check("/archive", 200)).text(), /<h1 id="archive-title">Archive\.<\/h1>/);
 assert.match(await (await check("/search", 200)).text(), /Enter a word or phrase/);
 await check("/about", 200);
 const staticPaths = [...home.matchAll(/(?:src|href)="([^"?]+\.(?:js|css))(?:\?[^"]*)?"/g)].map(match => match[1]);
