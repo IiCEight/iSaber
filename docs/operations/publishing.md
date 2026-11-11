@@ -1,6 +1,8 @@
 # Markdown publishing
 
-Status: Publishing, images, and revision history are merged through PR #8 with successful GitHub checks. Category/tag management, public browsing, and English/Chinese search are merged in PR #9. Guest comments and owner moderation share `feat/guest-comments` for one milestone PR, pending review. Cloud deployment and the final artistic design remain separate work.
+Status: Publishing/images/history merged through PR #8, labels/search in PR #9 and guest comments/moderation in PR #10. These features are deployed on Tencent with successful CI/HTTP checks. Real browser acceptance and final page design remain; see the [current backlog](../product/backlog.md#next-priorities).
+
+For the live blog, open [owner sign-in](https://101.42.13.215/admin) and use the preserved JD account. Follow the upload/preview/publish workflows below in that site. The local startup commands are for development; production operator commands are in [deployment](deployment.md).
 
 ## Try it locally
 
@@ -145,14 +147,14 @@ Comment moderation does not change article versions or publication/update dates.
 - Shared React preview/public renderer: GFM tables, links, fenced code highlighting, inline/display LaTeX, and managed/HTTPS images. Raw HTML is skipped; Markdown never runs as MDX or JavaScript. KaTeX trust is disabled. External images display their host notice and load in the reader's browser with no referrer; the server never fetches them.
 - ZIP limits: 50 MiB compressed, 100 MiB expanded, 200 files, and 400 total file/directory entries. Each image is at most 10 MiB and 16 million pixels; PNG, JPEG, GIF, and WebP bytes must decode and match their extension. Unused images are validated but create no asset row. Reject encrypted/split/ZIP64 archives, symlinks/special entries, duplicate names (including case-only duplicates), absolute/drive/backslash/traversal paths, and unsupported files such as SVG, `.DS_Store`, or executables. Entry paths are limited to 1024 UTF-8 bytes. Archive contents are read with size/CRC checks and are never extracted to user-chosen filesystem paths.
 - Unavailable local images and forged managed-image URLs block publication. Publication also checks stored bytes against their recorded size/checksum. Metadata edits preserve the revision's image memberships. Re-importing normalized Markdown without its original ZIP does not grant membership based on copied URLs; upload the source article and images together.
-- The private COS adapter remains subsequent work. Permanent deletion, draft-only history browsing, and retention cleanup remain deferred.
-- The layout is a neutral functional shell. Artistic direction, motion, responsive visual acceptance, keyboard interaction review, and interactive browser QA remain pending.
+- Private persistent uploads are deployed; a COS adapter is optional future storage work. Permanent deletion, draft-only history browsing, and retention cleanup remain deferred.
+- Vivid Home and its scroll motion are integrated. Archive, Article and About still need final visual design; responsive/keyboard checks and interactive browser acceptance remain open.
 
 ## Persistence, retries, and recovery
 
 `UPLOAD_DIR` defaults to `backend/.data/uploads` when running Go from `backend/`. It must be accessible only to the API operating-system user (0700 directory, 0600 files). The API creates it if absent and rejects a broadly readable existing directory. Keep it outside any static file server. It contains **both staged uploads and retained image bytes**, including private and historical content. Do not delete it after imports finish. Stages use opaque `.upload` keys (older `.md` keys remain readable), and image objects use opaque `.asset` keys. SQL rollback/uncertain commits can leave private orphan files for later retention cleanup. The database stores Markdown snapshots, image metadata/memberships, and import records; storage keys are never returned by the API.
 
-This is a **single-host filesystem adapter**. Keep the private directory across restarts together with its database; the proposed Tencent Compose deployment uses a persistent uploads volume. Do not deploy replicas with independent upload directories or ephemeral storage. A shared private COS adapter and storage quotas remain separate storage work. The owner removed automated backups from the delivery scope; see [deployment](deployment.md) for current setup and data-cutover acceptance.
+This is a **single-host filesystem adapter**. Keep the private directory across restarts together with its database; the live Tencent Compose deployment uses a persistent uploads volume. Do not deploy replicas with independent upload directories or ephemeral storage. A shared private COS adapter and storage quotas remain separate storage work. The owner removed automated backups from the delivery scope; see [deployment](deployment.md) for current setup and data-cutover acceptance.
 
 An import returns `202` only after staging the file and committing a durable database job. The in-process worker claims queued jobs and commits the new draft plus successful job result atomically. An update checks the expected article version both at acceptance and completion. An intervening edit makes the import fail without overwriting that edit.
 

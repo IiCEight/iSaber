@@ -1,12 +1,12 @@
 # ADR 0003: React and Go application foundation
 
-Status: Selected for implementation in the foundation branch; pending code review and merge.
+Status: Accepted and merged in PR #3. Authentication/content features and container delivery followed in later milestones; [ADR 0019](0019-simple-delivery.md) describes the live deployment. The original foundation scope is recorded below.
 
 ## Context
 
 The approved product requires a React frontend and Go backend, independently buildable and deployable. Public articles need server-rendered content, while the owner dashboard uses the same API. An artistic visual direction will be reviewed separately.
 
-The existing local Linux Go installation is 1.22.2 and there is no Linux Node.js on PATH. Supported toolchains were downloaded into `/tmp` and checked against official SHA-256 metadata for validation; system installations were not changed.
+During the initial foundation validation, the local Linux Go installation was 1.22.2 and Linux Node.js was absent from PATH. Supported toolchains were downloaded into `/tmp` and checked against official SHA-256 metadata for validation; system installations were not changed.
 
 ## Decision
 
@@ -27,7 +27,7 @@ At introduction, backend readiness was process-only because there were no extern
 
 Initial HTTP timeouts and request sizes are foundation defaults, not final upload configuration. Markdown upload work must reconcile them with the approved file limits and real server/network behavior.
 
-Database drivers and migrations follow in ADR 0004. Storage clients, generated API clients, credentials, container builds, and deployment configuration remain subsequent tasks. No cloud server is modified by this foundation.
+At this milestone, database drivers/migrations, storage, credentials, containers and deployment were later work. PostgreSQL and the filesystem adapter subsequently shipped, and automatic Tencent delivery is now accepted; a COS adapter and generated-client consistency remain future work. This record preserves the scope of the original foundation change.
 
 ## References
 

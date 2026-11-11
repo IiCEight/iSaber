@@ -1,6 +1,6 @@
 # Vivid Home: React integration
 
-Status: The owner selected A · Vivid and positively reviewed the motion prototype. The approved composition is integrated into the existing React/Next.js application for milestone review.
+Status: Vivid Home merged in PR #22, followed by continuous scroll/lens interactions in PR #23. The owner selected Vivid and positively reviewed the prototype. The integration is live on Tencent; final copy/fonts, remaining page design and real-content browser acceptance remain open.
 
 ## Result
 

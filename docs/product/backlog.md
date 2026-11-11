@@ -1,8 +1,20 @@
 # Implementation backlog
 
-Status: Derived from the approved PRD. Ordered for incremental delivery; a checked item indicates local completion, not a production release.
+Status: Reconciled with merged PRs and live deployment evidence on November 11, 2026. Checked feature items record implementation/automated verification; live acceptance is identified separately. Browser and final design acceptance remain open.
 
 Current operational scope (owner decision, November 11): replace the relay/staging/backup framework with one workflow, public GHCR images through NJU, and one Tencent Compose deployment. PR #26 is merged and the Tencent blog is live over trusted IP HTTPS, preserving the JD account/article. Ongoing automatic main delivery is enabled with explicit owner approval; the full CI-to-Tencent pipeline has passed. See [ADR 0019](../architecture/decisions/0019-simple-delivery.md).
+
+## Next priorities
+
+| Priority | Remaining work | Current evidence |
+| --- | --- | --- |
+| 1 | Require Frontend, Backend and Containers in the main ruleset | Pull requests and API contract are already required; all four checks run and gate deployment |
+| 2 | Rehearse explicit live application rollback | Failure-path tests pass and the first automatic release retained previous image references |
+| 3 | Complete real browser publishing/reading acceptance | HTTP/SSR, database and privacy tests pass; owner browser/mobile/keyboard review is pending |
+| 4 | Finish public page design and owner content | Vivid Home/scroll motion merged; Archive, Article, About, copy and fonts need refinement |
+| 5 | Add a domain when chosen | Trusted public-IP HTTPS works; private persistent storage is accepted, with COS optional |
+
+## Implementation sequence and evidence
 
 | Order | Work item | PRD coverage | Completion evidence |
 | --- | --- | --- | --- |
@@ -16,18 +28,18 @@ Current operational scope (owner decision, November 11): replace the relay/stagi
 | 8 | Guest comments and moderation | COMM-01 | Pending/approved visibility, owner moderation, disabled-comment and rate-limit tests |
 | 9 | Simple Tencent delivery and launch | Operational acceptance | Tested images reused through GHCR/NJU, persistent storage, public HTTPS, application rollback |
 
-Visual design discovery can run alongside backend development after the owner provides references. Privacy checks begin with the first authenticated/data endpoints and are expanded in every subsequent slice.
+The owner selected and positively reviewed the Vivid Home direction and motion. Remaining page design can continue alongside browser acceptance. Privacy checks begin with the first authenticated/data endpoints and are expanded in every subsequent slice.
 
 ## Foundation progress
 
 - [x] Independent source directories and toolchain version pins.
-- [x] Neutral React/Next.js public and owner-access shells; final design remains open.
+- [x] Merge the initial React/Next.js public and owner-access shells; Vivid Home later replaced the neutral homepage in PRs #22–23.
 - [x] Go process health endpoints, problem responses, HTTP timeouts, and shutdown handling.
 - [x] Frontend/backend CI jobs added alongside the existing contract check.
 - [x] Complete local build, static analysis, and smoke verification for the foundation branch, including real Next.js-to-Go forwarding and clean Go shutdown.
 - [x] Merge the application foundation in PR #3 and observe all three successful GitHub checks.
-- [ ] Add Frontend and Backend as required checks after they report successfully.
-- [x] Implement PostgreSQL/pgx and Goose migrations in the persistence branch; select private COS as the production object-storage boundary, with its adapter deferred to import work.
+- [ ] Add Frontend, Backend and Containers as required merge checks; the existing main ruleset requires pull requests and API contract only.
+- [x] Implement PostgreSQL/pgx and Goose migrations in PR #4. Its initial COS proposal remains a future option; the accepted Tencent deployment uses the private filesystem adapter and persistent uploads volume.
 - [x] Validate migration upgrades/reruns, ownership constraints, the migration CLI, and readiness transitions against real local PostgreSQL; verify unit/race tests and builds.
 - [x] Merge persistence in PR #4 and observe its successful PostgreSQL CI checks.
 
@@ -49,7 +61,7 @@ Visual design discovery can run alongside backend development after the owner pr
 - [x] Merge publishing in PR #6 and observe successful checks on the PR and main.
 - [ ] Perform interactive browser, keyboard, and visual acceptance.
 
-See the [publishing guide](../operations/publishing.md). Local image/ZIP imports and authorized delivery are merged. Published version browsing/restoration is merged; production private COS setup remains a separate guided deployment step. Final public design still requires the owner's references and approval.
+See the [publishing guide](../operations/publishing.md). Local image/ZIP imports and authorized delivery are merged. Published version browsing/restoration is merged. Tencent uses a private persistent uploads volume; COS is optional future storage work. Vivid Home is integrated, while final page design and browser acceptance remain open.
 
 
 ## Typora image import progress
@@ -60,7 +72,7 @@ See the [publishing guide](../operations/publishing.md). Local image/ZIP imports
 - [x] Verify Go/PostgreSQL privacy tests, production builds, and real Next.js/Go ZIP/image HTTP acceptance.
 - [x] Merge images in PR #7 and observe successful checks on both the PR and main.
 - [ ] Perform interactive browser acceptance for image imports and reading.
-- [ ] Accept private persistent storage for the single Tencent deployment; COS remains a separate storage decision. Automated backups are outside the revised delivery scope.
+- [x] Accept separate private persistent database/uploads volumes on Tencent and verify the JD content cutover. COS remains optional; automated backups are outside the revised delivery scope.
 
 
 ## Published revision history progress
@@ -72,7 +84,7 @@ See the [publishing guide](../operations/publishing.md). Local image/ZIP imports
 - [x] Merge history in PR #8 and observe successful checks on both the PR and main.
 - [ ] Perform interactive browser acceptance for history reading/restoration.
 
-Category/tag management, public browsing, and public search are merged together in PR #9 while the owner gathers artistic design references. Production COS and CI/CD deployment remain guided release work.
+Category/tag management, public browsing and public search merged in PR #9 and are deployed. Private persistent storage and automatic CI/CD are accepted; browser review and further visual refinement remain.
 
 
 ## Category and tag progress
@@ -85,7 +97,7 @@ Category/tag management, public browsing, and public search are merged together 
 - [x] Merge content discovery in PR #9 and observe successful PR/main checks.
 - [ ] Perform interactive browser acceptance for content discovery.
 
-The comments milestone is merged in PR #10. Final design still requires owner references; private COS and cloud deployment remain guided release work.
+Comments merged in PR #10 and are deployed. The owner approved the Vivid Home direction; remaining public pages and browser moderation acceptance still need review.
 
 
 ## Content-discovery milestone review
@@ -109,7 +121,7 @@ Owner preference: continue related implementation on one branch with focused com
 - [x] Merge the combined comments PR (#10) and observe successful PR/main GitHub checks.
 - [ ] Perform interactive browser/keyboard acceptance for comments.
 
-Publishing, organization, search, and moderated feedback are implemented locally after this milestone. Portfolio content and final artistic design still need owner input and approval; production storage, simplified delivery, and public release acceptance remain separate work.
+Publishing, organization, search and moderated feedback are implemented and deployed. Portfolio content, final page design and interactive browser acceptance still need owner input/review. Tencent storage, trusted IP HTTPS and automatic delivery have passed operational acceptance.
 
 
 ## Simplified delivery milestone
@@ -141,5 +153,5 @@ See [deployment](../operations/deployment.md), [mirror evidence](../operations/g
 - [x] Preserve existing browsing/search/filter/pagination behavior in Archive/Search and retain legacy homepage-query redirects.
 - [x] Provide actual navigation destinations and preserve existing owner and reading paths.
 - [x] Merge Vivid Home integration (#22) and continuous scroll/lens interactions (#23).
-- [ ] Review the integrated site with real staging articles.
+- [ ] Review the live integrated site with representative English/Chinese articles, mobile layouts, keyboard navigation and reduced motion.
 - [ ] Refine final owner copy/fonts and separately design Archive, Article, and About.

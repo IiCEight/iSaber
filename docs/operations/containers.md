@@ -1,6 +1,6 @@
 # Application container rehearsal
 
-This milestone packages both applications and checks their connection before cloud deployment. It uses synthetic data and credentials. No registry publishing, server installation, TLS setup, or GitHub deployment secrets are needed. See [ADR 0011](../architecture/decisions/0011-container-foundation.md).
+Status: The disposable local/CI rehearsal validates packaging with synthetic data. The live Tencent blog and automatic delivery are accepted; see [deployment](deployment.md). No cloud credentials or server setup are needed to run this rehearsal. The original packaging decision is [ADR 0011](../architecture/decisions/0011-container-foundation.md).
 
 ## Run on local Linux
 
@@ -18,7 +18,7 @@ docker compose up -d --wait api frontend
 docker compose exec -T frontend node --input-type=module < infra/tests/container-smoke.mjs
 ```
 
-Open `http://127.0.0.1:3300` to inspect the empty public site. Only this loopback port is published; PostgreSQL and Go remain internal. The API uses a separate runtime database role; migrations use the operator role. This is an HTTP packaging rehearsal. The Go API uses production authentication with the synthetic origin `https://localhost`, so browser owner sign-in requires the later TLS setup. Continue using the normal [local development setup](../../README.md#local-development) for owner publishing acceptance.
+Open `http://127.0.0.1:3300` to inspect the empty public site. Only this loopback port is published; PostgreSQL and Go remain internal. The API uses a separate runtime database role; migrations use the operator role. This is an HTTP packaging rehearsal. The Go API uses production authentication with the synthetic origin `https://localhost`, so this HTTP rehearsal is not the browser owner-sign-in environment. Continue using the normal [local development setup](../../README.md#local-development) for owner publishing acceptance.
 
 The smoke script checks non-root frontend execution, database/schema readiness, uncached SSR, static JS/CSS delivery, the frontend API rewrite, anonymous owner-route rejection, and mutation Origin enforcement. CI also stops PostgreSQL and verifies that Go readiness returns 503. Repeat after restart to verify migration state is retained:
 
