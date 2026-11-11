@@ -1,6 +1,6 @@
 # Archive design review
 
-Status: First local design prototype, pending owner review. The live `/archive` page is unchanged. No push or CI/CD is part of this iteration.
+Status: Layout approved and [integrated locally](archive-integration.md) for review. The standalone prototype remains a reference. No push or CI/CD is part of this iteration.
 
 ## Purpose and direction
 
@@ -16,9 +16,9 @@ Open `archive-prototype.html` through a local static server. All article content
 
 Soft independent lens breathing is decorative, with no pointer attraction or scroll choreography in this first Archive pass. Reduced motion disables it. Native form controls, keyboard focus, semantic landmarks, and a dismissible sample dialog support review without mouse input. No JavaScript still exposes the sample rows and an explanatory notice.
 
-## Next integration, after review
+## Integration requirements
 
-Connect the approved structure to the existing public article and label endpoints. Keep GET filter URLs, search semantics, cursor pagination, clear actions, unknown selected labels, unavailable-label feedback, and privacy boundaries. Do not ship these samples or the review controls. Preserve the separate Search page until its own design review.
+The React integration connects the approved structure to the existing public article and label endpoints. Keep GET filter URLs, search semantics, cursor pagination, clear actions, unknown selected labels, unavailable-label feedback, and privacy boundaries. Do not ship these samples or the review controls. Preserve the separate Search page until its own design review.
 
 Review the hierarchy, balance of graphics and writing, row density, and mobile filter layout before refining motion or implementing the production route.
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ArchiveView from "./archive-view";
 import { backendOrigin, getPublicLabels } from "../lib/public-api";
 import type { Label, Page, PublicArticleSummary } from "../lib/articles";
 
@@ -6,10 +7,10 @@ export type BrowseParams = { q?: string | string[]; cursor?: string; category?: 
 export default async function ArticleBrowser({ params, basePath }: { params: BrowseParams; basePath: "/archive" | "/search" }) {
   const query = new URLSearchParams();
   for (const key of ["category", "tag", "language", "cursor"] as const) if (typeof params[key] === "string" && params[key]) query.set(key, params[key]);
-  const searching = params.q !== undefined;
-  const malformedQuery = searching && typeof params.q !== "string";
   const rawQuery = typeof params.q === "string" ? params.q : "";
   const text = rawQuery.trim();
+  const searching = params.q !== undefined && (basePath === "/search" || typeof params.q !== "string" || text !== "");
+  const malformedQuery = searching && typeof params.q !== "string";
   if (searching) query.set("q", text);
   const emptySearch = searching && !malformedQuery && text === "";
   const tooLong = searching && Array.from(rawQuery).length > 200;
@@ -24,6 +25,10 @@ export default async function ArticleBrowser({ params, basePath }: { params: Bro
   const tags: Label[] = tagsResult.status === "fulfilled" ? tagsResult.value : [];
   const nextQuery = new URLSearchParams(query);
   if (page?.next_cursor) nextQuery.set("cursor", page.next_cursor);
+  if (basePath === "/archive") {
+    const error = malformedQuery ? "Use a single search query." : tooLong ? "Use a search query of at most 200 characters." : !page ? invalid ? "Check the query and filters, then try again." : searching ? "Search is temporarily unavailable. Please try again shortly." : "Articles are temporarily unavailable. Please try again shortly." : null;
+    return <ArchiveView page={page} query={query.toString()} categories={categories} tags={tags} labelsUnavailable={categoriesResult.status === "rejected" || tagsResult.status === "rejected"} error={error} searching={searching} filtered={filters} nextHref={page?.next_cursor ? `/archive?${nextQuery}` : null} />;
+  }
   return (
     <div className="article-browser">
       <p className="page-eyebrow">iSaber · Public articles</p>
