@@ -11,7 +11,7 @@ Current operational scope (owner decision, November 11): replace the relay/stagi
 | 1 | Require Frontend, Backend and Containers in the main ruleset | Pull requests and API contract are already required; all four checks run and gate deployment |
 | 2 | Rehearse explicit live application rollback | Failure-path tests pass and the first automatic release retained previous image references |
 | 3 | Complete real browser publishing/reading acceptance | HTTP/SSR, database and privacy tests pass; owner browser/mobile/keyboard review is pending |
-| 4 | Finish public page design and owner content | Vivid Home/scroll motion merged; Archive, Article, About, copy and fonts need refinement |
+| 4 | Finish public page acceptance and owner content | Archive, Article and About are integrated; [local cross-page review](../design/public-page-review.md) records two reading fixes, the no-JavaScript 404 issue, and remaining live-content/device checks. Biography/contact copy is deferred. |
 
 Domain setup is complete: `isaber.top` is canonical and `www` redirects to it. Private persistent storage is accepted; COS remains optional.
 
@@ -60,6 +60,7 @@ The owner selected and positively reviewed the Vivid Home direction and motion. 
 - [x] Connect owner upload/preview/management and public reading using a shared Markdown/code/math renderer.
 - [x] Verify PostgreSQL integration/privacy tests and the actual Next.js/Go upload → preview → publish → read flow against OpenAPI.
 - [x] Merge publishing in PR #6 and observe successful checks on the PR and main.
+- [x] Integrate the owner-approved conventional admin design locally, preserving the existing authenticated API workflows and shared Markdown preview. See the [admin integration review](../design/admin-integration.md); real Go/database acceptance and remote delivery of this UI remain separate work.
 - [ ] Perform interactive browser, keyboard, and visual acceptance.
 
 See the [publishing guide](../operations/publishing.md). Local image/ZIP imports and authorized delivery are merged. Published version browsing/restoration is merged. Tencent uses a private persistent uploads volume; COS is optional future storage work. Vivid Home is integrated, while final page design and browser acceptance remain open.

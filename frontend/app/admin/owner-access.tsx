@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import PublishingDashboard from "./publishing-dashboard";
 
 export type OwnerSession = {
@@ -13,6 +13,8 @@ export default function OwnerAccess({ initialSession, unavailable }: {
   initialSession: OwnerSession | null;
   unavailable: boolean;
 }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => { setReady(true); }, []);
   const [session, setSession] = useState(initialSession);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(unavailable ? "Sign-in is temporarily unavailable. Please try again." : "");
@@ -74,25 +76,22 @@ export default function OwnerAccess({ initialSession, unavailable }: {
     }
   }
 
-  return (
-    <section aria-labelledby="owner-title" className="owner-access">
-      <h1 id="owner-title">{session ? "Your dashboard" : "Owner sign-in"}</h1>
-      {message && <p role="alert">{message}</p>}
-      {session ? (
-        <>
-          <p>Signed in as <strong>{session.owner.username}</strong>.</p>
-          <button type="button" disabled={busy} onClick={signOut}>{busy ? "Signing out…" : "Sign out"}</button>
-          <PublishingDashboard csrf={session.csrf_token} onExpired={expired} />
-        </>
-      ) : (
-        <form method="post" action="/api/v1/auth/login" onSubmit={signIn} aria-busy={busy}>
-          <label htmlFor="owner-username">Username</label>
-          <input id="owner-username" name="username" autoComplete="username" required disabled={busy} />
-          <label htmlFor="owner-password">Password</label>
-          <input id="owner-password" name="password" type="password" autoComplete="current-password" required disabled={busy} />
-          <button type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-        </form>
-      )}
-    </section>
-  );
+  if (session) return <PublishingDashboard csrf={session.csrf_token} onExpired={expired} username={session.owner.username} signingOut={busy} onSignOut={signOut} sessionMessage={message} />;
+  return <section className="admin-signin" aria-labelledby="owner-title">
+    <div className="admin-login-top"><a className="brand" href="/">iSaber</a><a href="/">← Back to blog</a></div>
+    <div className="signin-wrap"><div className="card"><div className="card-body">
+      <p className="eyebrow">YOUR CONTENT WORKSPACE</p><h1 id="owner-title">Owner sign-in</h1>
+      <p className="muted">Manage your writing and reader comments.</p>
+      {message && <p className="admin-alert" role="alert">{message}</p>}
+      <noscript>Enable JavaScript to sign in and manage your articles.</noscript>
+      <form method="post" action="/api/v1/auth/login" onSubmit={signIn} aria-busy={busy}>
+        <label htmlFor="owner-username">Username</label>
+        <input id="owner-username" name="username" autoComplete="username" required disabled={busy || !ready} />
+        <label htmlFor="owner-password">Password</label>
+        <input id="owner-password" name="password" type="password" autoComplete="current-password" required disabled={busy || !ready} />
+        <button className="button primary" type="submit" disabled={busy || !ready}>{busy ? "Signing in…" : "Sign in"}</button>
+      </form>
+      <p className="help">One owner account. No reader registration.</p>
+    </div></div></div>
+  </section>;
 }

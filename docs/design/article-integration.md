@@ -1,6 +1,6 @@
 # Article integration
 
-Status: The approved reading design is implemented locally on `/articles/[slug]`. Nothing is pushed or deployed, and no production build or CI/CD run is part of this iteration. The standalone prototype remains available for visual review.
+Status: The approved reading design is integrated on the design branch at `/articles/[slug]`. The owner subsequently pushed the branch and reported successful CI. The [November 12 local cross-page review](public-page-review.md) records current reading fixes, production checks, and open acceptance work. The standalone prototype remains a visual reference.
 
 ## Result
 

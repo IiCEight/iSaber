@@ -1,6 +1,6 @@
 # About integration
 
-Status: The approved animation study is implemented locally at `http://127.0.0.1:3000/about`. Nothing is pushed or deployed; no production build or CI/CD run is part of this iteration.
+Status: The approved animation study is integrated on the design branch at `/about`. The owner subsequently pushed the branch and reported successful CI. The [November 12 local cross-page review](public-page-review.md) records current verification and open acceptance work; biography/contact copy is deferred.
 
 ## Result
 

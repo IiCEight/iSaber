@@ -23,7 +23,11 @@ test("production frontend handles unavailable and older backend capabilities", a
   const olderAPI = createServer((request, response) => {
     const url = new URL(request.url, "http://fixture.invalid");
     publicRequests.push({ path: url.pathname, query: url.searchParams, cookie: request.headers.cookie });
-    if ((url.pathname === "/api/v1/articles" || url.pathname === "/api/v1/articles/search") && listMode !== "unavailable") {
+    if (url.pathname === "/api/v1/auth/session") {
+      const authenticated = request.headers.cookie === "fixture-owner=session";
+      response.writeHead(authenticated ? 200 : 401, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+      response.end(JSON.stringify(authenticated ? { owner: { id: "owner-fixture", username: "private-owner-fixture" }, csrf_token: "private-csrf-fixture", expires_at: "2027-01-01T00:00:00Z" } : { code: "unauthorized" }));
+    } else if ((url.pathname === "/api/v1/articles" || url.pathname === "/api/v1/articles/search") && listMode !== "unavailable") {
       response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
       response.end(JSON.stringify({ items: listMode === "empty" ? [] : sampleArticles, next_cursor: listMode === "empty" ? null : "fixture-next" }));
     } else if (request.url === "/api/v1/articles/legacy-article") {
@@ -145,6 +149,21 @@ test("production frontend handles unavailable and older backend capabilities", a
     assert.match(html, /name="password"/);
     assert.match(html, /method="post"/);
     assert.doesNotMatch(html, /Signed in as/);
+  });
+  await t.test("authenticated admin HTML is uncached and never reused for anonymous readers", async () => {
+    const owner = await fetch(`${origin}/admin`, { headers: { Cookie: "fixture-owner=session" } });
+    assert.equal(owner.status, 200);
+    assert.match(owner.headers.get("cache-control") ?? "", /no-store/);
+    const ownerHTML = await owner.text();
+    assert.match(ownerHTML, /private-owner-fixture/);
+    assert.match(ownerHTML, /private-csrf-fixture/);
+    assert.match(ownerHTML, /aria-label="Workspace"/);
+    assert.doesNotMatch(ownerHTML, /name="password"/);
+    const anonymous = await fetch(`${origin}/admin`);
+    assert.match(anonymous.headers.get("cache-control") ?? "", /no-store/);
+    const anonymousHTML = await anonymous.text();
+    assert.match(anonymousHTML, /Owner sign-in/);
+    assert.doesNotMatch(anonymousHTML, /private-owner-fixture|private-csrf-fixture|aria-label="Workspace"/);
   });
   await t.test("empty search prompts for input", async () => {
     const response = await fetch(`${origin}/?q=`);
