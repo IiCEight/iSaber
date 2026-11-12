@@ -39,7 +39,7 @@ Styles are restricted to the admin container so Next.js retaining a route styles
 - Failure checks verified article-list retry, label retry without dropping tag memberships, and moderation retry after API outages. Leaving admin restored the correct public header/layout.
 - All 19 frontend tests pass, including a production smoke regression checking that authenticated admin HTML is uncached and never reused for a following anonymous request. The temporary fixture is not a substitute for live Go/database acceptance; no real account, stored article, or cloud server was modified.
 
-Physical-device and full real-Go publishing acceptance remain separate checks. The earlier public-page review's no-JavaScript missing-article and live-IP certificate findings are unrelated to this admin integration and remain open.
+Physical-device and full real-Go publishing acceptance remain separate checks. The earlier public-page review's no-JavaScript missing-article finding remains open. Its IP certificate observation is historical: PR #31 established `https://isaber.top` as the canonical address, with `www` redirected to it. Live owner acceptance should use the new domain and the existing credentials; see the [domain setup record](../operations/deployment.md#domain-setup).
 
 ## Local review
 
