@@ -28,6 +28,14 @@ export default function Markdown({ content, headings }: { content: string; headi
           [rehypeHighlight, { ignoreMissing: true }],
         ]}
         components={{
+          span({ node, ...props }) {
+            if (node?.type === "element" && props.className?.split(" ").includes("katex-display")) {
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: Wide equations must be reachable for horizontal keyboard scrolling, including without JavaScript.
+              // biome-ignore lint/a11y/useSemanticElements: KaTeX emits display math inside paragraphs; a section would create invalid nested HTML.
+              return <span {...props} role="region" aria-label="Math formula" tabIndex={0} />;
+            }
+            return <span {...props} />;
+          },
           ...(headings ? {
             h1({ children, id }) { return <h2 id={id} tabIndex={-1}>{children}</h2>; },
             h2({ children, id }) { return <h2 id={id} tabIndex={-1}>{children}</h2>; },

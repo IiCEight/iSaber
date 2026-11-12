@@ -113,7 +113,9 @@
 .article-page .article-comments > ol > li p:first-child { font-size: 13px; color: var(--muted); }
 .article-page .article-prose .markdown > p:first-child { font-size: 23px; line-height: 1.65; color: #fff; letter-spacing: -.015em; }
 .article-page .article-code pre { background: transparent; border-radius: 0; }
-.article-page .article-code .hljs { background: transparent; }
+/* The named, focusable outer region owns code scrolling. Highlight.js also
+   adds overflow to code; clear it to avoid a nested, unreachable scroll area. */
+.article-page .article-code .hljs { background: transparent; overflow: visible; padding: 0; }
 .article-page .article-prose .article-table-scroll table { display: table; }
 .article-page .article-prose .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-block: 18px; border-block: 1px solid var(--line); }
 .article-page .article-prose .external-image { font-size: inherit; }
