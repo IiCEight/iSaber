@@ -3,7 +3,7 @@ export type Label = { id: string; name: string; slug: string };
 export type AdminLabel = Label & { version: number };
 export type Revision = {
   id: string; article_id: string; title: string | null; summary: string | null;
-  language: "en" | "zh" | null; written_at: string | null; category: Label | null;
+  language: "en" | "zh" | null; written_at: string | null; updated_at: string | null; category: Label | null;
   tags: Label[]; markdown: string; created_at: string; first_published_at: string | null;
   restored_from_revision_id: string | null;
 };

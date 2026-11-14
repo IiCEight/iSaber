@@ -6,7 +6,7 @@ For the live blog, open [owner sign-in](https://isaber.top/admin) and use the pr
 
 ## Try it locally
 
-Start PostgreSQL and follow the root README to configure Go and Next.js. Apply pending migrations before starting the API (the comments API requires version 5; migration 00005 adds a creation-time index):
+Start PostgreSQL and follow the root README to configure Go and Next.js. Apply pending migrations before starting the API (version 6 adds optional last updated times to revisions):
 
 ```bash
 cd backend
@@ -50,7 +50,11 @@ $$
 6. Change the file in Typora and upload into **Selected article, as a draft revision**. Visitors continue reading the previous version until you preview and publish the new draft.
 7. Try **Make private** and **Unpublish**. A fresh public request must return 404 and the homepage must omit it. Unpublishing retains a draft and stored history.
 
-All new articles start private. Front matter cannot publish an article or change access. The URL locks after first publication. Writing dates are calendar dates; first publication time stays fixed, while publication/control changes update the system update time. Owner and public list endpoints support cursor pagination; the dashboard adds title, status, and visibility filters.
+All new articles start private. Front matter cannot publish an article or change access. The URL locks after first publication. Writing dates are calendar dates; first publication time stays fixed. Owner and public list endpoints support cursor pagination; the dashboard adds title, status, and visibility filters.
+
+To preserve an older article’s last updated time, set **Last updated time** in draft metadata after uploading, then save, preview, and publish. The field uses **China time (UTC+08:00)** regardless of your browser timezone. Alternatively, include `updated_at: 2024-06-15T18:30:00+08:00` in Markdown front matter; a timezone is required. The chosen time may predate the article’s first publication on this blog. Saving a draft leaves the live article’s dates unchanged.
+
+Leave the field blank (or use `updated_at: null`) to use publication time automatically. Each new upload starts with automatic dating unless that file supplies `updated_at`; other metadata edits and historical restores preserve the revision’s choice. Invalid imported timestamps block publication until corrected or cleared in metadata. Explicit timestamps survive visibility/comment setting changes and label renames. Without an explicit timestamp, publication and live metadata/control changes continue updating the automatic date. Unpublishing records its transition time; publishing again applies the draft’s chosen time or the new publication time.
 
 ## Include Typora images
 

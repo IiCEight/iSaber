@@ -18,13 +18,14 @@ func loadRevision(ctx context.Context, q queryer, id string) (*Revision, error) 
 	var category *string
 	var source []byte
 	err := q.QueryRowContext(ctx, `SELECT id,article_id,title,summary,language,to_char(written_at,'YYYY-MM-DD'),
-        category_id,markdown,created_at,first_published_at,restored_from_revision_id,source_issues FROM revisions WHERE id=$1`, id).
-		Scan(&r.ID, &r.ArticleID, &r.Title, &r.Summary, &r.Language, &r.WrittenAt, &category, &r.Markdown, &r.CreatedAt, &r.FirstPublishedAt, &r.RestoredFromRevision, &source)
+        category_id,markdown,created_at,first_published_at,restored_from_revision_id,source_issues,updated_at FROM revisions WHERE id=$1`, id).
+		Scan(&r.ID, &r.ArticleID, &r.Title, &r.Summary, &r.Language, &r.WrittenAt, &category, &r.Markdown, &r.CreatedAt, &r.FirstPublishedAt, &r.RestoredFromRevision, &source, &r.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 	r.CreatedAt = r.CreatedAt.UTC()
 	utc(r.FirstPublishedAt)
+	utc(r.UpdatedAt)
 	if err := json.Unmarshal(source, &r.SourceIssues); err != nil {
 		return nil, err
 	}
@@ -111,8 +112,8 @@ func insertRevision(ctx context.Context, tx *sql.Tx, r *Revision) error {
 	if r.Category != nil {
 		category = &r.Category.ID
 	}
-	err = tx.QueryRowContext(ctx, `INSERT INTO revisions(id,article_id,title,summary,language,written_at,category_id,markdown,source_issues,restored_from_revision_id)
-        VALUES(gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id,created_at`, r.ArticleID, r.Title, r.Summary, r.Language, r.WrittenAt, category, r.Markdown, source, r.RestoredFromRevision).Scan(&r.ID, &r.CreatedAt)
+	err = tx.QueryRowContext(ctx, `INSERT INTO revisions(id,article_id,title,summary,language,written_at,category_id,markdown,source_issues,restored_from_revision_id,updated_at)
+        VALUES(gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id,created_at`, r.ArticleID, r.Title, r.Summary, r.Language, r.WrittenAt, category, r.Markdown, source, r.RestoredFromRevision, r.UpdatedAt).Scan(&r.ID, &r.CreatedAt)
 	if err != nil {
 		return err
 	}

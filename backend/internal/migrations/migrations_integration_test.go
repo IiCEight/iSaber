@@ -155,6 +155,37 @@ func TestArticleRevisionAndAssetOwnership(t *testing.T) {
 	}
 }
 
+func TestRevisionUpdatedAtUpgradePreservesArticleDates(t *testing.T) {
+	db, ctx := isolatedDatabase(t)
+	provider, err := Provider(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := provider.UpTo(ctx, 5); err != nil {
+		t.Fatal(err)
+	}
+	article := "11111111-1111-4111-8111-111111111111"
+	revision := "22222222-2222-4222-8222-222222222222"
+	mustExec(t, db, ctx, `INSERT INTO articles(id,slug,published_at,updated_at) VALUES($1,'existing','2024-06-01T00:00:00Z','2024-07-01T00:00:00Z')`, article)
+	mustExec(t, db, ctx, `INSERT INTO revisions(id,article_id,markdown) VALUES($1,$2,'Existing content')`, revision, article)
+	mustExec(t, db, ctx, `UPDATE articles SET published_revision_id=$1 WHERE id=$2`, revision, article)
+	if err := CheckReady(ctx, db); err == nil {
+		t.Fatal("version 5 must require the revision timestamp migration")
+	}
+	if _, err := provider.Up(ctx); err != nil {
+		t.Fatal(err)
+	}
+	var published, updated time.Time
+	var override *time.Time
+	var markdown string
+	if err := db.QueryRowContext(ctx, `SELECT a.published_at,a.updated_at,r.updated_at,r.markdown FROM articles a JOIN revisions r ON r.id=a.published_revision_id WHERE a.id=$1`, article).Scan(&published, &updated, &override, &markdown); err != nil {
+		t.Fatal(err)
+	}
+	if published.UTC().Format(time.RFC3339) != "2024-06-01T00:00:00Z" || updated.UTC().Format(time.RFC3339) != "2024-07-01T00:00:00Z" || override != nil || markdown != "Existing content" {
+		t.Fatal("migration changed existing article dates or content")
+	}
+}
+
 func TestImportResultAndIdempotencyConstraints(t *testing.T) {
 	db, ctx := migratedDatabase(t)
 	articleA := "11111111-1111-4111-8111-111111111111"

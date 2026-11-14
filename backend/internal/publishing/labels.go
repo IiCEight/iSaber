@@ -104,7 +104,7 @@ func (s *Service) renameLabel(ctx context.Context, kind, id string, fields map[s
 		return result, err
 	}
 	_, err = tx.ExecContext(ctx, `UPDATE articles a SET version=version+1,modified_at=clock_timestamp(),
- updated_at=CASE WHEN EXISTS(SELECT 1 FROM revisions r WHERE r.id=a.published_revision_id AND `+labelAssociation(kind, "r")+`) THEN clock_timestamp() ELSE updated_at END
+ updated_at=CASE WHEN EXISTS(SELECT 1 FROM revisions r WHERE r.id=a.published_revision_id AND `+labelAssociation(kind, "r")+`) THEN COALESCE((SELECT updated_at FROM revisions WHERE id=a.published_revision_id),clock_timestamp()) ELSE updated_at END
  WHERE EXISTS(SELECT 1 FROM revisions r WHERE r.id IN (a.draft_revision_id,a.published_revision_id) AND `+labelAssociation(kind, "r")+`)`, id)
 	if err != nil {
 		return result, err

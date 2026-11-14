@@ -98,6 +98,8 @@ invalid = [
     ("SubmitComment", {"display_name": "Guest", "body": "   "}),
     ("SubmitComment", {"display_name": "Guest", "body": "x" * 5001}),
     ("DraftPatch", {"expected_version": 1, "written_at": "2026-02-30"}),
+    ("DraftPatch", {"expected_version": 1, "updated_at": "2024-06-15"}),
+    ("DraftPatch", {"expected_version": 1, "updated_at": "2024-02-30T10:00:00Z"}),
 ]
 for name, value in invalid:
     assert not validator(name).is_valid(value), f"Invalid {name} unexpectedly accepted"

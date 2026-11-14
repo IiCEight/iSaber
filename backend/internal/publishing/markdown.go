@@ -21,6 +21,7 @@ const MaxMarkdown = 5 * 1024 * 1024
 
 var slugPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 var frontMatterEnd = regexp.MustCompile(`(?m)^---[ \t]*(?:\n|$)`)
+var timestampPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$`)
 
 var slugSeparators = regexp.MustCompile(`[^a-z0-9]+`)
 
@@ -32,6 +33,7 @@ type imported struct {
 	Markdown                            string
 	Fields                              map[string]bool
 	Title, Summary, Language, WrittenAt *string
+	UpdatedAt                           *time.Time
 	Slug                                *string
 	Category                            *string
 	Tags                                []string
@@ -68,13 +70,14 @@ func parseMarkdown(data []byte, filename string) (imported, error) {
 				Slug      *string  `yaml:"slug"`
 				Language  *string  `yaml:"language"`
 				WrittenAt *string  `yaml:"written_at"`
+				UpdatedAt *string  `yaml:"updated_at"`
 				Category  *string  `yaml:"category"`
 				Tags      []string `yaml:"tags"`
 			}
 			if err := node.Decode(&meta); err != nil {
 				return result, errors.New("invalid_front_matter")
 			}
-			known := map[string]bool{"title": true, "summary": true, "slug": true, "language": true, "written_at": true, "category": true, "tags": true}
+			known := map[string]bool{"title": true, "summary": true, "slug": true, "language": true, "written_at": true, "updated_at": true, "category": true, "tags": true}
 			for i := 0; i < len(node.Content[0].Content); i += 2 {
 				key := node.Content[0].Content[i].Value
 				result.Fields[key] = true
@@ -84,6 +87,14 @@ func parseMarkdown(data []byte, filename string) (imported, error) {
 			}
 			result.Title, result.Summary, result.Slug = meta.Title, meta.Summary, meta.Slug
 			result.Language, result.WrittenAt, result.Category, result.Tags = meta.Language, meta.WrittenAt, meta.Category, meta.Tags
+			if meta.UpdatedAt != nil {
+				value, err := parseUpdatedAt(*meta.UpdatedAt)
+				if err != nil {
+					result.Issues = append(result.Issues, issue("blocking", "invalid_updated_at", "updated_at", "Enter a valid last updated time with a timezone, or clear it to use publication time."))
+				} else {
+					result.UpdatedAt = &value
+				}
+			}
 			result.Markdown = strings.TrimPrefix(result.Markdown[closing:], "\n")
 		}
 	}
@@ -223,4 +234,13 @@ func plainNode(node ast.Node, source []byte) string {
 func validDate(value string) bool {
 	date, err := time.Parse("2006-01-02", value)
 	return err == nil && date.Year() >= 1
+}
+
+func parseUpdatedAt(value string) (time.Time, error) {
+	date, err := time.Parse(time.RFC3339Nano, value)
+	date = date.UTC()
+	if err != nil || !timestampPattern.MatchString(value) || date.Year() < 1 || date.Year() > 9999 {
+		return time.Time{}, errors.New("invalid_updated_at")
+	}
+	return date, nil
 }

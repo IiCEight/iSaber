@@ -109,6 +109,19 @@ func (s *Service) PatchDraft(ctx context.Context, id string, fields map[string]j
 			case "written_at":
 				r.WrittenAt = value
 			}
+		case "updated_at":
+			var value *string
+			if json.Unmarshal(raw, &value) != nil {
+				return nil, fault(422, "invalid_updated_at")
+			}
+			r.UpdatedAt = nil
+			if value != nil {
+				date, err := parseUpdatedAt(*value)
+				if err != nil {
+					return nil, fault(422, "invalid_updated_at")
+				}
+				r.UpdatedAt = &date
+			}
 		case "slug":
 			var value string
 			if json.Unmarshal(raw, &value) != nil || !validSlug(value) {
@@ -231,7 +244,7 @@ func (s *Service) Controls(ctx context.Context, id string, fields map[string]jso
 		}
 	}
 	_, err = tx.ExecContext(ctx, `UPDATE articles SET visibility=$1,comments_enabled=$2,version=version+1,modified_at=clock_timestamp(),
-        updated_at=CASE WHEN published_revision_id IS NOT NULL THEN clock_timestamp() ELSE updated_at END WHERE id=$3`, a.Visibility, a.CommentsEnabled, id)
+        updated_at=CASE WHEN published_revision_id IS NOT NULL THEN COALESCE((SELECT updated_at FROM revisions WHERE id=published_revision_id),clock_timestamp()) ELSE updated_at END WHERE id=$3`, a.Visibility, a.CommentsEnabled, id)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +290,7 @@ func (s *Service) Publish(ctx context.Context, owner, id, key string, fields map
 			}
 			if _, err = tx.ExecContext(ctx, `UPDATE revisions SET first_published_at=COALESCE(first_published_at,clock_timestamp()) WHERE id=$1`, a.Draft.ID); err == nil {
 				_, err = tx.ExecContext(ctx, `UPDATE articles SET published_revision_id=draft_revision_id,draft_revision_id=NULL,
-                    published_at=COALESCE(published_at,clock_timestamp()),updated_at=clock_timestamp(),modified_at=clock_timestamp(),version=version+1 WHERE id=$1`, id)
+                    published_at=COALESCE(published_at,clock_timestamp()),updated_at=COALESCE($2,clock_timestamp()),modified_at=clock_timestamp(),version=version+1 WHERE id=$1`, id, a.Draft.UpdatedAt)
 			}
 		}
 		if err != nil {
