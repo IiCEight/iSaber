@@ -1566,6 +1566,12 @@ components:
           - type: string
             format: date
           - type: 'null'
+        updated_at:
+          description: Optional last updated time applied on publication; null uses publication time. May predate first publication.
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
         category:
           anyOf:
           - $ref: '#/components/schemas/Label'
@@ -1857,6 +1863,12 @@ components:
           - type: string
             format: date
           - type: 'null'
+        updated_at:
+          description: Optional last updated time applied on publication; null uses publication time. May predate first publication.
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
         category_id:
           anyOf:
           - type: string
@@ -1877,6 +1889,7 @@ components:
       examples:
       - expected_version: 1
         written_at: '2026-11-06'
+        updated_at: '2024-06-15T18:30:00+08:00'
     ArticleControls:
       type: object
       properties:

@@ -27,6 +27,7 @@ type Revision struct {
 	Summary              *string    `json:"summary"`
 	Language             *string    `json:"language"`
 	WrittenAt            *string    `json:"written_at"`
+	UpdatedAt            *time.Time `json:"updated_at"`
 	Category             *Label     `json:"category"`
 	Tags                 []Label    `json:"tags"`
 	Markdown             string     `json:"markdown"`

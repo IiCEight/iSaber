@@ -3,7 +3,29 @@ package publishing
 import (
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestMarkdownUpdatedAt(t *testing.T) {
+	for _, value := range []string{"2024-06-15T18:30:00+08:00", "2024-06-15T10:30:00Z", "\"2024-06-15T18:30:00+08:00\""} {
+		parsed, err := parseMarkdown([]byte("---\nupdated_at: "+value+"\n---\n# Old article"), "old.md")
+		if err != nil || len(parsed.Issues) != 0 || parsed.UpdatedAt == nil || parsed.UpdatedAt.Format(time.RFC3339) != "2024-06-15T10:30:00Z" {
+			t.Fatalf("updated_at %q: %+v, %v", value, parsed, err)
+		}
+	}
+	for _, value := range []string{"2024-02-30T18:30:00+08:00", "2024-06-15", "2024-06-15T18:30:00", "0000-01-01T00:00:00Z", "0001-01-01T00:00:00+08:00", "9999-12-31T23:59:59-08:00", "2024-06-15T10:30:00+24:00", "yesterday", "\"\""} {
+		parsed, err := parseMarkdown([]byte("---\nupdated_at: "+value+"\n---\n# Old article"), "old.md")
+		if err != nil || parsed.UpdatedAt != nil || len(parsed.Issues) != 1 || parsed.Issues[0].Code != "invalid_updated_at" || !blocking(parsed.Issues) {
+			t.Fatalf("invalid updated_at %q: %+v, %v", value, parsed, err)
+		}
+	}
+	for _, source := range []string{"# No timestamp", "---\nupdated_at: null\n---\n# Automatic timestamp"} {
+		parsed, err := parseMarkdown([]byte(source), "old.md")
+		if err != nil || parsed.UpdatedAt != nil || len(parsed.Issues) != 0 {
+			t.Fatalf("optional updated_at: %+v, %v", parsed, err)
+		}
+	}
+}
 
 func TestMarkdownMetadataAndValidation(t *testing.T) {
 	source := "\ufeff---\r\ntitle: 中文 journal\r\nwritten_at: 2026-11-07\r\nlanguage: zh\r\nvisibility: public\r\n---\r\n# Body\r\n"

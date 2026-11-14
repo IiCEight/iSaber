@@ -44,7 +44,7 @@ go run ./cmd/owner setup --username owner
 go run ./cmd/api
 ```
 
-The comments API requires migration **00005**. Existing checkouts must run `go run ./cmd/migrate up` before starting the API. It adds a rate-check index and preserves existing data.
+The API requires migration **00006** for optional article last updated times. Existing checkouts must run `go run ./cmd/migrate up` before starting the API. It adds a nullable revision timestamp and preserves existing data.
 
 Owner setup is a first-time step and refuses to replace an existing account. It prompts for a password without echoing it. See the [owner guide](docs/operations/owner-account.md) for recovery and production configuration.
 

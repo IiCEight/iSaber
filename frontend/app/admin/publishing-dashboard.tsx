@@ -8,6 +8,7 @@ import CommentModeration from "./comment-moderation";
 import { AdminBadge, AdminIcon, AdminNote, AdminTable, adminDate } from "./admin-ui";
 import { useAdminConfirmation } from "./admin-confirmation";
 import { articleOutline } from "../../lib/article-outline";
+import { updatedAtInput, updatedAtTimestamp } from "../../lib/article-dates";
 import type { AdminLabel, Label, Article, ArticleSummary, ImportJob, Page, Revision } from "../../lib/articles";
 
 class APIError extends Error {
@@ -21,6 +22,7 @@ const messages: Record<string, string> = {
   slug_conflict: "That URL name is already used. Choose another one.",
   slug_locked: "The URL stays fixed after first publication.",
   invalid_slug: "Use lowercase letters, numbers, and hyphens for the URL. The name search is reserved.",
+  invalid_updated_at: "Enter a valid last updated time, or leave it blank to use publication time.",
   publication_blocked: "Resolve the blocking issues and review the preview before publishing.",
   markdown_or_zip_required: "Choose a Markdown file or a ZIP containing one article and its images.",
   assets_unavailable: "An image file is unavailable. Re-upload the article ZIP before publishing.",
@@ -177,6 +179,7 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
     const fields = new FormData(event.currentTarget);
     await run(async () => {
       const payload: Record<string, unknown> = { expected_version: article.version, title: fields.get("title"), summary: fields.get("summary") || null, language: fields.get("language"), written_at: fields.get("written_at") || null };
+      payload.updated_at = updatedAtTimestamp(String(fields.get("updated_at") || ""));
       if (!article.published_at) payload.slug = fields.get("slug");
       payload.category_id = fields.get("category_id") || null; payload.tag_ids = fields.getAll("tag_ids");
       const saved = await request<Article>(`/articles/${article.id}/draft`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
@@ -317,6 +320,8 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
                 <label htmlFor="article-slug">URL name<span className="input-prefix"><span>/articles/</span><input id="article-slug" name="slug" defaultValue={article.slug ?? ""} disabled={!!article.published_at} pattern="[a-z0-9]+(-[a-z0-9]+)*" required /></span></label><p className="help">{article.published_at ? "The URL stays fixed after first publication." : "Use lowercase letters, numbers, and hyphens."}</p>
                 <label htmlFor="article-summary">Summary <span className="optional">Optional</span><textarea id="article-summary" name="summary" defaultValue={article.draft.summary ?? ""} /></label>
                 <div className="two-col"><label htmlFor="article-language">Language<select id="article-language" name="language" defaultValue={article.draft.language ?? "en"}><option value="en">English</option><option value="zh">中文</option></select></label><label htmlFor="article-written">Writing date<input id="article-written" name="written_at" type="date" defaultValue={article.draft.written_at ?? ""} required /></label></div>
+                <label htmlFor="article-updated">Last updated time <span className="optional">Optional · China time (UTC+08:00)</span><input id="article-updated" name="updated_at" type="datetime-local" step="0.001" defaultValue={updatedAtInput(article.draft.updated_at)} aria-describedby="article-updated-help" /></label>
+                <p id="article-updated-help" className="help">Set the article’s original last updated time when importing older writing. Leave blank to use the time you publish this revision.</p>
                 <label htmlFor="article-category">Category<select id="article-category" name="category_id" defaultValue={article.draft.category?.id ?? ""}><option value="">None</option>{choices("categories").map(label => <option key={label.id} value={label.id}>{label.name}</option>)}</select></label>
                 <fieldset><legend>Tags</legend><div className="check-options">{choices("tags").length === 0 ? <p className="help">Create tags in Categories & tags.</p> : choices("tags").map(label => <label key={label.id}><input type="checkbox" name="tag_ids" value={label.id} defaultChecked={article.draft?.tags.some(tag => tag.id === label.id)} />{label.name}</label>)}</div></fieldset>
                 <div className="form-foot"><span className={`saved-indicator ${dirty ? "unsaved" : ""}`}>{dirty ? "Unsaved metadata changes" : "No unsaved metadata changes"}</span><button className="button primary" type="submit">Save metadata</button></div>

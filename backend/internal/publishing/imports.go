@@ -238,7 +238,7 @@ func (s *Service) commitImport(ctx context.Context, jobID string, article *strin
 	if err != nil {
 		return err
 	}
-	r := Revision{ArticleID: a.ID, Title: parsed.Title, Summary: parsed.Summary, Language: parsed.Language, WrittenAt: parsed.WrittenAt,
+	r := Revision{ArticleID: a.ID, Title: parsed.Title, Summary: parsed.Summary, Language: parsed.Language, WrittenAt: parsed.WrittenAt, UpdatedAt: parsed.UpdatedAt,
 		Markdown: parsed.Markdown, Tags: []Label{}, SourceIssues: append([]Issue{}, parsed.Issues...)}
 	base := a.Draft
 	if base == nil {

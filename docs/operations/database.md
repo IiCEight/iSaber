@@ -1,6 +1,6 @@
 # Database setup and migrations
 
-Status: PostgreSQL and migrations are deployed on Tencent in the isolated blog Compose project. Schema version 5, separate runtime/operator roles and private persistent storage are verified. See [deployment](deployment.md) for the accepted installation; the commands below cover local development and deliberate migration operations.
+Status: PostgreSQL and migrations are deployed on Tencent in the isolated blog Compose project. Schema version 6, separate runtime/operator roles and private persistent storage are verified. Migration 00006 was applied on November 14, 2026 before the last updated time application release; article, revision, owner, and asset fingerprints were unchanged and the existing application remained healthy. See [deployment](deployment.md) for the accepted installation; the commands below cover local development and deliberate migration operations.
 
 ## Local development
 
@@ -59,6 +59,8 @@ The container image is pinned to major version 16 so compatible patch updates ca
 Foreign keys ensure that article pointers, restored revision references, and revision assets cannot cross article ownership. They do not replace reader authorization. Incomplete drafts are permitted; publication completeness is validated by the future publishing service.
 
 Migration `00004_revision_import_issues.sql` adds internal saved revision issues and the original import filename. The comment milestone adds `00005_comment_rate_index.sql` for creation-time quota lookups and requires schema version 5. Apply it with `migrate up` before starting the new binary; it preserves existing rows.
+
+Migration `00006_revision_updated_at.sql` adds a nullable revision timestamp for owner-selected last updated times. The API now requires schema version 6. Apply `migrate up` before starting the new binary. Existing revisions receive null and retain automatic publication dating; existing article dates are unchanged. The additive column remains compatible with older binaries.
 
 The Go pool allows five open connections and two idle connections initially. Both are modest development defaults; review aggregate pool sizes against the database limit before adding replicas or migration workers.
 

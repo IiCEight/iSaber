@@ -130,7 +130,8 @@
     "schema": "DraftPatch",
     "value": {
       "expected_version": 1,
-      "written_at": "2026-11-06"
+      "written_at": "2026-11-06",
+      "updated_at": "2024-06-15T18:30:00+08:00"
     }
   },
   {

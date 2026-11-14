@@ -1,6 +1,6 @@
 # Data model
 
-Status: Approved logical data model. PostgreSQL migrations, authentication, Markdown/ZIP imports and authorized images, published revision history, labels/search and moderated guest comments are merged and deployed. The API requires schema version 5. See the [publishing guide](../operations/publishing.md) and [database guide](../operations/database.md).
+Status: Approved logical data model. PostgreSQL migrations, authentication, Markdown/ZIP imports and authorized images, published revision history, labels/search and moderated guest comments are merged and deployed. The optional revision last updated time requires schema version 6. See the [publishing guide](../operations/publishing.md) and [database guide](../operations/database.md).
 
 Source: [approved PRD](../product/requirements.md). Contract: [OpenAPI](../../contracts/openapi.yaml). Behavior and HTTP conventions: [API design](api-design.md).
 
@@ -21,7 +21,7 @@ Identifiers are UUIDs. Store event timestamps in UTC and serialize them as RFC 3
 | Owner | `id`, `username`, `password_hash`, `created_at`, `credentials_changed_at` | Exactly one provisioned owner; no registration API. Username/password authentication is approved; hashing parameters remain an implementation decision. Never expose the hash. |
 | Session | `id`, `owner_id`, `token_hash`, `csrf_token_hash`, `created_at`, `last_seen_at`, `expires_at`, `revoked_at` | Store hashes, not bearer secrets. Sign-out and credential recovery revoke sessions. Expiry and password-hashing parameters require implementation review. |
 | Article | `id`, `slug`, `visibility`, `comments_enabled`, `draft_revision_id`, `published_revision_id`, `published_at`, `updated_at`, `version`, `created_at`, `modified_at` | Stable identity and global access controls. Unique non-null slugs; incomplete imports may have no slug. `version` increments on every article mutation. |
-| Revision | `id`, `article_id`, `markdown`, `title`, `summary`, `language`, `written_at`, `category_id`, `created_at`, `first_published_at`, `restored_from_revision_id` | Immutable editorial snapshot. Incomplete drafts allow missing required publication fields. Each snapshot belongs to exactly one article. |
+| Revision | `id`, `article_id`, `markdown`, `title`, `summary`, `language`, `written_at`, `updated_at`, `category_id`, `created_at`, `first_published_at`, `restored_from_revision_id` | Immutable editorial snapshot. Nullable `updated_at` overrides automatic publication dating. Incomplete drafts allow missing required publication fields. Each snapshot belongs to exactly one article. |
 | RevisionTag | `revision_id`, `tag_id` | Unique pair. Tags remain associated with their snapshot. |
 | Category | `id`, `name`, `slug`, `version` | Stable unique slug; editable display name. Category deletion is deferred. |
 | Tag | `id`, `name`, `slug`, `version` | Stable unique slug; editable display name. Tag deletion is deferred. |
@@ -51,9 +51,9 @@ Operational logging records action identifiers and outcomes, not article bodies,
 - A public reader may access only a public article's current published revision. Drafts and history require owner access.
 - A published and draft pointer must reference snapshots of that same article. Enforce this in database constraints and transactional application validation.
 - The first publication time is set once, including if the first publication is private. It is never reset by unpublishing, visibility changes, or revision publication.
-- `updated_at` represents the latest change to live article content or metadata. Draft saves change `modified_at` and `version`, not `updated_at`. Publishing a new revision or changing live visibility/comment controls updates `updated_at`; unpublishing also records the transition. Public dates are absent before first publication.
+- Article `updated_at` uses the published revision’s optional owner-selected time, which may predate first publication. Without that override, it represents the latest change to live article content or metadata. Draft saves change `modified_at` and `version`, not article `updated_at`. Publishing applies the draft’s selected time or the current time. Live visibility/comment changes preserve an explicit timestamp, otherwise they use the current time; unpublishing records its transition. Public dates are absent before first publication.
 - Slug edits are permitted only before the article has ever been published. Re-uploaded front matter cannot silently change an existing article's slug or global controls.
-- Revision category/tag links refer to stable identities. Label renames preserve associations and update `updated_at` for affected live articles because public metadata changed; prior snapshot label text is not preserved.
+- Revision category/tag links refer to stable identities. Label renames preserve associations and update automatic `updated_at` for affected live articles while preserving explicitly selected timestamps; prior snapshot label text is not preserved.
 - A draft snapshot can be incomplete. Publication requires a title, unique slug, language, writing date, valid category/tag references, and resolved local assets.
 - No permanent article, category, or tag deletion API is included in this first release.
 
