@@ -22,6 +22,7 @@ export type PublicArticle = {
   tags: Label[]; markdown: string; comments_enabled: boolean;
 };
 export type Page<T> = { items: T[]; next_cursor: string | null };
+export type NumberedPage<T> = Page<T> & { page: number; page_size: number; total: number; total_pages: number };
 export type PublicArticleSummary = Omit<PublicArticle, "markdown" | "comments_enabled">;
 export type ImportJob = {
   id: string; status: "queued" | "processing" | "succeeded" | "failed";

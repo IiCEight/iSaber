@@ -46,3 +46,13 @@ Physical-device and full real-Go publishing acceptance remain separate checks. T
 Use the normal [local development setup](../../README.md#local-development), with the Go API at `http://127.0.0.1:8080` and the frontend at `http://127.0.0.1:3000`. Open <http://127.0.0.1:3000/admin> and sign in with the local owner account. If the API is stopped, the sign-in screen displays an availability message; no mock account is supplied by the application. The static [prototype](http://127.0.0.1:8765/admin-prototype.html) remains a design reference.
 
 At this handoff the temporary QA backend was stopped, the normal frontend was started on port 3000, and the local Go API on port 8080 was not reachable. Start the normal local API to review the authenticated workspace with your own account/data.
+
+## Readable typography update — 14 November 2026
+
+The workspace now uses a shared type scale: 16px article titles, navigation, form inputs, and preview text; 15px controls and labels; 14px dates and supporting metadata; and 13px compact badges and table headings. Headings retain a clear hierarchy with a 32px desktop page title. Sizes use rem values so they follow the browser's preferred text size.
+
+The sidebar and desktop publication column have more room for the larger text. Regular controls have a 44px minimum height. Mobile editor tabs wrap at word boundaries, the URL prefix stays on one line, and the visibility selector keeps its full width. Styling remains scoped to the admin workspace.
+
+Local production build, TypeScript, Biome, and all 26 frontend tests pass. Chromium checked articles, the published editor, content preview, history, import, labels, and comments at 1920, 1440, 1024, 768, 390, and 320 CSS pixels, plus mobile sign-in: 43 screen/viewport checks with no document-wide overflow or uncaught browser errors. Editable metadata was also checked at all six widths, including the URL prefix and 16px inputs. A sample Markdown draft was imported and previewed through the real local Go API using a disposable database; English, Chinese, code, and math were visually reviewed. These checks did not use production credentials or modify production data.
+
+Review screenshots: [desktop articles](previews/admin-typography-desktop.png), [mobile articles](previews/admin-typography-mobile.png), [desktop editor](previews/admin-typography-editor-desktop.png), and [mobile editor](previews/admin-typography-editor-mobile.png). The temporary local preview for this iteration runs at <http://127.0.0.1:3001/admin>. No push or deployment is part of this update.

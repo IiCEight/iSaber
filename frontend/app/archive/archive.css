@@ -57,8 +57,21 @@
 .archive-condition-chip span:last-child { font-size: 20px; color: #ffb4d0; }
 .archive-condition-chip:hover { border-color: #ffb4d0; background: #394984; }
 .archive-pending { font-size: 13px; margin: 0; }
-.archive-results-note { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; color: var(--archive-muted); font-size: 13px; letter-spacing: .04em; margin: 24px 0 12px; }
+.archive-results-note { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; color: var(--archive-muted); font-size: 13px; letter-spacing: .04em; margin: 24px 0 12px; }
 .archive-results-note p { margin: 0; }
+.archive-date-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.archive-sort { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; max-width: 100%; margin-left: auto; }
+.archive-sort-caption { color: #aeb9d7; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.archive-sort-fields { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; }
+.archive-sort-field,.archive-sort-direction { position: relative; display: inline-flex; align-items: center; min-height: 44px; color: #d4ddf3; text-decoration: none; white-space: nowrap; }
+.archive-sort-field::after { content: ""; position: absolute; inset: auto 0 4px; height: 2px; background: #ffb4d0; opacity: 0; }
+.archive-sort-field[aria-current="true"] { color: #ffb4d0; }
+.archive-sort-field[aria-current="true"]::after { opacity: 1; }
+.archive-sort-field:hover,.archive-sort-direction:hover { color: #ffb4d0; }
+.archive-sort-field:hover::after { opacity: .5; }
+.archive-sort-direction { gap: 10px; padding-left: 20px; border-left: 1px solid var(--archive-line); }
+.archive-sort-arrow { color: #ffb4d0; font-size: 18px; line-height: 1; }
+.archive-sort a:focus-visible { outline: 2px solid #ffb4d0; outline-offset: 4px; }
 .archive-articles { list-style: none; padding: 0; margin: 0; }
 .archive-article-row { position: relative; display: grid; grid-template-columns: 140px minmax(0,1fr) 44px; column-gap: 32px; border-top: 1px solid var(--archive-line); padding: 30px 18px 30px 0; transition: background .2s,color .2s; }
 .archive-article-date { font-size: 14px; color: var(--archive-muted); padding-top: 8px; }
@@ -123,6 +136,10 @@
   .archive-footer { padding: 20px 18px; }
   .archive-state { padding: 32px 20px; }
   .archive-results-note { font-size: 12px; }
+  .archive-sort { margin-left: 0; width: 100%; gap: 2px 12px; }
+  .archive-sort-caption { display: none; }
+  .archive-sort-fields { width: 100%; justify-content: space-between; gap: 12px; }
+  .archive-sort-direction { margin-left: auto; padding-left: 0; border-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .archive-lens-art > span { animation: none; }

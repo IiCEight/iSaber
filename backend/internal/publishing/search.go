@@ -197,7 +197,7 @@ type searchCursor struct {
 func (s *Service) searchPublic(w http.ResponseWriter, r *http.Request) {
 	values := r.URL.Query()
 	for key, items := range values {
-		if (key != "q" && key != "language" && key != "category" && key != "tag" && key != "limit" && key != "cursor") || len(items) != 1 {
+		if (key != "q" && key != "language" && key != "category" && key != "tag" && key != "limit" && key != "cursor" && key != "page" && key != "sort") || len(items) != 1 {
 			reply(w, nil, fault(400, "invalid_search_parameters"))
 			return
 		}
@@ -217,6 +217,11 @@ func (s *Service) searchPublic(w http.ResponseWriter, r *http.Request) {
 		reply(w, nil, fault(400, "invalid_filters"))
 		return
 	}
+	options, err := parseNumberedOptions(values)
+	if err != nil {
+		reply(w, nil, err)
+		return
+	}
 	limit := 20
 	if values.Has("limit") {
 		number, err := strconv.Atoi(values.Get("limit"))
@@ -232,6 +237,7 @@ func (s *Service) searchPublic(w http.ResponseWriter, r *http.Request) {
 	}
 	filterValues.Del("cursor")
 	filterValues.Del("limit")
+	filterValues.Del("page")
 	hash := sha256.Sum256([]byte(filterValues.Encode()))
 	fingerprint := hex.EncodeToString(hash[:])
 	var after *searchResult
@@ -267,15 +273,13 @@ func (s *Service) searchPublic(w http.ResponseWriter, r *http.Request) {
 		reply(w, nil, fault(503, "search_busy"))
 		return
 	}
+	if options != nil {
+		s.searchPublicNumbered(w, r, values, terms, *options)
+		return
+	}
 	// One SQL snapshot reads only current public revisions. Stream candidates and
 	// retain at most limit+1 summaries; never retain an entire Markdown corpus.
-	rows, err := s.db.QueryContext(r.Context(), `SELECT a.id,a.slug,r.title,COALESCE(r.summary,''),r.language,to_char(r.written_at,'YYYY-MM-DD'),a.published_at,a.updated_at,
- CASE WHEN c.id IS NULL THEN 'null'::jsonb ELSE jsonb_build_object('id',c.id,'name',c.name,'slug',c.slug) END,
- COALESCE((SELECT jsonb_agg(jsonb_build_object('id',t.id,'name',t.name,'slug',t.slug) ORDER BY t.name,t.id)
- FROM tags t JOIN revision_tags rt ON rt.tag_id=t.id WHERE rt.revision_id=r.id),'[]'::jsonb),r.markdown
- FROM articles a JOIN revisions r ON r.id=a.published_revision_id LEFT JOIN categories c ON c.id=r.category_id
- WHERE a.visibility='public' AND ($1='' OR r.language=$1) AND ($2='' OR c.slug=$2)
- AND ($3='' OR EXISTS(SELECT 1 FROM revision_tags rt JOIN tags t ON t.id=rt.tag_id WHERE rt.revision_id=r.id AND t.slug=$3))`, language, category, tag)
+	rows, err := s.db.QueryContext(r.Context(), publicSearchSQL, language, category, tag)
 	if err != nil {
 		reply(w, nil, err)
 		return
@@ -288,37 +292,15 @@ func (s *Service) searchPublic(w http.ResponseWriter, r *http.Request) {
 			reply(w, nil, err)
 			return
 		}
-		var article publicArticleSummary
-		var categoryJSON, tagsJSON []byte
-		var markdown string
-		if err := rows.Scan(&article.ID, &article.Slug, &article.Title, &article.Summary, &article.Language, &article.WrittenAt, &article.PublishedAt, &article.UpdatedAt, &categoryJSON, &tagsJSON, &markdown); err != nil {
-			reply(w, nil, err)
-			return
-		}
-		if err := json.Unmarshal(categoryJSON, &article.Category); err != nil {
-			reply(w, nil, err)
-			return
-		}
-		if err := json.Unmarshal(tagsJSON, &article.Tags); err != nil {
-			reply(w, nil, err)
-			return
-		}
-		text := searchableText(markdown)
-		metadata := article.Summary
-		for _, label := range article.Tags {
-			metadata += "\n" + label.Name
-		}
-		rank, err := searchRank(r.Context(), terms, strings.ToLower(article.Title), strings.ToLower(metadata), strings.ToLower(text))
+		result, text, err := scanSearchResult(r.Context(), rows, terms)
 		if err != nil {
 			reply(w, nil, err)
 			return
 		}
-		if rank < 0 {
+		if result.rank < 0 {
 			continue
 		}
-		article.PublishedAt = article.PublishedAt.UTC()
-		article.UpdatedAt = article.UpdatedAt.UTC()
-		result := searchResult{article: article, rank: rank}
+		article, rank := result.article, result.rank
 		if after != nil && compareSearch(result, *after) <= 0 {
 			continue
 		}

@@ -126,11 +126,12 @@ paths:
       parameters:
       - $ref: '#/components/parameters/limit'
       - $ref: '#/components/parameters/cursor'
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/article_sort'
       - $ref: '#/components/parameters/language'
       - $ref: '#/components/parameters/category'
       - $ref: '#/components/parameters/tag'
-      description: Newest first by first publication time then ID. Never returns drafts, private articles, or their
-        metadata.
+      description: Cursor mode orders by newest first publication time then ID. Numbered mode defaults to newest writing date and supports the sort parameter. Never returns drafts, private articles, or their metadata.
   /articles/search:
     get:
       operationId: searchPublicArticles
@@ -156,11 +157,12 @@ paths:
       - $ref: '#/components/parameters/q'
       - $ref: '#/components/parameters/limit'
       - $ref: '#/components/parameters/cursor'
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/article_sort'
       - $ref: '#/components/parameters/language'
       - $ref: '#/components/parameters/category'
       - $ref: '#/components/parameters/tag'
-      description: Rank by title, then summary/tags, then body matches; ties by publication time and ID. Does not
-        search comments. Require all whitespace-separated terms to match; rank by the highest field level needed to
+      description: Cursor mode ranks by title, then summary/tags, then body matches; ties by publication time and ID. Numbered mode defaults to newest writing date; sort can select other dates or relevance. Does not search comments. Require all whitespace-separated terms to match; rank by the highest field level needed to
         satisfy them. ASCII identifiers use case-insensitive whole-word matching; Chinese and punctuation terms use
         literal substring matching. Markdown text includes code but excludes hidden HTML and URL destinations.
         No shared caching. Busy searches return 503 with Retry-After.
@@ -1068,6 +1070,23 @@ components:
         minimum: 1
         maximum: 100
         default: 20
+    page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 2147483647
+      description: Opt into numbered pagination with limit as page size. Cannot combine with cursor. Responses include page, page_size, total, and total_pages; a page beyond the collection resolves to its last page. An empty collection uses page 1 of 1. Totals include only matching public published articles. Omit page to retain cursor pagination.
+    article_sort:
+      name: sort
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [written, written_oldest, updated, updated_oldest, newest, oldest, relevance]
+      description: Requires numbered pagination (page). Numbered browse and search default to written (newest writing date first). written_oldest reverses that order; updated and updated_oldest use the live article update timestamp; newest and oldest use first publication time. The chosen date is primary across all matching results; ID breaks ties in the same direction and missing dates sort last. relevance is accepted only for search. Legacy cursor requests retain their existing ordering.
     cursor:
       name: cursor
       in: query
@@ -2098,10 +2117,26 @@ components:
           anyOf:
           - type: string
           - type: 'null'
+        page:
+          type: integer
+          minimum: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+        total_pages:
+          type: integer
+          minimum: 1
       required:
       - items
       - next_cursor
       additionalProperties: false
+      description: Numbered pagination metadata is included only when the page parameter is supplied. Cursor mode retains items and next_cursor. In numbered mode next_cursor is null; total is independent of the selected page and respects all search and filter conditions.
+      dependentRequired:
+        page: [page_size, total, total_pages]
       examples:
       - items:
         - id: 11111111-1111-4111-8111-111111111111
@@ -2115,6 +2150,12 @@ components:
           category: null
           tags: []
         next_cursor: null
+      - items: []
+        next_cursor: null
+        page: 1
+        page_size: 20
+        total: 0
+        total_pages: 1
     AdminArticlePage:
       type: object
       properties:

@@ -20,6 +20,11 @@ test("production frontend handles unavailable and older backend capabilities", a
     written_at: "2026-11-07", published_at: "2026-11-07T08:00:00Z", updated_at: "2026-11-07T08:00:00Z",
     category: { id: "label", name: "Notes", slug: "notes" }, tags: [],
   }));
+  const manyArticles = Array.from({ length: 35 }, (_, index) => ({
+    ...sampleArticles[index % sampleArticles.length],
+    id: `22222222-2222-4222-8222-${String(index + 1).padStart(12, "0")}`,
+    slug: `numbered-article-${index + 1}`, title: `Numbered article ${index + 1}`,
+  }));
   const olderAPI = createServer((request, response) => {
     const url = new URL(request.url, "http://fixture.invalid");
     publicRequests.push({ path: url.pathname, query: url.searchParams, cookie: request.headers.cookie });
@@ -29,7 +34,13 @@ test("production frontend handles unavailable and older backend capabilities", a
       response.end(JSON.stringify(authenticated ? { owner: { id: "owner-fixture", username: "private-owner-fixture" }, csrf_token: "private-csrf-fixture", expires_at: "2027-01-01T00:00:00Z" } : { code: "unauthorized" }));
     } else if ((url.pathname === "/api/v1/articles" || url.pathname === "/api/v1/articles/search") && listMode !== "unavailable") {
       response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
-      response.end(JSON.stringify({ items: listMode === "empty" ? [] : sampleArticles, next_cursor: listMode === "empty" ? null : "fixture-next" }));
+      const source = listMode === "empty" ? [] : listMode === "paginated" ? manyArticles : sampleArticles;
+      const items = url.searchParams.get("sort") === "oldest" ? [...source].reverse() : source;
+      if (url.searchParams.has("page")) {
+        const pageSize = Number(url.searchParams.get("limit") ?? "20"), totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+        const page = Math.min(Number(url.searchParams.get("page")), totalPages);
+        response.end(JSON.stringify({ items: items.slice((page - 1) * pageSize, page * pageSize), next_cursor: null, page, page_size: pageSize, total: items.length, total_pages: totalPages }));
+      } else response.end(JSON.stringify({ items, next_cursor: listMode === "empty" ? null : "fixture-next" }));
     } else if (request.url === "/api/v1/articles/legacy-article") {
       response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
       response.end(JSON.stringify({ id: "11111111-1111-4111-8111-111111111111", slug: "legacy-article", title: "Legacy article", summary: "A readable existing article.", language: "en", written_at: "2026-11-07", published_at: "2026-11-07T08:00:00Z", updated_at: "2026-11-07T08:00:00Z", category: null, tags: [], markdown: "Existing article body.", comments_enabled: true }));
@@ -99,23 +110,91 @@ test("production frontend handles unavailable and older backend capabilities", a
     listMode = "populated";
   });
   await t.test("archive preserves filters and pagination", async () => {
+    listMode = "paginated";
     const html = await (await fetch(`${origin}/archive?category=notes&tag=go&language=zh`)).text();
     assert.match(html, /id="archive-title">Archive\.<\/h1>/);
-    assert.ok(html.includes('/archive?category=notes&amp;tag=go&amp;language=zh&amp;cursor=fixture-next'));
+    assert.ok(html.includes('/archive?category=notes&amp;tag=go&amp;language=zh&amp;page=2#archive-writing'));
     assert.match(html, /action="\/archive#archive-writing"/);
     assert.match(html, /Applied search conditions/);
     assert.match(html, /Remove Category: notes|Remove Category: Notes/);
+    listMode = "populated";
   });
   await t.test("Archive search retains applied conditions and drops pagination when removing one", async () => {
     publicRequests.length = 0;
-    const html = await (await fetch(`${origin}/archive?q=Go&category=notes&language=en&cursor=fixture-next`, { headers: { Cookie: "reader-session=fixture" } })).text();
-    assert.match(html, /Best match first/);
+    listMode = "paginated";
+    const html = await (await fetch(`${origin}/archive?q=Go&category=notes&language=en&page=2`, { headers: { Cookie: "reader-session=fixture" } })).text();
     assert.match(html, /Remove Search: Go/);
     assert.ok(html.includes('/archive?language=en&amp;q=Go#archive-writing'));
     const request = publicRequests.find(request => request.path === "/api/v1/articles/search");
     assert.equal(request.query.get("q"), "Go");
     assert.equal(request.query.get("category"), "notes");
+    assert.equal(request.query.get("page"), "2");
+    assert.equal(request.query.get("limit"), "10");
     assert.equal(request.cookie, undefined);
+    listMode = "populated";
+  });
+  await t.test("Archive numbered pages expose the full count, continuous numbering, and clean links", async () => {
+    listMode = "paginated";
+    const first = await (await fetch(`${origin}/archive`)).text();
+    assert.match(first, /1–10 of 35 articles/);
+    assert.match(first, /aria-current="true" aria-label="Sort by written date"/);
+    assert.match(first, /title="Written date"/);
+    assert.equal((first.match(/class="archive-article-row"/g) ?? []).length, 10);
+    assert.match(first, /aria-label="Article pages"/);
+    assert.match(first, /aria-disabled="true"/);
+    assert.ok(first.includes('/archive?page=2#archive-writing'));
+    const second = await (await fetch(`${origin}/archive?page=2`)).text();
+    assert.match(second, /11–20 of 35 articles/);
+    assert.match(second, /class="archive-articles" start="11"/);
+    assert.equal((second.match(/class="archive-article-row"/g) ?? []).length, 10);
+    assert.match(second, /Numbered article 20/);
+    assert.doesNotMatch(second, /More articles|cursor=/);
+    assert.match(second, /rel="prev"/);
+    assert.match(second, /rel="next"/);
+    const last = await (await fetch(`${origin}/archive?page=4`)).text();
+    assert.match(last, /31–35 of 35 articles/);
+    assert.equal((last.match(/class="archive-article-row"/g) ?? []).length, 5);
+    assert.match(last, /Numbered article 35/);
+    assert.doesNotMatch(last, /rel="next"/);
+    listMode = "populated";
+  });
+  await t.test("Archive sorts the collection and preserves ordering in pagination and filter forms", async () => {
+    listMode = "paginated";
+    publicRequests.length = 0;
+    const html = await (await fetch(`${origin}/archive?q=Go&language=en&sort=oldest&page=2`)).text();
+    assert.match(html, /Sort articles/);
+    assert.match(html, /aria-current="true" aria-label="Sort by published date"/);
+    assert.match(html, /Switch to newest first/);
+    assert.match(html, /Numbered article 25/);
+    assert.match(html, /type="hidden" name="sort" value="oldest"/);
+    const nextLinks = [...html.matchAll(/href="([^"]+)"/g)].map(match => new URL(match[1].replaceAll("&amp;", "&"), origin));
+    assert.ok(nextLinks.some(url => url.pathname === "/archive" && url.searchParams.get("page") === "3" && url.searchParams.get("sort") === "oldest" && url.searchParams.get("q") === "Go"));
+    const request = publicRequests.find(request => request.path === "/api/v1/articles/search");
+    assert.equal(request.query.get("sort"), "oldest");
+    assert.equal(request.query.get("page"), "2");
+    assert.equal(request.query.get("limit"), "10");
+    for (const [order, dateLabel] of [["written", "Written date"], ["written_oldest", "Written date"], ["updated", "Last updated"], ["updated_oldest", "Last updated"], ["newest", "Published date"]]) {
+      publicRequests.length = 0;
+      const sorted = await (await fetch(`${origin}/archive?sort=${order}`)).text();
+      const field = order.startsWith("written") ? "written date" : order.startsWith("updated") ? "last updated" : "published date";
+      assert.ok(sorted.includes(`aria-current="true" aria-label="Sort by ${field}"`));
+      assert.doesNotMatch(sorted, /<select[^>]+name="sort"/);
+      assert.match(sorted, new RegExp(`title="${dateLabel}"`));
+      assert.equal(publicRequests.find(request => request.path === "/api/v1/articles").query.get("sort"), order);
+    }
+    for (const query of ["sort=unknown", "sort=oldest&sort=newest"]) {
+      assert.match(await (await fetch(`${origin}/archive?${query}`)).text(), /Use a valid article order/);
+    }
+    listMode = "populated";
+  });
+  await t.test("Archive rejects invalid page numbers and resets legacy cursor links", async () => {
+    for (const query of ["page=0", "page=-1", "page=1.5", "page=1&page=2"]) {
+      const html = await (await fetch(`${origin}/archive?${query}`)).text();
+      assert.match(html, /Use a positive whole page number/);
+    }
+    const legacy = await fetch(`${origin}/archive?category=notes&cursor=fixture-next`, { redirect: "manual" });
+    assert.equal(legacy.status, 307);
+    assert.equal(legacy.headers.get("location"), "/archive?category=notes#archive-writing");
   });
   await t.test("a blank Archive search field still browses the selected category", async () => {
     publicRequests.length = 0;

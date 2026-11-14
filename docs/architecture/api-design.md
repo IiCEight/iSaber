@@ -30,6 +30,10 @@ The owner approved these session and CSRF mechanisms; their implementation is me
 
 Successful single-resource responses are direct objects. Lists return `items` and `next_cursor`. IDs are UUIDs; event times are UTC RFC 3339 values; writing dates use `YYYY-MM-DD`. A missing publication timestamp is JSON `null`, not an invented upload date.
 
+Public article browse/search endpoints also support numbered pagination: supply `page` (positive integer) and optionally `limit` (page size, default 20). These responses add `page`, `page_size`, `total`, and `total_pages`, with `next_cursor: null`. Totals include only matching current public published articles. Counts and results use one repeatable-read snapshot. A page beyond the available collection resolves to its last page; an empty collection uses page 1 of 1. Numbered browse and search default to `sort=written` (newest writing date first). Other choices are `written_oldest`, `updated`, `updated_oldest`, `newest`, and `oldest`; the latter two use first publication time. Search additionally accepts `relevance`. Last updated uses the live article timestamp; writing date comes from the published revision. The chosen date orders all matches, ID breaks ties in the same direction, and missing dates sort last. Sorting requires `page`; do not combine `page` and `cursor`. Omitting `page` preserves the existing cursor response and semantics. No schema migration is required.
+
+Archive uses shareable `/archive?page=2` links with retained search/category/tag/language conditions and explicitly requests 10 articles per page. Filter changes reset to page 1. Older Archive cursor URLs redirect to the first page with their conditions preserved; API cursor clients and the separate `/search` route retain their existing behavior.
+
 Errors use `application/problem+json` with `type`, `title`, `status`, `code`, optional `detail`, and `request_id`. Validation errors can include a field/path-based `errors` array. Never include raw credentials, private text, or stack traces.
 
 | Status | Typical use |
