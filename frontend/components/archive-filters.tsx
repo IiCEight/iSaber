@@ -49,7 +49,8 @@ export default function ArchiveFilters({ query, categories, tags, labelsUnavaila
     requestAnimationFrame(() => input.current?.focus({ preventScroll: true }));
   };
   const without = (key: string) => {
-    const next = new URLSearchParams(query); next.delete(key); next.delete("cursor");
+    const next = new URLSearchParams(query); next.delete(key); next.delete("cursor"); next.delete("page");
+    if (key === "q" && next.get("sort") === "relevance") next.delete("sort");
     return `/archive${next.size ? `?${next}` : ""}#archive-writing`;
   };
   const active = fields.filter(key => applied.get(key));
@@ -76,9 +77,12 @@ export default function ArchiveFilters({ query, categories, tags, labelsUnavaila
           event.preventDefault();
           const data = new FormData(event.currentTarget), next = new URLSearchParams();
           for (const key of fields) { const value = String(data.get(key) ?? "").trim(); if (value) next.set(key, value); }
+          const order = applied.get("sort");
+          if (order && (order !== "relevance" || next.has("q"))) next.set("sort", order);
           close();
           startTransition(() => router.push(`/archive${next.size ? `?${next}` : ""}#archive-writing`));
         }}>
+          {applied.get("sort") && <input type="hidden" name="sort" value={applied.get("sort") ?? ""} />}
           <search aria-label="Search public articles"><div className="archive-search-line">
             <label htmlFor="archive-query">Search articles<input ref={input} id="archive-query" type="search" name="q" defaultValue={applied.get("q") ?? ""} maxLength={200} placeholder="Search the collection…" /></label>
             <button className="archive-solid" type="submit" disabled={pending}>Search ↗</button>

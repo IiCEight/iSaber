@@ -466,14 +466,18 @@ type publicArticle struct {
 }
 
 func (s *Service) publicArticle(ctx context.Context, slug string) (publicArticle, error) {
-	var value publicArticle
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
 	if err != nil {
-		return value, err
+		return publicArticle{}, err
 	}
 	defer tx.Rollback()
+	return readPublicArticle(ctx, tx, slug)
+}
+
+func readPublicArticle(ctx context.Context, q queryer, slug string) (publicArticle, error) {
+	var value publicArticle
 	var revisionID string
-	err = tx.QueryRowContext(ctx, `SELECT id,slug,published_revision_id,published_at,updated_at,comments_enabled FROM articles
+	err := q.QueryRowContext(ctx, `SELECT id,slug,published_revision_id,published_at,updated_at,comments_enabled FROM articles
         WHERE slug=$1 AND visibility='public' AND published_revision_id IS NOT NULL`, slug).Scan(&value.ID, &value.Slug, &revisionID, &value.PublishedAt, &value.UpdatedAt, &value.CommentsEnabled)
 	if errors.Is(err, sql.ErrNoRows) {
 		return value, fault(404, "not_found")
@@ -481,7 +485,7 @@ func (s *Service) publicArticle(ctx context.Context, slug string) (publicArticle
 	if err != nil {
 		return value, err
 	}
-	revision, err := loadRevision(ctx, tx, revisionID)
+	revision, err := loadRevision(ctx, q, revisionID)
 	if err != nil {
 		return value, err
 	}
@@ -499,6 +503,20 @@ func (s *Service) publicArticle(ctx context.Context, slug string) (publicArticle
 }
 func (s *Service) listPublic(w http.ResponseWriter, r *http.Request) {
 	values := r.URL.Query()
+	options, err := parseNumberedOptions(values)
+	if err != nil {
+		reply(w, nil, err)
+		return
+	}
+	if options != nil {
+		language, category, tag := values.Get("language"), values.Get("category"), values.Get("tag")
+		if (language != "" && language != "en" && language != "zh") || len(category) > 160 || len(tag) > 160 {
+			reply(w, nil, fault(400, "invalid_filters"))
+			return
+		}
+		s.listPublicNumbered(w, r, values, *options)
+		return
+	}
 	limit, after, filter, err := pageOptions(values)
 	if err != nil {
 		reply(w, nil, err)
