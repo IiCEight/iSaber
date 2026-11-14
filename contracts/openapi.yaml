@@ -552,13 +552,15 @@ paths:
         default:
           $ref: '#/components/responses/Problem'
       parameters:
+      - $ref: '#/components/parameters/admin_page'
       - $ref: '#/components/parameters/limit'
       - $ref: '#/components/parameters/cursor'
       - $ref: '#/components/parameters/admin_q'
       - $ref: '#/components/parameters/article_status'
       - $ref: '#/components/parameters/visibility'
       description: Includes private and draft articles. Newest modified_at first, then ID. Status is published if
-        a live revision exists; has_draft is independent.
+        a live revision exists; has_draft is independent. Supply page for numbered results and matching totals;
+        omit it to retain cursor pagination. Both modes use the same filters and ordering.
   /admin/articles/{article_id}:
     get:
       operationId: getAdminArticle
@@ -1079,6 +1081,15 @@ components:
         minimum: 1
         maximum: 2147483647
       description: Opt into numbered pagination with limit as page size. Cannot combine with cursor. Responses include page, page_size, total, and total_pages; a page beyond the collection resolves to its last page. An empty collection uses page 1 of 1. Totals include only matching public published articles. Omit page to retain cursor pagination.
+    admin_page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 2147483647
+      description: Opt into numbered owner pagination with limit as page size. Cannot combine with cursor. Responses include page, page_size, total, and total_pages. Totals include all matching owner articles, including private articles and drafts. A page beyond the collection resolves to its last page. An empty collection uses page 1 of 1. Omit page to retain cursor pagination.
     article_sort:
       name: sort
       in: query
@@ -2167,10 +2178,26 @@ components:
           anyOf:
           - type: string
           - type: 'null'
+        page:
+          type: integer
+          minimum: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+        total_pages:
+          type: integer
+          minimum: 1
       required:
       - items
       - next_cursor
       additionalProperties: false
+      description: Numbered metadata is included only when page is supplied; next_cursor is then null. Totals respect status, visibility, and title filters, including private articles and drafts. Count and rows are read from one snapshot.
+      dependentRequired:
+        page: [page_size, total, total_pages]
     LabelPage:
       type: object
       properties:

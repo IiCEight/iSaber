@@ -24,3 +24,7 @@ export function AdminNote({ children }: { children: ReactNode }) {
 export function adminDate(value: string | null) {
   return value ? new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Shanghai", day: "2-digit", month: "short", year: "numeric" }).format(new Date(value)) : "Not published";
 }
+
+export function adminDateTime(value: string | null) {
+  return value ? new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Shanghai", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(value)) : "Not published";
+}

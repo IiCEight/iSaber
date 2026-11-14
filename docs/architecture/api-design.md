@@ -34,6 +34,8 @@ Public article browse/search endpoints also support numbered pagination: supply 
 
 Archive uses shareable `/archive?page=2` links with retained search/category/tag/language conditions and explicitly requests 10 articles per page. Filter changes reset to page 1. Older Archive cursor URLs redirect to the first page with their conditions preserved; API cursor clients and the separate `/search` route retain their existing behavior.
 
+The owner article list also accepts `page` and `limit`, with the same numbered response fields and page-clamping behavior. Its totals include matching private articles and drafts, respect `status`, `visibility`, and title `q`, and share one repeatable-read snapshot with the returned rows. Owner ordering remains `modified_at DESC, id DESC`; public sort options do not apply. Existing owner cursor clients remain supported. The admin UI defaults to 20 articles per page and offers 5, 10, or 20; changing filters or page size resets to page 1. No schema migration is required.
+
 Errors use `application/problem+json` with `type`, `title`, `status`, `code`, optional `detail`, and `request_id`. Validation errors can include a field/path-based `errors` array. Never include raw credentials, private text, or stack traces.
 
 | Status | Typical use |

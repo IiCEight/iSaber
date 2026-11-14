@@ -143,3 +143,41 @@
 .admin-page[data-admin-ui] :where(.sidebar-foot > div) { min-width: 0; }
 .admin-page[data-admin-ui] :where(.prose .article-code-scroll pre) { overflow: visible; }
 .admin-page[data-admin-ui] :where(.prose .article-code-scroll:focus-visible) { outline-offset: -3px; }
+
+/* Collection navigation and complete article metadata. */
+.admin-page[data-admin-ui] :where(.admin-article-pagination) { display: grid; grid-template-columns: minmax(0,1fr); justify-content: normal; gap: 20px; }
+.admin-page[data-admin-ui] :where(.admin-pagination-summary) { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; }
+.admin-page[data-admin-ui] :where(.admin-page-size) { display: flex; align-items: center; gap: 10px; font-size: var(--admin-text-sm); }
+.admin-page[data-admin-ui] :where(.admin-page-size select) { width: auto; min-width: 72px; }
+.admin-page[data-admin-ui] :where(.admin-pagination) { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 12px; }
+.admin-page[data-admin-ui] :where(.admin-page-previous) { justify-self: start; }
+.admin-page[data-admin-ui] :where(.admin-page-next) { justify-self: end; }
+.admin-page[data-admin-ui] :where(.admin-pagination-pages) { display: flex; gap: 4px; list-style: none; padding: 0; margin: 0; }
+.admin-page[data-admin-ui] :where(.admin-page-number,.admin-page-gap) { min-width: 40px; min-height: 40px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 5px; font-size: var(--admin-text-sm); }
+.admin-page[data-admin-ui] :where(.admin-page-number) { background: white; color: #33435b; }
+.admin-page[data-admin-ui] :where(.admin-page-number:hover:not(:disabled)) { background: #f1f5fa; border-color: #cbd4e1; }
+.admin-page[data-admin-ui] :where(.admin-page-number[aria-current="page"]) { background: var(--blue); color: white; border-color: var(--blue); }
+.admin-page[data-admin-ui] :where(.admin-metadata-grid) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px 32px; margin: 24px 0 0; }
+.admin-page[data-admin-ui] :where(.admin-metadata-grid > div) { min-width: 0; }
+.admin-page[data-admin-ui] :where(.admin-metadata-grid dt) { color: var(--muted); font-size: var(--admin-text-sm); margin-bottom: 5px; }
+.admin-page[data-admin-ui] :where(.admin-metadata-grid dd) { margin: 0; color: #22314a; overflow-wrap: anywhere; }
+.admin-page[data-admin-ui] :where(.admin-metadata-wide) { grid-column: 1/-1; }
+.admin-page[data-admin-ui] :where(.admin-metadata-section) { padding: 24px; border-top: 1px solid var(--line); }
+.admin-page[data-admin-ui] :where(.admin-history-heading) { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
+.admin-page[data-admin-ui] :where(.admin-history-heading > div) { flex: 1; min-width: 180px; }
+@media (max-width: 700px) {
+ .admin-page[data-admin-ui] :where(.admin-pagination) { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+ .admin-page[data-admin-ui] :where(.admin-pagination-pages) { grid-column: 1/-1; grid-row: 1; justify-self: center; gap: 0; }
+ .admin-page[data-admin-ui] :where(.admin-page-number,.admin-page-gap) { min-width: 36px; }
+ .admin-page[data-admin-ui] :where(.admin-page-previous,.admin-page-next) { grid-row: 2; }
+ .admin-page[data-admin-ui] :where(.admin-metadata-grid) { grid-template-columns: minmax(0,1fr); gap: 20px; }
+ .admin-page[data-admin-ui] :where(.admin-metadata-section) { padding: 20px 18px; }
+ .admin-page[data-admin-ui] :where(.admin-version-table) { display: block; min-width: 0; }
+ .admin-page[data-admin-ui] :where(.admin-version-table thead) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+ .admin-page[data-admin-ui] :where(.admin-version-table tbody) { display: block; }
+ .admin-page[data-admin-ui] :where(.admin-version-table tr) { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; padding: 18px; border-bottom: 1px solid var(--line); }
+ .admin-page[data-admin-ui] :where(.admin-version-table tr:last-child) { border-bottom: 0; }
+ .admin-page[data-admin-ui] :where(.admin-version-table td) { display: block; border: 0; padding: 0; }
+ .admin-page[data-admin-ui] :where(.admin-version-table td:first-child) { grid-column: 1/-1; }
+ .admin-page[data-admin-ui] :where(.admin-version-table .date-cell) { white-space: normal; align-self: center; }
+}

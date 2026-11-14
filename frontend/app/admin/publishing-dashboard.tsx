@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type DragEvent } from "react";
 import Markdown from "../../components/markdown";
 import RevisionHistory from "./revision-history";
+import AdminPagination from "./admin-pagination";
+import ArticleMetadata from "./article-metadata";
 import LabelManager from "./label-manager";
 import CommentModeration from "./comment-moderation";
 import { AdminBadge, AdminIcon, AdminNote, AdminTable, adminDate } from "./admin-ui";
 import { useAdminConfirmation } from "./admin-confirmation";
 import { articleOutline } from "../../lib/article-outline";
 import { updatedAtInput, updatedAtTimestamp } from "../../lib/article-dates";
-import type { AdminLabel, Label, Article, ArticleSummary, ImportJob, Page, Revision } from "../../lib/articles";
+import type { AdminLabel, Label, Article, ArticleSummary, ImportJob, NumberedPage, Page, Revision } from "../../lib/articles";
 
 class APIError extends Error {
   constructor(public code: string, public status: number) { super(code); }
@@ -52,8 +54,10 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  const [items, setItems] = useState<ArticleSummary[]>([]);
-  const [next, setNext] = useState<string | null>(null);
+  const [collection, setCollection] = useState<NumberedPage<ArticleSummary> | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const items = collection?.items ?? [];
   const [article, setArticle] = useState<Article | null>(null);
   const [labels, setLabels] = useState<{ categories: AdminLabel[]; tags: AdminLabel[] } | null>(null);
   const [preview, setPreview] = useState<Revision | null>(null);
@@ -111,29 +115,38 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
     return () => { active = false; };
   }, [fetchLabels]);
 
-  const loadList = useCallback(async (cursor?: string) => {
+  const loadList = useCallback(async () => {
     const sequence = ++listSequence.current;
-    const query = new URLSearchParams();
+    setLoading(true); setListError("");
+    const query = new URLSearchParams({ page: String(pageNumber), limit: String(pageSize) });
     for (const [key, value] of Object.entries(filter)) if (value.trim()) query.set(key, value.trim());
-    if (cursor) query.set("cursor", cursor);
-    const page = await request<Page<ArticleSummary>>(`/articles?${query}`);
-    if (sequence !== listSequence.current) return;
-    setListError("");
-    setItems((old) => cursor ? [...old, ...page.items] : page.items);
-    setNext(page.next_cursor);
-  }, [filter, request]);
+    try {
+      const result = await request<NumberedPage<ArticleSummary>>(`/articles?${query}`);
+      if (sequence === listSequence.current) setCollection(result);
+    } catch (error) {
+      if (sequence === listSequence.current) setListError("Articles could not be loaded. Reload the list to try again.");
+      throw error;
+    } finally {
+      if (sequence === listSequence.current) setLoading(false);
+    }
+  }, [filter, pageNumber, pageSize, request]);
 
   useEffect(() => {
-    let active = true;
-    setLoading(true); setItems([]); setNext(null); setListError("");
-    loadList().catch(() => { if (active) setListError("Articles could not be loaded. Reload the list to try again."); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    void loadList().catch(() => { /* The collection displays its own retry state. */ });
+    return () => { listSequence.current++; };
   }, [loadList]);
+
+  function applyFilters(applied: typeof filter) {
+    setFilter(applied); setPageNumber(1);
+  }
+  function changePage(number: number) {
+    setPageNumber(number);
+    requestAnimationFrame(() => { workspace.current?.focus(); workspace.current?.scrollIntoView({ block: "start", behavior: "instant" }); });
+  }
 
   async function selectArticle(id: string) {
     const loaded = await request<Article>(`/articles/${id}`);
-    setArticle(loaded); setPreview(null); setDirty(false);
+    setArticle(loaded); setPreview(loaded.published); setDirty(false);
     return loaded;
   }
   function explain(error: unknown) {
@@ -266,7 +279,6 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
     requestAnimationFrame(() => document.getElementById("admin-preview-content")?.focus());
   }
   const canPublish = !!article?.draft && article.publishable && preview?.id === article.draft.id && !dirty;
-  const currentMetadata = article?.draft ?? article?.published;
   const viewName = { articles: "Articles", import: "Import article", editor: "Article details", labels: "Categories & tags", comments: "Comments" }[view];
   return <div className="shell">
     <aside className="sidebar" aria-label="Workspace sidebar">
@@ -284,14 +296,19 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
         <div hidden={view !== "articles"}>
           <div className="page-heading"><div><h1>Articles</h1><p>Manage drafts, published writing, and article visibility.</p></div><button className="button primary" type="button" disabled={locked} onClick={() => { setUploadTarget("new"); void navigate("import"); }}><AdminIcon name="import" />Import article</button></div>
           <section className="card" aria-label="Article collection">
-            <fieldset className="list-tabs" aria-label="Article status">{([ ["", "All articles"], ["published", "Published"], ["draft", "Drafts"] ] as const).map(([value, label]) => <button type="button" key={value} disabled={locked} aria-pressed={filter.status === value} onClick={() => { const applied = { ...filter, status: value }; setFilter(applied); setFilterFields(applied); }}>{label}</button>)}</fieldset>
-            <form className="toolbar" onSubmit={event => { event.preventDefault(); setFilter({ ...filterFields }); }}>
+            <fieldset className="list-tabs" aria-label="Article status">{([ ["", "All articles"], ["published", "Published"], ["draft", "Drafts"] ] as const).map(([value, label]) => <button type="button" key={value} disabled={locked} aria-pressed={filter.status === value} onClick={() => { const applied = { ...filter, status: value }; applyFilters(applied); setFilterFields(applied); }}>{label}</button>)}</fieldset>
+            <form className="toolbar" onSubmit={event => { event.preventDefault(); applyFilters({ ...filterFields }); }}>
               <label className="search-label">Search articles<input type="search" value={filterFields.q} placeholder="Search by title…" disabled={locked} onChange={event => setFilterFields({ ...filterFields, q: event.target.value })} /></label>
               <label>Visibility<select value={filterFields.visibility} disabled={locked} onChange={event => setFilterFields({ ...filterFields, visibility: event.target.value })}><option value="">All visibility</option><option value="public">Public</option><option value="private">Private</option></select></label>
-              <button className="button" type="submit" disabled={locked}>Apply filters</button><button type="button" className="reset" disabled={locked} onClick={() => { const clean = { q: "", status: "", visibility: "" }; setFilterFields(clean); setFilter(clean); }}>Reset</button>
+              <button className="button" type="submit" disabled={locked}>Apply filters</button><button type="button" className="reset" disabled={locked} onClick={() => { const clean = { q: "", status: "", visibility: "" }; setFilterFields(clean); applyFilters(clean); }}>Reset</button>
             </form>
             {loading ? <p className="empty" role="status">Loading articles…</p> : listError ? <div className="empty"><h2>The article list is unavailable</h2><p>{listError}</p><button className="button" type="button" disabled={locked} onClick={() => run(loadList)}>Reload list</button></div> : items.length === 0 ? <div className="empty"><div className="empty-icon"><AdminIcon name="articles" /></div><h2>No matching articles yet</h2><p>Adjust your filters or import your first Markdown article.</p></div> : <AdminTable label="Articles table"><table><thead><tr><th scope="col">Article</th><th scope="col">Status</th><th scope="col">Visibility</th><th scope="col">Modified</th><th scope="col">Actions</th></tr></thead><tbody>{items.map(item => <tr key={item.id}><td className="article-cell"><button className="article-title" type="button" disabled={locked} onClick={() => run(() => openArticle(item.id))}>{item.title || "Untitled draft"}</button><div className="row-meta"><span>{item.slug ? `/articles/${item.slug}` : "URL not set"}</span>{item.has_draft && item.status === "published" && <span>Unpublished changes</span>}</div></td><td><AdminBadge tone={item.status === "published" ? "green" : "amber"}>{item.status === "published" ? "Published" : "Draft"}</AdminBadge></td><td><AdminBadge tone={item.visibility === "public" ? "blue" : ""}>{item.visibility === "public" ? "Public" : "Private"}</AdminBadge></td><td className="date-cell"><time dateTime={item.modified_at}>{adminDate(item.modified_at)}</time></td><td><button className="row-action" type="button" disabled={locked} aria-label={`Edit ${item.title || "untitled draft"}`} onClick={() => run(() => openArticle(item.id))}>Edit</button></td></tr>)}</tbody></table></AdminTable>}
-            <div className="table-foot"><span>{loading ? "Loading…" : listError ? "List unavailable" : `${items.length} articles loaded`}</span>{next ? <button className="button small" type="button" disabled={locked} onClick={() => run(() => loadList(next))}>More articles</button> : !listError && <button className="row-action" type="button" disabled={locked || loading} onClick={() => run(loadList)}>Reload list</button>}</div>
+            <div className="table-foot admin-article-pagination">
+              <div className="admin-pagination-summary"><span role="status">{loading ? "Loading articles…" : listError ? "List unavailable" : collection?.total ? `${(collection.page - 1) * collection.page_size + 1}–${(collection.page - 1) * collection.page_size + items.length} of ${collection.total} articles` : "0 articles"}</span>
+                <label className="admin-page-size" htmlFor="admin-page-size">Articles per page<select id="admin-page-size" value={pageSize} disabled={locked || loading} onChange={event => { setPageSize(Number(event.target.value)); setPageNumber(1); }}>{[5, 10, 20].map(size => <option key={size} value={size}>{size}</option>)}</select></label>
+              </div>
+              {collection && !listError && <AdminPagination current={collection.page} total={collection.total_pages} disabled={locked || loading} onChange={changePage} />}
+            </div>
           </section>
           <AdminNote><strong>Write in Typora, manage it here.</strong> New Markdown and ZIP imports start as private drafts.</AdminNote>
         </div>
@@ -325,11 +342,12 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
                 <label htmlFor="article-category">Category<select id="article-category" name="category_id" defaultValue={article.draft.category?.id ?? ""}><option value="">None</option>{choices("categories").map(label => <option key={label.id} value={label.id}>{label.name}</option>)}</select></label>
                 <fieldset><legend>Tags</legend><div className="check-options">{choices("tags").length === 0 ? <p className="help">Create tags in Categories & tags.</p> : choices("tags").map(label => <label key={label.id}><input type="checkbox" name="tag_ids" value={label.id} defaultChecked={article.draft?.tags.some(tag => tag.id === label.id)} />{label.name}</label>)}</div></fieldset>
                 <div className="form-foot"><span className={`saved-indicator ${dirty ? "unsaved" : ""}`}>{dirty ? "Unsaved metadata changes" : "No unsaved metadata changes"}</span><button className="button primary" type="submit">Save metadata</button></div>
-              </form></fieldset> : <div className="card-body"><h2>Published metadata</h2><p className="help">Import a draft revision to edit this article. The current published version stays unchanged.</p><dl className="details admin-metadata"><div><dt>Title</dt><dd>{currentMetadata?.title}</dd></div><div><dt>Summary</dt><dd>{currentMetadata?.summary || "No summary"}</dd></div><div><dt>Language</dt><dd>{currentMetadata?.language === "zh" ? "中文" : "English"}</dd></div><div><dt>Category</dt><dd>{currentMetadata?.category?.name || "None"}</dd></div><div><dt>Tags</dt><dd>{currentMetadata?.tags.map(tag => tag.name).join(", ") || "None"}</dd></div></dl></div>}
+              </form></fieldset> : <div className="card-body"><h2>Published metadata</h2><p className="help">Import a draft revision to edit this article. The current published version stays unchanged.</p><ArticleMetadata article={article} includeRevisionFields /></div>}
+              {article.draft && <section className="admin-metadata-section" aria-labelledby="article-details-title"><h2 id="article-details-title">Article details</h2><p className="help">Dates shown in China time. Publication dates describe the published article.</p><ArticleMetadata article={article} /></section>}
               {!labels && <p className="admin-inline-note">Labels are unavailable. Refresh labels before editing metadata so saved associations are preserved. <button type="button" className="row-action" disabled={locked} onClick={() => run(loadLabels)}>Refresh labels</button></p>}
             </div>
             <div hidden={editorTab !== "preview"}>{preview ? <><div className="preview-label">{preview.id === article.draft?.id ? "Draft preview" : preview.id === article.published?.id ? "Published article" : "Historical version"} · Written {preview.written_at || "Not set"}{preview.first_published_at ? ` · Published ${adminDate(preview.first_published_at)}` : ""}</div><section className="prose admin-preview" id="admin-preview-content" tabIndex={-1} aria-label="Article content preview" lang={preview.language === "zh" ? "zh-CN" : "en"}><h2>{preview.title}</h2><Markdown content={preview.markdown} headings={articleOutline(preview.markdown)} /></section></> : <p className="card-body help">Review the saved draft or read the current published version.</p>}</div>
-            <div hidden={editorTab !== "history"}><RevisionHistory key={`${article.id}:${article.published?.id ?? "unpublished"}`} article={article} busy={locked} request={request} run={run} onRead={revision => { setPreview(revision); setEditorTab("preview"); requestAnimationFrame(() => document.getElementById("admin-preview-content")?.focus()); }} onRestored={async restored => {
+            <div hidden={editorTab !== "history"}><RevisionHistory key={`${article.id}:${article.published?.id ?? "unpublished"}`} article={article} active={view === "editor" && editorTab === "history"} busy={locked} request={request} run={run} onRead={revision => { setPreview(revision); setEditorTab("preview"); requestAnimationFrame(() => document.getElementById("admin-preview-content")?.focus()); }} onRestored={async restored => {
               setPreview(null); setDirty(false); setEditorTab("metadata");
               try { await selectArticle(restored.id); } catch { setMessage("The version was restored. Reload the article to review its latest draft."); return; }
               try { await loadList(); } catch { setMessage("The version was restored. Review its draft, then reload the article list."); return; }
@@ -339,7 +357,7 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
           </section><AdminNote><strong>Content is written in Typora.</strong> Import Markdown or ZIP to update the body. Saving metadata does not publish it.</AdminNote></div>
           <aside className="editor-side" aria-label="Publication controls"><section className="card"><div className="card-head"><h2>Publication</h2><AdminBadge tone={article.status === "published" ? "green" : "amber"}>{article.status === "published" ? "Published" : "Draft"}</AdminBadge></div><div className="card-body"><p className="help admin-publication-summary">{article.published ? article.draft ? "The published article has an unpublished draft." : "The published version is up to date." : "This article has not been published."}</p><button className="button" type="button" disabled={locked || !article.draft || dirty} onClick={() => run(reviewDraft)}>Review draft preview</button><button className="button primary" type="button" disabled={locked || !canPublish} onClick={() => publication("publish")}>{article.status === "published" ? "Publish changes" : "Publish draft"}</button><p className="help">{dirty ? "Save metadata before reviewing the preview." : !article.draft ? "Import a draft revision to make changes." : !article.publishable ? "Resolve the required fields and import issues before publishing." : canPublish ? `Draft reviewed. Publication visibility: ${article.visibility}.` : "Review the saved draft preview to enable publication."}</p>{article.published && <><button type="button" className="row-action" disabled={locked} onClick={() => { setPreview(article.published); setEditorTab("preview"); }}>Read current version</button><button className="row-action admin-danger-link" type="button" disabled={locked} onClick={() => publication("unpublish")}>Unpublish article</button></>}</div></section>
             <section className="card"><div className="card-head"><h2>Article settings</h2></div><div className="card-body"><div className="setting-row"><div><label htmlFor="article-visibility">Visibility</label><p className="help">{article.visibility === "private" ? "Only the owner can read this article." : "Public readers can read the published version."}</p></div><select id="article-visibility" aria-label="Article visibility" value={article.visibility} disabled={locked} onChange={event => controls(event.target.value as "public" | "private")}><option value="private">Private</option><option value="public">Public</option></select></div><p className="help">Visibility takes effect immediately and does not publish a draft.</p><div className="setting-row"><label className="switch-check"><input type="checkbox" checked={article.comments_enabled} disabled={locked} onChange={toggleComments} />Allow new comments</label></div>{article.published && article.visibility === "public" && <a className="row-action" href={`/articles/${article.slug}`} target="_blank" rel="noreferrer">Read published article ↗</a>}</div></section>
-            <section className="card"><div className="card-head"><h2>Article dates</h2></div><div className="card-body"><dl className="details"><div><dt>Written</dt><dd>{currentMetadata?.written_at || "Not set"}</dd></div><div><dt>Published</dt><dd>{adminDate(article.published_at)}</dd></div><div><dt>Updated</dt><dd>{article.updated_at ? adminDate(article.updated_at) : "Not published"}</dd></div></dl></div></section>
+
           </aside></div>
         </div>}
         <div hidden={view !== "labels"}><div className="page-heading"><div><h1>Categories & tags</h1><p>Organize all your writing in one collection.</p></div></div><LabelManager labels={labels} busy={locked} request={request} run={run} onChanged={labelsChanged} refresh={loadLabels} /></div>
