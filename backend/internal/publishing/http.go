@@ -385,6 +385,10 @@ func encodeCursor(at time.Time, id, filter string) *string {
 
 func (s *Service) listAdmin(w http.ResponseWriter, r *http.Request) {
 	values := r.URL.Query()
+	if values.Has("page") {
+		s.listAdminNumbered(w, r, values)
+		return
+	}
 	limit, after, filter, err := pageOptions(values)
 	if err != nil {
 		reply(w, nil, err)
