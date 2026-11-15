@@ -14,6 +14,8 @@ const origin = "http://127.0.0.1:4317";
 test("production frontend handles unavailable and older backend capabilities", async (t) => {
   let listMode = "unavailable";
   const publicRequests = [];
+  let readerAuthenticated = true;
+  const readerCookie = "isaber_dev_session=reader-fixture";
   const sampleArticles = Array.from({ length: 6 }, (_, index) => ({
     id: `11111111-1111-4111-8111-${String(index + 1).padStart(12, "0")}`, slug: `public-article-${index}`,
     title: index === 1 ? "中文标题与阅读" : `Public article ${index}`, summary: `Summary ${index}`, language: index === 1 ? "zh" : "en",
@@ -25,13 +27,26 @@ test("production frontend handles unavailable and older backend capabilities", a
     id: `22222222-2222-4222-8222-${String(index + 1).padStart(12, "0")}`,
     slug: `numbered-article-${index + 1}`, title: `Numbered article ${index + 1}`,
   }));
+  const privateArticle = { ...sampleArticles[0], id: "33333333-3333-4333-8333-333333333333", slug: "private-fixture", title: "Private fixture title", summary: "Private fixture summary", visibility: "private", markdown: "# Private fixture title\n\nowner-only-body-marker", comments_enabled: true };
   const olderAPI = createServer((request, response) => {
     const url = new URL(request.url, "http://fixture.invalid");
     publicRequests.push({ path: url.pathname, query: url.searchParams, cookie: request.headers.cookie });
     if (url.pathname === "/api/v1/auth/session") {
-      const authenticated = request.headers.cookie === "fixture-owner=session";
+      const authenticated = (request.headers.cookie === "fixture-owner=session" || (readerAuthenticated && request.headers.cookie === readerCookie));
       response.writeHead(authenticated ? 200 : 401, { "Content-Type": "application/json", "Cache-Control": "no-store" });
       response.end(JSON.stringify(authenticated ? { owner: { id: "owner-fixture", username: "private-owner-fixture" }, csrf_token: "private-csrf-fixture", expires_at: "2027-01-01T00:00:00Z" } : { code: "unauthorized" }));
+    } else if (url.pathname.startsWith("/api/v1/admin/reading/")) {
+      if (!readerAuthenticated || request.headers.cookie !== readerCookie) { response.writeHead(401, { "Content-Type": "application/problem+json" }); response.end(JSON.stringify({ code: "unauthorized" })); return; }
+      response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow" });
+      if (url.pathname.endsWith("/private-fixture")) response.end(JSON.stringify(privateArticle));
+      else if (url.pathname.endsWith("/categories") || url.pathname.endsWith("/tags")) response.end(JSON.stringify({ items: [{ id: "private-label", name: "Private category fixture", slug: "private-category" }], next_cursor: null }));
+      else {
+        const source = url.pathname.endsWith("/search") ? [privateArticle] : [privateArticle, ...sampleArticles.map(article => ({ ...article, visibility: "public" }))];
+        const size = Number(url.searchParams.get("limit") ?? 20), page = Number(url.searchParams.get("page") ?? 1);
+        const { markdown: _markdown, comments_enabled: _comments, ...summary } = privateArticle;
+        const items = source.slice((page - 1) * size, page * size).map(article => article.visibility === "private" ? summary : article);
+        response.end(JSON.stringify({ items, next_cursor: null, ...(url.searchParams.has("page") ? { page, page_size: size, total: source.length, total_pages: Math.max(1, Math.ceil(source.length / size)) } : {}) }));
+      }
     } else if ((url.pathname === "/api/v1/articles" || url.pathname === "/api/v1/articles/search") && listMode !== "unavailable") {
       response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
       const source = listMode === "empty" ? [] : listMode === "paginated" ? manyArticles : sampleArticles;
@@ -218,6 +233,49 @@ test("production frontend handles unavailable and older backend capabilities", a
     const searchRequest = publicRequests.find(request => request.path === "/api/v1/articles/search");
     assert.equal(searchRequest.query.get("q"), "中文");
     assert.equal((await fetch(`${origin}/about`)).status, 200);
+  });
+  await t.test("owner Home, Archive, and search include private publications without sharing them with guests", async () => {
+    listMode = "populated";
+    for (const path of ["/", "/archive", "/archive?q=private", "/search?q=private"]) {
+      const owned = await fetch(`${origin}${path}`, { headers: { Cookie: readerCookie } });
+      const ownerHTML = await owned.text();
+      assert.equal(owned.status, 200);
+      assert.match(ownerHTML, /Private fixture title/);
+      assert.match(ownerHTML, /class="private-writing-label"/);
+      assert.match(ownerHTML, /noindex/);
+      assert.doesNotMatch(ownerHTML, /isaber_dev_session=reader-fixture|private-csrf-fixture/);
+      assert.match(owned.headers.get("cache-control") ?? "", /private/);
+      assert.match(owned.headers.get("cache-control") ?? "", /no-store/);
+      const guestHTML = await (await fetch(`${origin}${path}`)).text();
+      assert.doesNotMatch(guestHTML, /Private fixture title|Private fixture summary|Private category fixture|owner-only-body-marker/);
+    }
+    const protectedRequests = publicRequests.filter(request => request.path.startsWith("/api/v1/admin/reading"));
+    assert.ok(protectedRequests.length > 0);
+    assert.ok(protectedRequests.every(request => request.cookie === readerCookie));
+    assert.ok(publicRequests.filter(request => request.path === "/api/v1/articles" || request.path === "/api/v1/articles/search").every(request => request.cookie === undefined));
+  });
+  await t.test("private reading is owner-only, uncached, noindex, and hides the public comment form", async () => {
+    const owned = await fetch(`${origin}/articles/private-fixture`, { headers: { Cookie: readerCookie } });
+    assert.equal(owned.status, 200);
+    const html = await owned.text();
+    assert.match(html, /owner-only-body-marker/);
+    assert.match(html, /Private · Only you/);
+    assert.match(html, /noindex/);
+    assert.doesNotMatch(html, /id="comments"/);
+    assert.doesNotMatch(html, /href="#comments-title"/);
+    for (const headers of [{}, { Cookie: "isaber_dev_session=forged" }, { Cookie: `${readerCookie}; isaber_dev_session=forged` }, { Cookie: `isaber_dev_session=forged; ${readerCookie}` }]) {
+      const guest = await fetch(`${origin}/articles/private-fixture`, { headers });
+      assert.equal(guest.status, 404);
+      assert.doesNotMatch(await guest.text(), /Private fixture title|Private fixture summary|owner-only-body-marker/);
+    }
+  });
+  await t.test("expired owner cookies return to public reading without retaining private HTML", async () => {
+    readerAuthenticated = false;
+    try {
+      const html = await (await fetch(origin, { headers: { Cookie: readerCookie } })).text();
+      assert.doesNotMatch(html, /Private fixture title|Private fixture summary|owner-only-body-marker/);
+      assert.equal((await fetch(`${origin}/articles/private-fixture`, { headers: { Cookie: readerCookie } })).status, 404);
+    } finally { readerAuthenticated = true; }
   });
   await t.test("admin page offers sign-in but exposes no owner data", async () => {
     const response = await fetch(`${origin}/admin`);

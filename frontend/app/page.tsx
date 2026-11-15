@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import HomeMotion from "../components/home-motion";
-import { backendOrigin } from "../lib/public-api";
-import type { Page, PublicArticleSummary } from "../lib/articles";
+import { readingFetch } from "../lib/reading-api";
+import type { Page, ReadingArticleSummary } from "../lib/articles";
 import "./home.css";
 
 type Params = Record<string, string | string[] | undefined>;
@@ -28,9 +28,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
     }
     redirect(`${params.q !== undefined ? "/search" : "/archive"}?${query}`);
   }
-  let page: Page<PublicArticleSummary> | null = null;
+  let page: Page<ReadingArticleSummary> | null = null;
   try {
-    const response = await fetch(`${backendOrigin()}/api/v1/articles?limit=4`, { cache: "no-store", signal: AbortSignal.timeout(5000) });
+    const response = await readingFetch("articles?limit=4");
     if (response.ok) page = await response.json();
   } catch { /* Keep identity and navigation available during API outages. */ }
   return <HomeMotion>
@@ -72,6 +72,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
               <h3><Link href={`/articles/${article.slug}`}>{article.title}<span className="home-article-arrow" aria-hidden="true">↗</span></Link></h3>
               {article.summary && <p>{article.summary}</p>}
               <div className="home-article-meta">
+                {article.visibility === "private" && <span className="private-writing-label">Private</span>}
                 {article.category && <Link href={{ pathname: "/archive", query: { category: article.category.slug } }}>{article.category.name}</Link>}
                 <span>{article.language === "zh" ? "中文" : "English"}</span>
                 <time dateTime={article.published_at} lang="en">{new Date(article.published_at).toLocaleDateString("en-GB", { timeZone: "Asia/Shanghai", day: "2-digit", month: "short", year: "numeric" })}</time>

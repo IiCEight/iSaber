@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import PublishingDashboard from "./publishing-dashboard";
+import { notifyAuthChanged } from "../../lib/auth-events";
 
 export type OwnerSession = {
   owner: { id: string; username: string };
@@ -38,6 +39,7 @@ export default function OwnerAccess({ initialSession, unavailable }: {
         const next: OwnerSession = await response.json();
         form.reset();
         setSession(next);
+        notifyAuthChanged("signed-in");
       } else if (response.status === 401) {
         setMessage("The username or password is incorrect.");
       } else if (response.status === 429) {
@@ -67,7 +69,7 @@ export default function OwnerAccess({ initialSession, unavailable }: {
         headers: { "X-CSRF-Token": session.csrf_token },
         signal: AbortSignal.timeout(10000),
       });
-      if (response.ok || response.status === 401) setSession(null);
+      if (response.ok || response.status === 401) { setSession(null); notifyAuthChanged("signed-out"); window.location.replace("/admin"); }
       else setMessage("Sign-out could not be confirmed. Please try again.");
     } catch {
       setMessage("Sign-out could not be confirmed. Please try again.");

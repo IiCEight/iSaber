@@ -8,14 +8,14 @@ import type { PublicComment } from "../../../lib/comments";
 import Markdown from "../../../components/markdown";
 import ArticleContents from "../../../components/article-contents";
 import { articleOutline } from "../../../lib/article-outline";
-import { getPublicArticle } from "../../../lib/public-api";
+import { getReadingArticle } from "../../../lib/reading-api";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const article = await getPublicArticle((await params).slug);
+  const article = await getReadingArticle((await params).slug);
   if (!article) notFound();
-  return { title: article.title, description: article.summary };
+  return { title: article.title, description: article.summary, ...(article.visibility === "private" ? { robots: { index: false, follow: false } } : {}) };
 }
 
 function date(value: string) {
@@ -23,14 +23,14 @@ function date(value: string) {
 }
 
 export default async function ArticlePage({ params }: Props) {
-  const article = await getPublicArticle((await params).slug);
+  const article = await getReadingArticle((await params).slug);
   if (!article) notFound();
   let commentPage: Page<PublicComment> | null = null;
   let missing = false;
   try {
-    const response = await fetch(`${backendOrigin()}/api/v1/articles/${article.id}/comments`, { cache: "no-store", signal: AbortSignal.timeout(5000) });
-    if (response.status === 404) missing = true;
-    else if (response.ok) commentPage = await response.json();
+    const response = article.visibility === "private" ? null : await fetch(`${backendOrigin()}/api/v1/articles/${article.id}/comments`, { cache: "no-store", signal: AbortSignal.timeout(5000) });
+    if (response?.status === 404) missing = true;
+    else if (response?.ok) commentPage = await response.json();
   } catch { /* Keep article reading available when comment storage is unavailable. */ }
   const headings = articleOutline(article.markdown);
   return <article className="article-page" lang={article.language === "zh" ? "zh-CN" : "en"}>
@@ -38,7 +38,7 @@ export default async function ArticlePage({ params }: Props) {
       <div className="article-opening-art" aria-hidden="true"><span /><span /><span /><span /></div>
       <div className="article-opening-copy">
         <Link className="article-back" href="/archive">← All writing</Link>
-        <div className="article-labels">{article.category && <Link href={{ pathname: "/archive", query: { category: article.category.slug } }}>{article.category.name}</Link>}<span>{article.language === "zh" ? "中文" : "English"}</span></div>
+        <div className="article-labels">{article.visibility === "private" && <span className="private-writing-label">Private · Only you</span>}{article.category && <Link href={{ pathname: "/archive", query: { category: article.category.slug } }}>{article.category.name}</Link>}<span>{article.language === "zh" ? "中文" : "English"}</span></div>
         <h1>{article.title}</h1>
         {article.summary && <p className="article-standfirst">{article.summary}</p>}
         <div className="article-opening-byline"><span>iSaber</span>{article.tags.length > 0 && <nav aria-label="Article tags">{article.tags.map(tag => <Link key={tag.id} href={{ pathname: "/archive", query: { tag: tag.slug } }}>#{tag.name}</Link>)}</nav>}</div>
@@ -50,11 +50,11 @@ export default async function ArticlePage({ params }: Props) {
       </dl>
     </header>
     <div className={`article-reading-layout${headings.some(heading => heading.depth <= 3) ? "" : " article-reading-layout--short"}`}>
-      {headings.some(heading => heading.depth <= 3) && <ArticleContents headings={headings} />}
+      {headings.some(heading => heading.depth <= 3) && <ArticleContents headings={headings} comments={article.visibility !== "private"} />}
       <div className="article-reading-column">
         <div className="article-prose"><Markdown content={article.markdown} headings={headings} /></div>
         <div className="article-end"><Link href="/archive">← Back to Archive</Link><a href="#content">Back to top ↑</a></div>
-        <ArticleComments articleId={article.id} enabled={!missing && article.comments_enabled} initialPage={commentPage} unavailable={!commentPage} />
+        {article.visibility !== "private" && <ArticleComments articleId={article.id} enabled={!missing && article.comments_enabled} initialPage={commentPage} unavailable={!commentPage} />}
       </div>
     </div>
     <footer className="article-footer"><Link className="site-brand" href="/">iSaber</Link><nav aria-label="Footer"><Link href="/archive">Archive ↗</Link><Link href="/about">About ↗</Link></nav></footer>
