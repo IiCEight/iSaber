@@ -240,6 +240,9 @@ func (s *Service) searchPublic(w http.ResponseWriter, r *http.Request) {
 	filterValues.Del("page")
 	hash := sha256.Sum256([]byte(filterValues.Encode()))
 	fingerprint := hex.EncodeToString(hash[:])
+	if ownerReading(r.Context()) {
+		fingerprint = "owner-reading:" + fingerprint
+	}
 	var after *searchResult
 	if values.Has("cursor") {
 		raw := values.Get("cursor")
@@ -277,9 +280,9 @@ func (s *Service) searchPublic(w http.ResponseWriter, r *http.Request) {
 		s.searchPublicNumbered(w, r, values, terms, *options)
 		return
 	}
-	// One SQL snapshot reads only current public revisions. Stream candidates and
+	// Read only current publications in the authorized scope. Stream candidates and
 	// retain at most limit+1 summaries; never retain an entire Markdown corpus.
-	rows, err := s.db.QueryContext(r.Context(), publicSearchSQL, language, category, tag)
+	rows, err := s.db.QueryContext(r.Context(), readingSearchSQL(r.Context()), language, category, tag)
 	if err != nil {
 		reply(w, nil, err)
 		return

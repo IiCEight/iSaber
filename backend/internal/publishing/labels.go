@@ -156,6 +156,7 @@ type labelCursor struct {
 	Admin bool   `json:"admin"`
 	Name  string `json:"name"`
 	ID    string `json:"id"`
+	Owner bool   `json:"owner,omitempty"`
 }
 
 func (s *Service) listLabels(w http.ResponseWriter, r *http.Request, kind string, admin bool) {
@@ -188,7 +189,7 @@ func (s *Service) listLabels(w http.ResponseWriter, r *http.Request, kind string
 			return
 		}
 		after = &labelCursor{}
-		if json.Unmarshal(data, after) != nil || after.Kind != kind || after.Admin != admin || utf8.RuneCountInString(after.Name) > 120 || strings.TrimSpace(after.Name) == "" || strings.ContainsRune(after.Name, 0) {
+		if json.Unmarshal(data, after) != nil || after.Kind != kind || after.Admin != admin || after.Owner != ownerReading(r.Context()) || utf8.RuneCountInString(after.Name) > 120 || strings.TrimSpace(after.Name) == "" || strings.ContainsRune(after.Name, 0) {
 			reply(w, nil, fault(400, "invalid_cursor"))
 			return
 		}
@@ -207,8 +208,8 @@ func (s *Service) listLabels(w http.ResponseWriter, r *http.Request, kind string
 		association = "EXISTS(SELECT 1 FROM revision_tags rt WHERE rt.revision_id=r.id AND rt.tag_id=l.id)"
 	}
 	rows, err := s.db.QueryContext(r.Context(), `SELECT l.id,l.name,l.slug,l.version FROM `+labelTable(kind)+` l
- WHERE ($1 OR EXISTS(SELECT 1 FROM articles a JOIN revisions r ON r.id=a.published_revision_id WHERE a.visibility='public' AND `+association+`))
- AND ($2::text IS NULL OR (l.name COLLATE "C",l.id)>($2 COLLATE "C",$3::uuid)) ORDER BY l.name COLLATE "C",l.id LIMIT $4`, admin, name, id, limit+1)
+ WHERE ($1 OR EXISTS(SELECT 1 FROM articles a JOIN revisions r ON r.id=a.published_revision_id WHERE (a.visibility='public' OR $5) AND `+association+`))
+ AND ($2::text IS NULL OR (l.name COLLATE "C",l.id)>($2 COLLATE "C",$3::uuid)) ORDER BY l.name COLLATE "C",l.id LIMIT $4`, admin, name, id, limit+1, ownerReading(r.Context()))
 	if err != nil {
 		reply(w, nil, err)
 		return
@@ -234,7 +235,7 @@ func (s *Service) listLabels(w http.ResponseWriter, r *http.Request, kind string
 	var next *string
 	if more && len(labels) > 0 {
 		last := labels[len(labels)-1]
-		encoded, _ := json.Marshal(labelCursor{kind, admin, last.Name, last.ID})
+		encoded, _ := json.Marshal(labelCursor{Kind: kind, Admin: admin, Name: last.Name, ID: last.ID, Owner: ownerReading(r.Context())})
 		value := base64.RawURLEncoding.EncodeToString(encoded)
 		next = &value
 	}

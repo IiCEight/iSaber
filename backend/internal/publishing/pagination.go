@@ -95,9 +95,11 @@ func (page numberedArticlePage) offset() int64 {
 	return int64(page.Page-1) * int64(page.PageSize)
 }
 
-const publicCollectionSQL = ` FROM articles a JOIN revisions r ON r.id=a.published_revision_id LEFT JOIN categories c ON c.id=r.category_id
- WHERE a.visibility='public' AND ($1='' OR r.language=$1) AND ($2='' OR c.slug=$2)
+const publishedCollectionSQL = ` FROM articles a JOIN revisions r ON r.id=a.published_revision_id LEFT JOIN categories c ON c.id=r.category_id
+ WHERE ($1='' OR r.language=$1) AND ($2='' OR c.slug=$2)
  AND ($3='' OR EXISTS(SELECT 1 FROM revision_tags rt JOIN tags t ON t.id=rt.tag_id WHERE rt.revision_id=r.id AND t.slug=$3))`
+
+const publicCollectionSQL = publishedCollectionSQL + ` AND a.visibility='public'`
 
 func (s *Service) listPublicNumbered(w http.ResponseWriter, r *http.Request, values url.Values, options numberedOptions) {
 	for key, items := range values {
@@ -113,14 +115,15 @@ func (s *Service) listPublicNumbered(w http.ResponseWriter, r *http.Request, val
 	}
 	defer tx.Rollback()
 	args := []any{values.Get("language"), values.Get("category"), values.Get("tag")}
+	collectionSQL := readingCollectionSQL(r.Context())
 	var total int64
-	if err := tx.QueryRowContext(r.Context(), `SELECT count(*)`+publicCollectionSQL, args...).Scan(&total); err != nil {
+	if err := tx.QueryRowContext(r.Context(), `SELECT count(*)`+collectionSQL, args...).Scan(&total); err != nil {
 		reply(w, nil, err)
 		return
 	}
 	page := options.result(total)
 	args = append(args, page.PageSize, page.offset())
-	rows, err := tx.QueryContext(r.Context(), `SELECT a.slug`+publicCollectionSQL+` ORDER BY `+publicArticleOrder(options.Sort)+` LIMIT $4 OFFSET $5`, args...)
+	rows, err := tx.QueryContext(r.Context(), `SELECT a.slug`+collectionSQL+` ORDER BY `+publicArticleOrder(options.Sort)+` LIMIT $4 OFFSET $5`, args...)
 	if err != nil {
 		reply(w, nil, err)
 		return

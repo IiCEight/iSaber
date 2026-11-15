@@ -27,6 +27,7 @@ func (s *Service) AdminHandler() http.Handler {
 	s.historyRoutes(mux)
 	s.adminLabelRoutes(mux)
 	s.adminCommentRoutes(mux)
+	s.readingRoutes(mux)
 	mux.HandleFunc("GET /api/v1/admin/articles", s.listAdmin)
 	mux.HandleFunc("GET /api/v1/admin/articles/{article_id}", func(w http.ResponseWriter, r *http.Request) {
 		id, ok := pathID(w, r, "article_id")
@@ -342,6 +343,10 @@ type cursor struct {
 }
 
 func pageOptions(values url.Values) (int, *cursor, string, error) {
+	return scopedPageOptions(values, "")
+}
+
+func scopedPageOptions(values url.Values, scope string) (int, *cursor, string, error) {
 	limit := 20
 	if raw, ok := values["limit"]; ok {
 		number, err := strconv.Atoi(raw[0])
@@ -358,6 +363,9 @@ func pageOptions(values url.Values) (int, *cursor, string, error) {
 	}
 	hash := sha256.Sum256([]byte(copyValues.Encode()))
 	fingerprint := hex.EncodeToString(hash[:])
+	if scope != "" {
+		fingerprint = scope + ":" + fingerprint
+	}
 	var after *cursor
 	if raw, ok := values["cursor"]; ok {
 		if len(raw[0]) > 4096 {
@@ -451,6 +459,8 @@ func (s *Service) listAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 type publicArticleSummary struct {
+	// Owner reader responses identify visibility; public responses omit it.
+	Visibility  string    `json:"visibility,omitempty"`
 	ID          string    `json:"id"`
 	Slug        string    `json:"slug"`
 	Title       string    `json:"title"`
@@ -481,8 +491,9 @@ func (s *Service) publicArticle(ctx context.Context, slug string) (publicArticle
 func readPublicArticle(ctx context.Context, q queryer, slug string) (publicArticle, error) {
 	var value publicArticle
 	var revisionID string
-	err := q.QueryRowContext(ctx, `SELECT id,slug,published_revision_id,published_at,updated_at,comments_enabled FROM articles
-        WHERE slug=$1 AND visibility='public' AND published_revision_id IS NOT NULL`, slug).Scan(&value.ID, &value.Slug, &revisionID, &value.PublishedAt, &value.UpdatedAt, &value.CommentsEnabled)
+	var visibility string
+	err := q.QueryRowContext(ctx, `SELECT id,slug,published_revision_id,published_at,updated_at,comments_enabled,visibility FROM articles
+        WHERE slug=$1 AND ($2 OR visibility='public') AND published_revision_id IS NOT NULL`, slug, ownerReading(ctx)).Scan(&value.ID, &value.Slug, &revisionID, &value.PublishedAt, &value.UpdatedAt, &value.CommentsEnabled, &visibility)
 	if errors.Is(err, sql.ErrNoRows) {
 		return value, fault(404, "not_found")
 	}
@@ -501,6 +512,9 @@ func readPublicArticle(ctx context.Context, q queryer, slug string) (publicArtic
 		value.Summary = excerpt(revision.Markdown)
 	}
 	value.Category, value.Tags, value.Markdown = revision.Category, revision.Tags, revision.Markdown
+	if ownerReading(ctx) {
+		value.Visibility = visibility
+	}
 	value.PublishedAt = value.PublishedAt.UTC()
 	value.UpdatedAt = value.UpdatedAt.UTC()
 	return value, nil
@@ -521,7 +535,7 @@ func (s *Service) listPublic(w http.ResponseWriter, r *http.Request) {
 		s.listPublicNumbered(w, r, values, *options)
 		return
 	}
-	limit, after, filter, err := pageOptions(values)
+	limit, after, filter, err := readingPageOptions(r.Context(), values)
 	if err != nil {
 		reply(w, nil, err)
 		return
@@ -538,9 +552,9 @@ func (s *Service) listPublic(w http.ResponseWriter, r *http.Request) {
 		id = &after.ID
 	}
 	rows, err := s.db.QueryContext(r.Context(), `SELECT a.slug FROM articles a JOIN revisions r ON r.id=a.published_revision_id LEFT JOIN categories c ON c.id=r.category_id
-        WHERE a.visibility='public' AND ($1='' OR r.language=$1) AND ($2='' OR c.slug=$2)
+        WHERE (a.visibility='public' OR $7) AND ($1='' OR r.language=$1) AND ($2='' OR c.slug=$2)
         AND ($3='' OR EXISTS(SELECT 1 FROM revision_tags rt JOIN tags t ON t.id=rt.tag_id WHERE rt.revision_id=r.id AND t.slug=$3))
-        AND ($4::timestamptz IS NULL OR (a.published_at,a.id)<($4,$5::uuid)) ORDER BY a.published_at DESC,a.id DESC LIMIT $6`, language, category, tag, at, id, limit+1)
+        AND ($4::timestamptz IS NULL OR (a.published_at,a.id)<($4,$5::uuid)) ORDER BY a.published_at DESC,a.id DESC LIMIT $6`, language, category, tag, at, id, limit+1, ownerReading(r.Context()))
 	if err != nil {
 		reply(w, nil, err)
 		return
@@ -565,7 +579,7 @@ func (s *Service) listPublic(w http.ResponseWriter, r *http.Request) {
 	if more {
 		slugs = slugs[:limit]
 	}
-	items := []map[string]any{}
+	items := []publicArticleSummary{}
 	var last publicArticle
 	for _, slug := range slugs {
 		a, err := s.publicArticle(r.Context(), slug)
@@ -578,7 +592,7 @@ func (s *Service) listPublic(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		last = a
-		items = append(items, map[string]any{"id": a.ID, "slug": a.Slug, "title": a.Title, "summary": a.Summary, "language": a.Language, "written_at": a.WrittenAt, "published_at": a.PublishedAt, "updated_at": a.UpdatedAt, "category": a.Category, "tags": a.Tags})
+		items = append(items, a.publicArticleSummary)
 	}
 	var next *string
 	if more && len(items) > 0 {

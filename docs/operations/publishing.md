@@ -46,9 +46,9 @@ $$
 2. Upload the file into **New private draft**. Wait for import completion.
 3. Review metadata, URL name, and issues. If no writing date was supplied, enter it and save metadata. Preview the draft.
 4. Choose **Make public** if you want visitors to read it. This changes access immediately but does not publish a draft.
-5. Choose **Publish draft**. Read it from the public homepage or `/articles/{slug}`. A private publication stays available through **Read current version** in the dashboard.
+5. Choose **Publish draft**. Read it from Home, Archive, or `/articles/{slug}`. While signed in, those pages include your published private articles with a **Private** label. The dashboard also provides **Read private article ↗** and **Read current version**.
 6. Change the file in Typora and upload into **Selected article, as a draft revision**. Visitors continue reading the previous version until you preview and publish the new draft.
-7. Try **Make private** and **Unpublish**. A fresh public request must return 404 and the homepage must omit it. Unpublishing retains a draft and stored history.
+7. Try **Make private** and **Unpublish**. A signed-out request for a private article must return 404 and guest lists must omit it; signed-in owners can still read its published version. Unpublishing removes it from reading lists for everyone and retains a draft and stored history.
 
 All new articles start private. Front matter cannot publish an article or change access. The URL locks after first publication. Writing dates are calendar dates; first publication time stays fixed. Owner and public list endpoints support cursor pagination; the dashboard adds title, status, and visibility filters.
 
@@ -85,7 +85,7 @@ Images belonging to a new draft require owner sign-in, even if an older revision
 
 ## Read and restore published versions
 
-1. Select an article in `/admin` and choose **Load published versions**. The list includes current and previous snapshots that were explicitly published, including private publications and versions retained after unpublishing. Draft-only uploads and metadata edits do not appear in this list.
+1. Select an article in `/admin` and open **Published versions**; the list loads automatically. It includes current and previous snapshots that were explicitly published, including private publications and versions retained after unpublishing. Draft-only uploads and metadata edits do not appear in this list.
 2. Choose a version to read it with the same Markdown/code/math/image renderer. Version dates belong to that snapshot. Use **More versions** for older pages, or **Refresh versions** to reload the list.
 3. Choose **Restore selected version as draft**. If a draft exists, the confirmation explains that its pointer will be replaced. The published version remains live. There is no draft-only history browsing in this release.
 4. Review the restored title, summary, language, writing date, category/tags, and images. Preview the new draft, then explicitly publish it if you want to replace the live version.
@@ -103,7 +103,7 @@ Restore requests require `expected_version`, CSRF/origin validation, and a UUID 
 1. Open **Categories and tags** in dashboard navigation. Create a label with an English or Chinese name and a stable URL name such as `technology` or `chinese-notes`.
 2. Select an article with a draft. Choose zero or one category and check the desired tags in **Draft metadata**, then save. **None** and unchecked tags clear those associations. If the article has no draft, restore a published version or upload a replacement first.
 3. Preview and explicitly publish to change the public article's labels. Private articles and new drafts do not expose labels publicly.
-4. Read the public article's category/tag links, or use the Archive category, tag, and language filters. Pagination preserves active filters. **Clear filters** returns to the full public list.
+4. Read an article's category/tag links, or use the Archive category, tag, and language filters. Pagination preserves active filters. **Clear filters** returns to all publications visible in your session: public writing for guests, public and private writing for the signed-in owner.
 5. To rename a label, edit its name in **Categories and tags** and confirm. Its URL name and associations stay fixed. This immediately changes its display name wherever used, including published articles and historical snapshots. No content upload or republication is required for a shared label rename.
 
 Creating a label does not select it for an article or automatically repair an imported name. After creating a missing label, choose its ID in the draft form and save (or re-import matching front matter). Duplicate names are allowed; ambiguous imported names block publication until selected/cleared explicitly. Names are matched case-insensitively during import; label lists use deterministic, case-sensitive name/ID order. Names are preserved as entered and must contain a non-whitespace character, with a maximum of 120 Unicode characters. URL names are unique within categories/tags and use lowercase ASCII letters, numbers, and hyphens, up to 160 characters. Label deletion and slug edits are unavailable.
