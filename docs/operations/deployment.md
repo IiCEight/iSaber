@@ -54,6 +54,12 @@ The owner explicitly enabled ongoing automatic delivery on November 11. [Main ru
 
 The active containers and `release.env` matched both digests. `previous.env` retained the preceding release references. PostgreSQL was not restarted; one owner, one article and zero managed images remained. Public Home/Archive/Search, article-list and HTTPS health requests returned 200 afterward, and RSSHub remained running. These are observed timings for this release, not a cold-pull performance guarantee. Explicit live rollback rehearsal remains separate from the already-passing rollback failure-path tests.
 
+## Remembered-login migration — November 15, 2026
+
+The owner approved production rollout of the 30-day remembered-login option. Before releasing the new API, migration `00007_remembered_sessions.sql` was applied under `/opt/isaber/.deploy.lock` using the reviewed, checksum-verified static migration binary mounted read-only into the existing Compose migration service. The operator connection stayed inside the blog database network; application secrets were not changed.
+
+Schema 7 and runtime column access were verified. Fingerprints for the owner, articles, revisions, assets, and existing session credentials/expiry values matched before and after. Counts remained one owner, 36 articles, 38 revisions, and zero managed images. All existing sessions received `remember_me=false`, retaining their expiry and idle policy. The previous application continued to pass HTTPS health after the migration, so image rollback remains compatible with the additive schema. New remembered sessions require one sign-in with the option selected after the application rollout.
+
 ## One-time Tencent setup
 
 The first setup and JD content cutover above are complete. The steps below are a reference for a new empty host; preserve an existing installation and its credentials. Tencent is shared: preserve Fieldnotes, its host PostgreSQL, RSSHub, k3s, Mihomo, Tailscale, and the existing encrypted vault. The new Compose project is named `isaber`; its PostgreSQL has no host port and its volumes are separate from the host database. The pinned official PostgreSQL/Caddy images pull through DaoCloud; NJU’s Docker Hub endpoint returned HTTP 403 from this host. These dependency images are independent of the GHCR application route. Select the host LAN address for `BLOG_BIND_ADDR`, avoiding the existing Tailscale listeners. Do not bind blindly to all interfaces.

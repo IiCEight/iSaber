@@ -1,6 +1,6 @@
 # Database setup and migrations
 
-Status: PostgreSQL and migrations are deployed on Tencent in the isolated blog Compose project. Schema version 6, separate runtime/operator roles and private persistent storage are verified. Migration 00006 was applied on November 14, 2026 before the last updated time application release; article, revision, owner, and asset fingerprints were unchanged and the existing application remained healthy. See [deployment](deployment.md) for the accepted installation; the commands below cover local development and deliberate migration operations.
+Status: PostgreSQL and migrations are deployed on Tencent in the isolated blog Compose project. Schema version 7, separate runtime/operator roles and private persistent storage are verified. Migration 00007 was applied on November 15, 2026 before the remembered-login application release; existing content, owner data, and session credential/expiry fingerprints were unchanged, and the preceding application remained healthy. Migration 00006 was applied on November 14, 2026 before the last updated time application release; article, revision, owner, and asset fingerprints were unchanged and the existing application remained healthy. See [deployment](deployment.md) for the accepted installation; the commands below cover local development and deliberate migration operations.
 
 ## Local development
 
@@ -60,7 +60,9 @@ Foreign keys ensure that article pointers, restored revision references, and rev
 
 Migration `00004_revision_import_issues.sql` adds internal saved revision issues and the original import filename. The comment milestone adds `00005_comment_rate_index.sql` for creation-time quota lookups and requires schema version 5. Apply it with `migrate up` before starting the new binary; it preserves existing rows.
 
-Migration `00006_revision_updated_at.sql` adds a nullable revision timestamp for owner-selected last updated times. The API now requires schema version 6. Apply `migrate up` before starting the new binary. Existing revisions receive null and retain automatic publication dating; existing article dates are unchanged. The additive column remains compatible with older binaries.
+Migration `00006_revision_updated_at.sql` adds a nullable revision timestamp for owner-selected last updated times. The last-updated-time release required schema version 6. Apply `migrate up` before starting its binary. Existing revisions receive null and retain automatic publication dating; existing article dates are unchanged. The additive column remains compatible with older binaries.
+
+The subsequent remembered-login release requires schema version 7. Migration `00007_remembered_sessions.sql` adds `sessions.remember_me`, defaulting to false. Existing sessions keep their expiry, idle policy, and credential hashes; no article data changes. Apply `migrate up` with operator credentials before deploying that API binary. The API does not apply migrations automatically. Older binaries can still use the additive schema. It was applied to production on November 15, 2026 with the reviewed migration binary in the existing migration container under the deployment lock. Owner, article, revision, asset, and session credential/expiry fingerprints matched before and after. Runtime SELECT/INSERT/UPDATE access to the new column and continued HTTPS health were verified.
 
 The Go pool allows five open connections and two idle connections initially. Both are modest development defaults; review aggregate pool sizes against the database limit before adding replicas or migration workers.
 

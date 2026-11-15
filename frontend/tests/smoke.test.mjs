@@ -226,6 +226,8 @@ test("production frontend handles unavailable and older backend capabilities", a
     const html = await response.text();
     assert.match(html, /Owner sign-in/);
     assert.match(html, /name="password"/);
+    assert.match(html, /name="remember_me"/);
+    assert.match(html, /Keep me signed in for 30 days/);
     assert.match(html, /method="post"/);
     assert.doesNotMatch(html, /Signed in as/);
   });

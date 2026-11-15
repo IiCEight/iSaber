@@ -127,6 +127,8 @@
 .admin-page[data-admin-ui] :where(.admin-signin .signin-wrap) { padding: 0 16px 40px; }
 .admin-page[data-admin-ui] :where(.admin-signin form) { gap: 10px; }
 .admin-page[data-admin-ui] :where(.admin-signin form input) { margin-bottom: 10px; }
+.admin-page[data-admin-ui] :where(.admin-remember) { margin: 4px 0 8px; }
+.admin-page[data-admin-ui] :where(.admin-remember input) { margin: 0; flex-shrink: 0; }
 @media (max-width: 700px) {
  .admin-page[data-admin-ui] :where(.sidebar nav button) { flex-direction: column; justify-content: center; text-align: center; font-size: var(--admin-text-xs); gap: 5px; }
  .admin-page[data-admin-ui] :where(.editor-tabs) { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }

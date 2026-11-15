@@ -118,8 +118,9 @@ func (h *httpHandler) login(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var fields map[string]json.RawMessage
 	var input struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Username   string `json:"username"`
+		Password   string `json:"password"`
+		RememberMe bool   `json:"remember_me"`
 	}
 	if err := decoder.Decode(&fields); err != nil {
 		var tooLarge *http.MaxBytesError
@@ -139,9 +140,23 @@ func (h *httpHandler) login(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	if len(fields) != 2 || json.Unmarshal(fields["username"], &input.Username) != nil || json.Unmarshal(fields["password"], &input.Password) != nil {
+	for key := range fields {
+		if key != "username" && key != "password" && key != "remember_me" {
+			authProblem(w, 400, "invalid_credentials_payload")
+			return
+		}
+	}
+	if json.Unmarshal(fields["username"], &input.Username) != nil || json.Unmarshal(fields["password"], &input.Password) != nil {
 		authProblem(w, 400, "invalid_credentials_payload")
 		return
+	}
+	if raw, exists := fields["remember_me"]; exists {
+		var value *bool
+		if json.Unmarshal(raw, &value) != nil || value == nil {
+			authProblem(w, 400, "invalid_credentials_payload")
+			return
+		}
+		input.RememberMe = *value
 	}
 	username, err := normalizeUsername(input.Username)
 	if err != nil || !validPassword(input.Password, 1) {
@@ -161,7 +176,7 @@ func (h *httpHandler) login(w http.ResponseWriter, r *http.Request) {
 		authProblem(w, 429, "login_busy")
 		return
 	}
-	session, token, err := h.service.Login(r.Context(), username, input.Password)
+	session, token, err := h.service.login(r.Context(), username, input.Password, input.RememberMe)
 	if errors.Is(err, ErrUnauthorized) {
 		authProblem(w, 401, "unauthorized")
 		return
@@ -170,7 +185,7 @@ func (h *httpHandler) login(w http.ResponseWriter, r *http.Request) {
 		authProblem(w, 503, "authentication_unavailable")
 		return
 	}
-	h.cookie(w, token, session.ExpiresAt, int(AbsoluteLifetime.Seconds()))
+	h.cookie(w, token, session.ExpiresAt, int(sessionLifetime(input.RememberMe).Seconds()))
 	writeJSON(w, http.StatusOK, session)
 }
 

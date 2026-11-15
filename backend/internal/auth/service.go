@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	AbsoluteLifetime = 8 * time.Hour
-	IdleLifetime     = 30 * time.Minute
+	AbsoluteLifetime   = 8 * time.Hour
+	IdleLifetime       = 30 * time.Minute
+	RememberedLifetime = 30 * 24 * time.Hour
 )
 
 type Session struct {
@@ -51,6 +52,17 @@ func digest(value string) []byte {
 }
 
 func (s *Service) Login(ctx context.Context, username, password string) (Session, string, error) {
+	return s.login(ctx, username, password, false)
+}
+
+func sessionLifetime(rememberMe bool) time.Duration {
+	if rememberMe {
+		return RememberedLifetime
+	}
+	return AbsoluteLifetime
+}
+
+func (s *Service) login(ctx context.Context, username, password string, rememberMe bool) (Session, string, error) {
 	var owner Owner
 	var hash string
 	err := s.store.db.QueryRowContext(ctx, `SELECT id,username,password_hash FROM owners WHERE lower(username)=lower($1)`, username).
@@ -86,9 +98,9 @@ func (s *Service) Login(ctx context.Context, username, password string) (Session
 		return Session{}, "", ErrUnauthorized
 	}
 	var expires time.Time
-	err = tx.QueryRowContext(ctx, `INSERT INTO sessions(id,owner_id,token_hash,csrf_token_hash,expires_at)
-        VALUES(gen_random_uuid(),$1,$2,$3,now()+make_interval(secs => $4)) RETURNING expires_at`,
-		owner.ID, digest(token), digest(csrf), AbsoluteLifetime.Seconds()).Scan(&expires)
+	err = tx.QueryRowContext(ctx, `INSERT INTO sessions(id,owner_id,token_hash,csrf_token_hash,expires_at,remember_me)
+        VALUES(gen_random_uuid(),$1,$2,$3,now()+make_interval(secs => $4),$5) RETURNING expires_at`,
+		owner.ID, digest(token), digest(csrf), sessionLifetime(rememberMe).Seconds(), rememberMe).Scan(&expires)
 	if err != nil {
 		return Session{}, "", errors.New("could not store owner session")
 	}
@@ -107,7 +119,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (Session, erro
 	csrf := s.csrf(token)
 	err = s.store.db.QueryRowContext(ctx, `UPDATE sessions AS s SET last_seen_at=clock_timestamp()
         FROM owners AS o WHERE s.owner_id=o.id AND s.token_hash=$1 AND s.csrf_token_hash=$2 AND s.revoked_at IS NULL
-        AND s.expires_at>clock_timestamp() AND s.last_seen_at>clock_timestamp()-make_interval(secs => $3)
+        AND s.expires_at>clock_timestamp() AND (s.remember_me OR s.last_seen_at>clock_timestamp()-make_interval(secs => $3))
         RETURNING o.id,o.username,s.expires_at`, digest(token), digest(csrf), IdleLifetime.Seconds()).
 		Scan(&session.Owner.ID, &session.Owner.Username, &session.ExpiresAt)
 	if errors.Is(err, sql.ErrNoRows) {
