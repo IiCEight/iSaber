@@ -14,9 +14,10 @@ Unknown and inaccessible public resources return the same `404` problem. API res
 
 ## 2. Authentication
 
-Use owner username/password login and opaque server-side sessions. The implementation uses Argon2id, an eight-hour absolute session lifetime, a 30-minute idle limit, and bounded per-process login attempts. Setup and atomic credential recovery are operational commands, not public APIs. See [ADR 0005](decisions/0005-owner-authentication.md) for parameters and the [owner guide](../operations/owner-account.md) for setup and deployment requirements.
+Use owner username/password login and opaque server-side sessions. The implementation uses Argon2id and bounded per-process login attempts. Short sessions have an eight-hour absolute lifetime and a 30-minute idle limit. Login may opt into `remember_me: true` for a fixed 30-day lifetime without idle expiry; activity never extends that deadline. The admin form selects this option by default; API requests omitting it retain short-session behavior. Setup and atomic credential recovery are operational commands, not public APIs. See [ADR 0005](decisions/0005-owner-authentication.md) for parameters and the [owner guide](../operations/owner-account.md) for setup and deployment requirements.
 
 - Login creates a fresh `__Host-isaber_session` cookie with `Secure`, `HttpOnly`, `SameSite=Strict`, and `Path=/`, with no `Domain` attribute. The cookie value is never returned in JSON.
+- Cookie `Expires` and `Max-Age` match the selected session lifetime. Remembered sessions survive browser restarts. Migration `00007` stores the chosen policy; existing sessions remain short sessions and are not renewed or extended by the migration.
 - Session responses return a CSRF token. `GET /auth/session` restores owner information and that token after a page reload; unauthenticated requests return `401`.
 - Derive the CSRF token reproducibly on the server from the session cookie using a separate server secret, retaining only verification material in the database. This supports reloads without storing recoverable session bearer tokens or invalidating other tabs' CSRF tokens.
 - Every unsafe owner operation except login requires the session cookie and `X-CSRF-Token`. Verify the token against the session on the backend.

@@ -254,6 +254,12 @@ func TestLoginOriginValidationAndRateLimit(t *testing.T) {
 	if response := call(handler, "POST", "/api/v1/auth/login", config.Origin, "", nil, `{"username":"owner","password":"x","extra":true}`); response.Code != 400 {
 		t.Fatal("unknown fields were accepted")
 	}
+	for _, value := range []string{`null`, `"true"`, `1`, `{}`, `[]`} {
+		payload := `{"username":"owner","password":"x","remember_me":` + value + `}`
+		if response := call(handler, "POST", "/api/v1/auth/login", config.Origin, "", nil, payload); response.Code != 400 {
+			t.Fatalf("Invalid remember_me accepted: %s", value)
+		}
+	}
 	for range 5 {
 		if response := call(handler, "POST", "/api/v1/auth/login", config.Origin, "", nil, body); response.Code != 401 {
 			t.Fatalf("unexpected login status %d", response.Code)
@@ -262,5 +268,86 @@ func TestLoginOriginValidationAndRateLimit(t *testing.T) {
 	response := call(handler, "POST", "/api/v1/auth/login", config.Origin, "", nil, body)
 	if response.Code != 429 || response.Header().Get("Retry-After") == "" {
 		t.Fatal("repeated login attempts were not rate limited")
+	}
+}
+
+func TestRememberedSessionSurvivesAbsenceAndRestartButRemainsRevocable(t *testing.T) {
+	_, store, handler, config, ctx := fixture(t)
+	signIn := func(remember bool) (Session, *http.Cookie) {
+		t.Helper()
+		payload := fmt.Sprintf(`{"username":"owner","password":%q,"remember_me":%t}`, fixturePassword, remember)
+		response := call(handler, "POST", "/api/v1/auth/login", config.Origin, "", nil, payload)
+		var session Session
+		if response.Code != 200 || json.Unmarshal(response.Body.Bytes(), &session) != nil || len(response.Result().Cookies()) != 1 {
+			t.Fatalf("Remembered login failed: %d", response.Code)
+		}
+		cookie := response.Result().Cookies()[0]
+		if cookie.MaxAge != int(sessionLifetime(remember).Seconds()) || !cookie.Secure || !cookie.HttpOnly || cookie.SameSite != http.SameSiteStrictMode || cookie.Path != "/" || cookie.Domain != "" {
+			t.Fatal("Remembered login changed cookie protections or lifetime")
+		}
+		if time.Until(session.ExpiresAt) < sessionLifetime(remember)-time.Minute || time.Until(session.ExpiresAt) > sessionLifetime(remember)+time.Minute || session.ExpiresAt.Sub(cookie.Expires) >= time.Second {
+			t.Fatal("Browser cookie and stored expiry disagree")
+		}
+		var persisted bool
+		if err := store.db.QueryRowContext(ctx, `SELECT remember_me FROM sessions WHERE token_hash=$1`, digest(cookie.Value)).Scan(&persisted); err != nil || persisted != remember {
+			t.Fatal("Login preference was not persisted")
+		}
+		if bytes.Contains(response.Body.Bytes(), []byte(cookie.Value)) {
+			t.Fatal("Session bearer token leaked in JSON")
+		}
+		return session, cookie
+	}
+	_, short := signIn(false)
+	_, remembered := signIn(true)
+	if _, err := store.db.ExecContext(ctx, `UPDATE sessions SET last_seen_at=now()-interval '31 minutes' WHERE token_hash=$1`, digest(short.Value)); err != nil {
+		t.Fatal(err)
+	}
+	if response := call(handler, "GET", "/api/v1/auth/session", "", "", short, ""); response.Code != 401 {
+		t.Fatal("Unchecking remember me removed the short-session idle limit")
+	}
+	if _, err := store.db.ExecContext(ctx, `UPDATE sessions SET created_at=now()-interval '3 days',last_seen_at=now()-interval '3 days',expires_at=now()+interval '27 days' WHERE token_hash=$1`, digest(remembered.Value)); err != nil {
+		t.Fatal(err)
+	}
+	restarted, err := NewService(store, config.Secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixedExpiry time.Time
+	if err := store.db.QueryRowContext(ctx, `SELECT expires_at FROM sessions WHERE token_hash=$1`, digest(remembered.Value)).Scan(&fixedExpiry); err != nil {
+		t.Fatal(err)
+	}
+	session, err := restarted.Authenticate(ctx, remembered.Value)
+	if err != nil || !session.ExpiresAt.Equal(fixedExpiry) {
+		t.Fatal("Remembered session did not survive absence/restart or its expiry was extended")
+	}
+	rotated, err := NewService(store, bytes.Repeat([]byte{8}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := rotated.Authenticate(ctx, remembered.Value); !errors.Is(err, ErrUnauthorized) {
+		t.Fatal("Remembered session bypassed key rotation")
+	}
+	if response := call(handler, "POST", "/api/v1/auth/logout", config.Origin, "wrong-token", remembered, ""); response.Code != 403 {
+		t.Fatal("Remembered session bypassed logout CSRF validation")
+	}
+	if response := call(handler, "POST", "/api/v1/auth/logout", config.Origin, session.CSRFToken, remembered, ""); response.Code != 204 || response.Result().Cookies()[0].MaxAge >= 0 {
+		t.Fatal("Remembered session was not revoked and cleared on logout")
+	}
+	if _, err := restarted.Authenticate(ctx, remembered.Value); !errors.Is(err, ErrUnauthorized) {
+		t.Fatal("Logged-out remembered session still authenticated")
+	}
+	_, expired := signIn(true)
+	if _, err := store.db.ExecContext(ctx, `UPDATE sessions SET created_at=now()-interval '31 days',expires_at=now()-interval '1 minute' WHERE token_hash=$1`, digest(expired.Value)); err != nil {
+		t.Fatal(err)
+	}
+	if response := call(handler, "GET", "/api/v1/auth/session", "", "", expired, ""); response.Code != 401 || response.Result().Cookies()[0].MaxAge >= 0 {
+		t.Fatal("Remembered session exceeded its absolute expiry")
+	}
+	_, recovered := signIn(true)
+	if err := store.Recover(ctx, "owner", "a new synthetic owner passphrase"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := restarted.Authenticate(ctx, recovered.Value); !errors.Is(err, ErrUnauthorized) {
+		t.Fatal("Owner recovery did not revoke remembered sessions")
 	}
 }

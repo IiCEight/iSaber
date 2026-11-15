@@ -37,7 +37,7 @@ paths:
             Set-Cookie:
               schema:
                 type: string
-              description: Opaque __Host-isaber_session cookie; Secure; HttpOnly; SameSite=Strict; Path=/; no Domain.
+              description: Opaque __Host-isaber_session cookie; Secure; HttpOnly; SameSite=Strict; Path=/; no Domain. Max-Age and Expires match the selected 8-hour or 30-day lifetime.
                 Never return its value in JSON.
           content:
             application/json:
@@ -54,7 +54,9 @@ paths:
             schema:
               $ref: '#/components/schemas/Login'
       description: Same-origin JSON only; rate-limited. Invalid credentials return 401. Creates a fresh session
-        cookie and returns the CSRF token. Owner provisioning is an operational command, not an API.
+        cookie and returns the CSRF token. remember_me=true keeps the session for up to 30 days without idle expiry;
+        false or omitted retains the 8-hour maximum and 30-minute idle limit. Both modes support logout and owner-recovery revocation.
+        Owner provisioning is an operational command, not an API.
   /auth/session:
     get:
       operationId: getOwnerSession
@@ -1422,6 +1424,10 @@ components:
           minLength: 1
           maxLength: 1024
           format: password
+        remember_me:
+          type: boolean
+          default: false
+          description: Keep this session across visits and browser restarts for up to 30 days. False or omitted retains the short-session policy. Does not store the password in the browser.
       required:
       - username
       - password

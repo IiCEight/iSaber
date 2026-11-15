@@ -4,7 +4,7 @@ Status: Authentication merged in PR #5. This guide covers local commands and own
 
 ## Local development
 
-First follow the [database guide](database.md) to start PostgreSQL and apply migrations. The existing identity migration already supports this feature; no new migration is required.
+First follow the [database guide](database.md) to start PostgreSQL and apply migrations. The remembered-login release requires schema version 7; apply migration `00007_remembered_sessions.sql` before starting its API binary.
 
 From `backend/`, load the synthetic local configuration and provision your owner:
 
@@ -34,6 +34,8 @@ npm run dev
 Visit `http://127.0.0.1:3000/admin`. Use that exact origin with the example configuration; `localhost` is a different origin and would need a matching `SITE_ORIGIN`. Article-management tools are merged; see the [publishing walkthrough](publishing.md).
 
 Five validated login attempts are allowed per minute per API process. If you see a rate-limit message, wait a minute before retrying. Repeated incorrect attempts and successful logins both count. Invalid cross-origin or malformed requests do not consume the password-check budget.
+
+The sign-in form selects **Keep me signed in for 30 days** by default. This creates a persistent HttpOnly session cookie and a server-side session with a fixed 30-day expiry, so closing the browser or returning after days away does not require signing in again. Uncheck it to use the previous eight-hour maximum and 30-minute idle limit. Existing sessions keep their previous policy; sign in once with the option selected to create a remembered session. Signing out or recovering the password revokes remembered sessions immediately. The password is not stored by the application in the browser.
 
 The development CSRF key is ephemeral unless you set `CSRF_SECRET`. Sessions therefore require sign-in again after an API restart by default. A changed cookie/key does not remove article or owner data.
 
@@ -68,10 +70,12 @@ The frontend must use the same `BACKEND_ORIGIN` for its production rewrite build
 
 ## Verification and remaining work
 
-Backend integration tests cover setup refusal, password verification, cookie attributes, stored token hashes, sessions, CSRF/origin rejection, logout revocation, recovery, idle/absolute expiry, key rotation, service restart, and process rate limits. Tests use isolated PostgreSQL schemas and no real credentials.
+Backend integration tests cover setup refusal, password verification, cookie attributes, stored token hashes, sessions, CSRF/origin rejection, logout revocation, recovery, idle/absolute expiry, key rotation, service restart, and process rate limits. Remembered-session checks include three days of inactivity, unchanged absolute expiry, explicit short-session login, strict boolean validation, restart/key behavior, and revocation after logout/recovery. Migration tests verify existing sessions retain their credentials, timestamps, and original policy. Tests use isolated PostgreSQL schemas and no real credentials.
 
 The hidden terminal setup prompt and stdin recovery were also exercised with synthetic local accounts; password input was not echoed or included in command output.
 
 Frontend HTTP checks verify the rendered sign-in page, POST form fallback, uncached responses, and absence of owner data for visitors. A full local proxy check verifies cookie forwarding and server-rendered authenticated state. Interactive browser and final visual/accessibility review remain separate verification steps.
+
+The November 15, 2026 remembered-login update was additionally checked in Chromium against the real local API: a persistent browser profile was closed and reopened after simulating three days of session inactivity, and the session survived an API restart using the same local key. Cookie expiry, request preference, fixed server expiry, logout revocation, and unchecked-mode idle expiry were verified. The sign-in layout was checked at 1440, 768, 390, and 320 CSS pixels. [Desktop preview](../design/previews/admin-remember-login-desktop.png) and [mobile preview](../design/previews/admin-remember-login-mobile.png) use only synthetic local credentials. Migration 00007 was also applied to production on November 15, 2026 before the application rollout; existing session policies and credentials were preserved.
 
 Article management, private article/media delivery, and comment moderation are merged and have their own access tests. Automated session cleanup and production ingress abuse controls remain separate work.

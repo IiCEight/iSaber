@@ -31,7 +31,7 @@ export default function OwnerAccess({ initialSession, unavailable }: {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: fields.get("username"), password: fields.get("password") }),
+        body: JSON.stringify({ username: fields.get("username"), password: fields.get("password"), remember_me: fields.get("remember_me") === "on" }),
         signal: AbortSignal.timeout(10000),
       });
       if (response.ok) {
@@ -89,6 +89,7 @@ export default function OwnerAccess({ initialSession, unavailable }: {
         <input id="owner-username" name="username" autoComplete="username" required disabled={busy || !ready} />
         <label htmlFor="owner-password">Password</label>
         <input id="owner-password" name="password" type="password" autoComplete="current-password" required disabled={busy || !ready} />
+        <label className="switch-check admin-remember" htmlFor="owner-remember"><input id="owner-remember" name="remember_me" type="checkbox" defaultChecked disabled={busy || !ready} />Keep me signed in for 30 days</label>
         <button className="button primary" type="submit" disabled={busy || !ready}>{busy ? "Signing in…" : "Sign in"}</button>
       </form>
       <p className="help">One owner account. No reader registration.</p>
