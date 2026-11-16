@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PinBadge from "./pin-badge";
 import ArchiveFilters from "./archive-filters";
 import Pagination from "./pagination";
 import ArchiveSort from "./archive-sort";
@@ -33,7 +34,7 @@ export default function ArchiveView({ page, query, categories, tags, labelsUnava
             <div className="archive-article-date"><span>{String(offset + index + 1).padStart(2, "0")} /</span><ArchiveArticleDate article={article} order={order} /></div>
             <div><h3 lang={article.language === "zh" ? "zh-CN" : "en"}><Link href={`/articles/${article.slug}`}>{article.title}</Link></h3>
               {article.summary && <p className="archive-summary" lang={article.language === "zh" ? "zh-CN" : "en"}>{article.summary}</p>}
-              <div className="archive-article-meta">{article.visibility === "private" && <span className="private-writing-label">Private</span>}{article.category && <span className="archive-category">{article.category.name}</span>}{article.tags.map(tag => <span key={tag.id}>#{tag.name}</span>)}<span className="archive-language">{article.language === "zh" ? "中文" : "EN"}</span></div>
+              <div className="archive-article-meta">{article.pinned && <PinBadge />}{article.visibility === "private" && <span className="private-writing-label">Private</span>}{article.category && <span className="archive-category">{article.category.name}</span>}{article.tags.map(tag => <span key={tag.id}>#{tag.name}</span>)}<span className="archive-language">{article.language === "zh" ? "中文" : "EN"}</span></div>
             </div><span className="archive-article-arrow" aria-hidden="true">↗</span>
           </li>)}</ol>}
       {page && !error && <Pagination current={page.page} total={page.total_pages} query={query} />}

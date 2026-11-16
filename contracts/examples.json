@@ -13,7 +13,8 @@
       "category": null,
       "tags": [],
       "markdown": "# Building my blog\n\n中文与 English.\n\n```go\nfmt.Println(\"hello\")\n```\n\nInline math: $E=mc^2$.\n",
-      "comments_enabled": true
+      "comments_enabled": true,
+      "pinned": false
     }
   },
   {
@@ -30,7 +31,8 @@
           "published_at": "2026-11-06T06:00:00Z",
           "updated_at": "2026-11-06T06:00:00Z",
           "category": null,
-          "tags": []
+          "tags": [],
+          "pinned": false
         }
       ],
       "next_cursor": null
@@ -73,7 +75,8 @@
           "path": "written_at",
           "message": "Choose a writing date before publication."
         }
-      ]
+      ],
+      "pinned": false
     }
   },
   {

@@ -92,6 +92,8 @@ for name, schema in spec["components"]["schemas"].items():
         validator(name).validate(example)
 
 invalid = [
+    ("ArticleControls", {"expected_version": 1, "pinned": None}),
+    ("ArticleControls", {"expected_version": 1, "pinned": "true"}),
     ("Login", {"username": "owner", "password": "synthetic", "remember_me": "true"}),
     ("Login", {"username": "owner", "password": "synthetic", "remember_me": None}),
     ("DraftPatch", {"expected_version": 1}),

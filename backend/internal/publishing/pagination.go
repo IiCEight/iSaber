@@ -123,7 +123,7 @@ func (s *Service) listPublicNumbered(w http.ResponseWriter, r *http.Request, val
 	}
 	page := options.result(total)
 	args = append(args, page.PageSize, page.offset())
-	rows, err := tx.QueryContext(r.Context(), `SELECT a.slug`+collectionSQL+` ORDER BY `+publicArticleOrder(options.Sort)+` LIMIT $4 OFFSET $5`, args...)
+	rows, err := tx.QueryContext(r.Context(), `SELECT a.slug`+collectionSQL+` ORDER BY a.pinned DESC,`+publicArticleOrder(options.Sort)+` LIMIT $4 OFFSET $5`, args...)
 	if err != nil {
 		reply(w, nil, err)
 		return

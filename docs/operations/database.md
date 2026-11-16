@@ -64,6 +64,8 @@ Migration `00006_revision_updated_at.sql` adds a nullable revision timestamp for
 
 The subsequent remembered-login release requires schema version 7. Migration `00007_remembered_sessions.sql` adds `sessions.remember_me`, defaulting to false. Existing sessions keep their expiry, idle policy, and credential hashes; no article data changes. Apply `migrate up` with operator credentials before deploying that API binary. The API does not apply migrations automatically. Older binaries can still use the additive schema. It was applied to production on November 15, 2026 with the reviewed migration binary in the existing migration container under the deployment lock. Owner, article, revision, asset, and session credential/expiry fingerprints matched before and after. Runtime SELECT/INSERT/UPDATE access to the new column and continued HTTPS health were verified.
 
+The global-pinning release requires schema version 8. Migration `00008_article_pins.sql` adds `articles.pinned`, defaulting to false, a publication constraint, a browse-order index, and a trigger that clears pins when unpublishing. Existing articles, revisions, visibility, and dates remain unchanged. The trigger also allows the preceding binary to unpublish a pinned article during rollout. Apply it with operator credentials before starting the new API; this migration has only been tested locally and has not been applied to production.
+
 The Go pool allows five open connections and two idle connections initially. Both are modest development defaults; review aggregate pool sizes against the database limit before adding replicas or migration workers.
 
 ## Integration tests

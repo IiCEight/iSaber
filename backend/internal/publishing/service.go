@@ -235,6 +235,13 @@ func (s *Service) Controls(ctx context.Context, id string, fields map[string]jso
 				return nil, fault(422, "invalid_visibility")
 			}
 			a.Visibility = value
+		case "pinned":
+			if string(raw) == "null" || json.Unmarshal(raw, &a.Pinned) != nil {
+				return nil, fault(422, "invalid_controls")
+			}
+			if a.Pinned && a.Published == nil {
+				return nil, fault(422, "pin_requires_publication")
+			}
 		case "comments_enabled":
 			if string(raw) == "null" || json.Unmarshal(raw, &a.CommentsEnabled) != nil {
 				return nil, fault(422, "invalid_controls")
@@ -243,8 +250,8 @@ func (s *Service) Controls(ctx context.Context, id string, fields map[string]jso
 			return nil, fault(400, "unknown_field")
 		}
 	}
-	_, err = tx.ExecContext(ctx, `UPDATE articles SET visibility=$1,comments_enabled=$2,version=version+1,modified_at=clock_timestamp(),
-        updated_at=CASE WHEN published_revision_id IS NOT NULL THEN COALESCE((SELECT updated_at FROM revisions WHERE id=published_revision_id),clock_timestamp()) ELSE updated_at END WHERE id=$3`, a.Visibility, a.CommentsEnabled, id)
+	_, err = tx.ExecContext(ctx, `UPDATE articles SET visibility=$1,comments_enabled=$2,pinned=$3,version=version+1,modified_at=clock_timestamp(),
+        updated_at=CASE WHEN $4 AND published_revision_id IS NOT NULL THEN COALESCE((SELECT updated_at FROM revisions WHERE id=published_revision_id),clock_timestamp()) ELSE updated_at END WHERE id=$5`, a.Visibility, a.CommentsEnabled, a.Pinned, fields["visibility"] != nil || fields["comments_enabled"] != nil, id)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +283,7 @@ func (s *Service) Publish(ctx context.Context, owner, id, key string, fields map
 		if unpublish {
 			if a.Published != nil {
 				_, err = tx.ExecContext(ctx, `UPDATE articles SET draft_revision_id=COALESCE(draft_revision_id,published_revision_id),
-                published_revision_id=NULL,version=version+1,modified_at=clock_timestamp(),updated_at=clock_timestamp() WHERE id=$1`, id)
+                published_revision_id=NULL,pinned=false,version=version+1,modified_at=clock_timestamp(),updated_at=clock_timestamp() WHERE id=$1`, id)
 			}
 		} else {
 			if a.Draft == nil {

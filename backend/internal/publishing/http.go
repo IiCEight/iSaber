@@ -337,6 +337,7 @@ func sendResult(w http.ResponseWriter, result response, err error) {
 }
 
 type cursor struct {
+	Pinned bool      `json:"pinned,omitempty"`
 	Time   time.Time `json:"time"`
 	ID     string    `json:"id"`
 	Filter string    `json:"filter"`
@@ -386,7 +387,7 @@ func scopedPageOptions(values url.Values, scope string) (int, *cursor, string, e
 	return limit, after, fingerprint, nil
 }
 func encodeCursor(at time.Time, id, filter string) *string {
-	data, _ := json.Marshal(cursor{at, id, filter})
+	data, _ := json.Marshal(cursor{Time: at, ID: id, Filter: filter})
 	encoded := base64.RawURLEncoding.EncodeToString(data)
 	return &encoded
 }
@@ -461,6 +462,7 @@ func (s *Service) listAdmin(w http.ResponseWriter, r *http.Request) {
 type publicArticleSummary struct {
 	// Owner reader responses identify visibility; public responses omit it.
 	Visibility  string    `json:"visibility,omitempty"`
+	Pinned      bool      `json:"pinned"`
 	ID          string    `json:"id"`
 	Slug        string    `json:"slug"`
 	Title       string    `json:"title"`
@@ -492,8 +494,8 @@ func readPublicArticle(ctx context.Context, q queryer, slug string) (publicArtic
 	var value publicArticle
 	var revisionID string
 	var visibility string
-	err := q.QueryRowContext(ctx, `SELECT id,slug,published_revision_id,published_at,updated_at,comments_enabled,visibility FROM articles
-        WHERE slug=$1 AND ($2 OR visibility='public') AND published_revision_id IS NOT NULL`, slug, ownerReading(ctx)).Scan(&value.ID, &value.Slug, &revisionID, &value.PublishedAt, &value.UpdatedAt, &value.CommentsEnabled, &visibility)
+	err := q.QueryRowContext(ctx, `SELECT id,slug,published_revision_id,published_at,updated_at,comments_enabled,visibility,pinned FROM articles
+        WHERE slug=$1 AND ($2 OR visibility='public') AND published_revision_id IS NOT NULL`, slug, ownerReading(ctx)).Scan(&value.ID, &value.Slug, &revisionID, &value.PublishedAt, &value.UpdatedAt, &value.CommentsEnabled, &visibility, &value.Pinned)
 	if errors.Is(err, sql.ErrNoRows) {
 		return value, fault(404, "not_found")
 	}
@@ -554,7 +556,7 @@ func (s *Service) listPublic(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.db.QueryContext(r.Context(), `SELECT a.slug FROM articles a JOIN revisions r ON r.id=a.published_revision_id LEFT JOIN categories c ON c.id=r.category_id
         WHERE (a.visibility='public' OR $7) AND ($1='' OR r.language=$1) AND ($2='' OR c.slug=$2)
         AND ($3='' OR EXISTS(SELECT 1 FROM revision_tags rt JOIN tags t ON t.id=rt.tag_id WHERE rt.revision_id=r.id AND t.slug=$3))
-        AND ($4::timestamptz IS NULL OR (a.published_at,a.id)<($4,$5::uuid)) ORDER BY a.published_at DESC,a.id DESC LIMIT $6`, language, category, tag, at, id, limit+1, ownerReading(r.Context()))
+        AND ($4::timestamptz IS NULL OR (a.pinned,a.published_at,a.id)<($8,$4,$5::uuid)) ORDER BY a.pinned DESC,a.published_at DESC,a.id DESC LIMIT $6`, language, category, tag, at, id, limit+1, ownerReading(r.Context()), after != nil && after.Pinned)
 	if err != nil {
 		reply(w, nil, err)
 		return
@@ -596,7 +598,9 @@ func (s *Service) listPublic(w http.ResponseWriter, r *http.Request) {
 	}
 	var next *string
 	if more && len(items) > 0 {
-		next = encodeCursor(last.PublishedAt, last.ID, filter)
+		data, _ := json.Marshal(cursor{Time: last.PublishedAt, ID: last.ID, Filter: filter, Pinned: last.Pinned})
+		encoded := base64.RawURLEncoding.EncodeToString(data)
+		next = &encoded
 	}
 	reply(w, map[string]any{"items": items, "next_cursor": next}, nil)
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PinBadge from "../components/pin-badge";
 import { redirect } from "next/navigation";
 import HomeMotion from "../components/home-motion";
 import { readingFetch } from "../lib/reading-api";
@@ -72,7 +73,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
               <h3><Link href={`/articles/${article.slug}`}>{article.title}<span className="home-article-arrow" aria-hidden="true">↗</span></Link></h3>
               {article.summary && <p>{article.summary}</p>}
               <div className="home-article-meta">
-                {article.visibility === "private" && <span className="private-writing-label">Private</span>}
+                {article.pinned && <PinBadge />}{article.visibility === "private" && <span className="private-writing-label">Private</span>}
                 {article.category && <Link href={{ pathname: "/archive", query: { category: article.category.slug } }}>{article.category.name}</Link>}
                 <span>{article.language === "zh" ? "中文" : "English"}</span>
                 <time dateTime={article.published_at} lang="en">{new Date(article.published_at).toLocaleDateString("en-GB", { timeZone: "Asia/Shanghai", day: "2-digit", month: "short", year: "numeric" })}</time>

@@ -27,7 +27,7 @@ test("production frontend handles unavailable and older backend capabilities", a
     id: `22222222-2222-4222-8222-${String(index + 1).padStart(12, "0")}`,
     slug: `numbered-article-${index + 1}`, title: `Numbered article ${index + 1}`,
   }));
-  const privateArticle = { ...sampleArticles[0], id: "33333333-3333-4333-8333-333333333333", slug: "private-fixture", title: "Private fixture title", summary: "Private fixture summary", visibility: "private", markdown: "# Private fixture title\n\nowner-only-body-marker", comments_enabled: true };
+  const privateArticle = { ...sampleArticles[0], id: "33333333-3333-4333-8333-333333333333", slug: "private-fixture", title: "Private fixture title", summary: "Private fixture summary", visibility: "private", pinned: true, markdown: "# Private fixture title\n\nowner-only-body-marker", comments_enabled: true };
   const olderAPI = createServer((request, response) => {
     const url = new URL(request.url, "http://fixture.invalid");
     publicRequests.push({ path: url.pathname, query: url.searchParams, cookie: request.headers.cookie });
@@ -49,7 +49,7 @@ test("production frontend handles unavailable and older backend capabilities", a
       }
     } else if ((url.pathname === "/api/v1/articles" || url.pathname === "/api/v1/articles/search") && listMode !== "unavailable") {
       response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
-      const source = listMode === "empty" ? [] : listMode === "paginated" ? manyArticles : sampleArticles;
+      const source = listMode === "empty" ? [] : listMode === "paginated" ? manyArticles : listMode === "pinned" ? (url.pathname.endsWith("/search") ? [sampleArticles[0], { ...sampleArticles[1], pinned: true }] : [{ ...sampleArticles[1], pinned: true }, sampleArticles[0]]) : sampleArticles;
       const items = url.searchParams.get("sort") === "oldest" ? [...source].reverse() : source;
       if (url.searchParams.has("page")) {
         const pageSize = Number(url.searchParams.get("limit") ?? "20"), totalPages = Math.max(1, Math.ceil(items.length / pageSize));
@@ -94,6 +94,26 @@ test("production frontend handles unavailable and older backend capabilities", a
   }
   assert.ok(ready, `Frontend did not become ready:\n${logs}`);
 
+  await t.test("new and invalid theme preferences render light HTML regardless of the system color hint", async () => {
+    for (const cookie of ["", "isaber_theme=unknown"]) {
+      const response = await fetch(`${origin}/about`, { headers: { Cookie: cookie, "Sec-CH-Prefers-Color-Scheme": "dark" } });
+      assert.equal(response.status, 200);
+      assert.match(await response.text(), /<html[^>]+data-theme="light"/);
+      assert.equal(response.headers.get("set-cookie"), null);
+    }
+  });
+  await t.test("saved dark theme is server rendered without authenticating or leaking the preference to public APIs", async () => {
+    publicRequests.length = 0;
+    const dark = await fetch(`${origin}/archive`, { headers: { Cookie: "isaber_theme=dark" } });
+    assert.match(await dark.text(), /<html[^>]+data-theme="dark"/);
+    assert.match(dark.headers.get("cache-control") ?? "", /no-store/);
+    assert.ok(publicRequests.length > 0);
+    assert.equal(publicRequests.some(request => request.path.includes("/auth/") || request.path.includes("/admin/")), false);
+    assert.ok(publicRequests.every(request => request.cookie === undefined));
+    const light = await fetch(`${origin}/about`);
+    assert.match(await light.text(), /<html[^>]+data-theme="light"/);
+  });
+
   await t.test("home page is server rendered and not cached", async () => {
     const response = await fetch(origin);
     assert.equal(response.status, 200);
@@ -116,6 +136,17 @@ test("production frontend handles unavailable and older backend capabilities", a
     assert.equal(listing.query.get("limit"), "4");
     assert.equal(listing.cookie, undefined);
     assert.equal(publicRequests.some(request => request.path.startsWith("/api/v1/admin")), false);
+  });
+  await t.test("pinned badges preserve backend browse and search order", async () => {
+    listMode = "pinned";
+    for (const path of ["/", "/archive", "/archive?q=writing&sort=relevance"]) {
+      const html = await (await fetch(`${origin}${path}`)).text();
+      assert.match(html, /class="pinned-writing-label"/);
+      const first = html.indexOf(path.includes("?q=") ? "Public article 0" : "中文标题与阅读");
+      const second = html.indexOf(path.includes("?q=") ? "中文标题与阅读" : "Public article 0");
+      assert.ok(first >= 0 && second > first, `Server order changed on ${path}`);
+    }
+    listMode = "populated";
   });
   await t.test("home handles a successful empty response separately from an outage", async () => {
     listMode = "empty";
@@ -242,6 +273,7 @@ test("production frontend handles unavailable and older backend capabilities", a
       assert.equal(owned.status, 200);
       assert.match(ownerHTML, /Private fixture title/);
       assert.match(ownerHTML, /class="private-writing-label"/);
+      assert.match(ownerHTML, /class="pinned-writing-label"/);
       assert.match(ownerHTML, /noindex/);
       assert.doesNotMatch(ownerHTML, /isaber_dev_session=reader-fixture|private-csrf-fixture/);
       assert.match(owned.headers.get("cache-control") ?? "", /private/);
@@ -260,6 +292,7 @@ test("production frontend handles unavailable and older backend capabilities", a
     const html = await owned.text();
     assert.match(html, /owner-only-body-marker/);
     assert.match(html, /Private · Only you/);
+    assert.match(html, /class="pinned-writing-label"/);
     assert.match(html, /noindex/);
     assert.doesNotMatch(html, /id="comments"/);
     assert.doesNotMatch(html, /href="#comments-title"/);

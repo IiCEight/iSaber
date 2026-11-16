@@ -39,6 +39,7 @@ type Revision struct {
 }
 
 type ArticleSummary struct {
+	Pinned      bool       `json:"pinned"`
 	ID          string     `json:"id"`
 	Slug        *string    `json:"slug"`
 	Title       *string    `json:"title"`
