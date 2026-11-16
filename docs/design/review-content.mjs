@@ -55,7 +55,7 @@ $$
 
 ${Array.from({length:6},(_,i)=>`## ${i+1}. A longer thread — 继续探索\n\n${'A clear reading column lets a thought develop over several paragraphs. 文字与代码，都需要恰当的空间。 '.repeat(4)}\n`).join('\n')}
 `;
-const articles = Array.from({length:7},(_,i)=>({id: i ? `11111111-1111-4111-8111-${String(i+1).padStart(12,'0')}` : '11111111-1111-4111-8111-111111111111',slug: i===0 ? 'reading-study' : i===1 ? 'chinese-study' : `field-note-${i}`,title: i===0 ? 'Building a quieter corner of the internet' : i===1 ? '把日常写下来，也是一种探索：关于文字、代码与仍在生长的想法' : i===2 ? 'UnderstandingConcurrentSystemsWithoutLosingTheThreadOrTheReaderAcrossScreenSizes' : `Field notes ${i}: things learned along the way`,summary: i===1 ? '记录探索，写下思考。让每一个想法，都有继续生长的空间。' : 'Notes on writing, software, and the small decisions that make a personal website worth returning to.',language:i===1?'zh':'en',written_at:'2026-10-24',published_at:'2026-11-08T08:30:00Z',updated_at:'2026-11-11T07:00:00Z',category:i===3?null:category,tags:i===3?[]:[tag],markdown:i===3?'A short note without headings.':markdown,comments_enabled:true}));
+const articles = Array.from({length:12},(_,i)=>({id: i ? `11111111-1111-4111-8111-${String(i+1).padStart(12,'0')}` : '11111111-1111-4111-8111-111111111111',slug: i===0 ? 'reading-study' : i===1 ? 'chinese-study' : `field-note-${i}`,title: i===0 ? 'Building a quieter corner of the internet' : i===1 ? '把日常写下来，也是一种探索：关于文字、代码与仍在生长的想法' : i===2 ? 'UnderstandingConcurrentSystemsWithoutLosingTheThreadOrTheReaderAcrossScreenSizes' : `Field notes ${i}: things learned along the way`,summary: i===1 ? '记录探索，写下思考。让每一个想法，都有继续生长的空间。' : 'Notes on writing, software, and the small decisions that make a personal website worth returning to.',language:i===1?'zh':'en',written_at:'2026-10-24',published_at:'2026-11-08T08:30:00Z',updated_at:'2026-11-11T07:00:00Z',category:i===3?null:category,tags:i===3?[]:[tag],markdown:i===3?'A short note without headings.':markdown,comments_enabled:true}));
 let mode='normal';
 function json(res,status,data){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data));}
 const server=createServer((req,res)=>{
@@ -71,8 +71,12 @@ const server=createServer((req,res)=>{
   let items=mode==='empty'?[]:articles;
   for(const k of ['category','tag','language']){const v=u.searchParams.get(k);if(v)items=items.filter(a=>k==='language'?a.language===v:k==='category'?a.category?.slug===v:a.tags.some(t=>t.slug===v));}
   if(u.searchParams.get('q'))items=items.filter(a=>(a.title+' '+a.summary+' '+a.markdown).toLowerCase().includes(u.searchParams.get('q').toLowerCase()));
-  const limit=Math.min(6,Number(u.searchParams.get('limit')||6)),offset=u.searchParams.get('cursor')==='review-next'?6:0;
-  return json(res,200,{items:items.slice(offset,offset+limit).map(({markdown,comments_enabled,...a})=>a),next_cursor:items.length>offset+limit?'review-next':null});
+  const numbered=u.searchParams.has('page');
+  const limit=Math.min(10,Number(u.searchParams.get('limit')||6));
+  const totalPages=Math.max(1,Math.ceil(items.length/limit));
+  const page=Math.min(totalPages,Math.max(1,Number(u.searchParams.get('page')||1)));
+  const offset=numbered?(page-1)*limit:u.searchParams.get('cursor')==='review-next'?6:0;
+  return json(res,200,{items:items.slice(offset,offset+limit).map(({markdown,comments_enabled,...a})=>a),next_cursor:items.length>offset+limit?'review-next':null,...(numbered?{page,page_size:limit,total:items.length,total_pages:totalPages}:{})});
  }
  const article=articles.find(a=>u.pathname===`/api/v1/articles/${a.slug}`);
  return article?json(res,200,article):json(res,404,{code:'not_found'});

@@ -1,6 +1,6 @@
 # Database setup and migrations
 
-Status: PostgreSQL and migrations are deployed on Tencent in the isolated blog Compose project. Schema version 7, separate runtime/operator roles and private persistent storage are verified. Migration 00007 was applied on November 15, 2026 before the remembered-login application release; existing content, owner data, and session credential/expiry fingerprints were unchanged, and the preceding application remained healthy. Migration 00006 was applied on November 14, 2026 before the last updated time application release; article, revision, owner, and asset fingerprints were unchanged and the existing application remained healthy. See [deployment](deployment.md) for the accepted installation; the commands below cover local development and deliberate migration operations.
+Status: PostgreSQL and migrations are deployed on Tencent in the isolated blog Compose project. Schema version 8, separate runtime/operator roles and private persistent storage are verified. Migration 00008 was applied on November 16, 2026 before the global-pinning application release, with existing data fingerprints and application health preserved. A persistent local PostgreSQL development database was initialized to schema 8 the same day. Migration 00007 was applied on November 15, 2026 before the remembered-login application release; existing content, owner data, and session credential/expiry fingerprints were unchanged, and the preceding application remained healthy. Migration 00006 was applied on November 14, 2026 before the last updated time application release; article, revision, owner, and asset fingerprints were unchanged and the existing application remained healthy. See [deployment](deployment.md) for the accepted installation; the commands below cover local development and deliberate migration operations.
 
 ## Local development
 
@@ -11,6 +11,15 @@ docker compose -f infra/compose.dev.yml up -d --wait
 ```
 
 This creates a loopback-only PostgreSQL 16 service on port 5432 with a named volume. The documented credentials are synthetic local development values. Do not reuse this Compose configuration for publicly reachable or production databases.
+
+The current Linux workspace uses the already-installed Podman runtime instead of Docker Compose. Its persistent development database was created on November 16, 2026:
+
+- Container: `isaber-dev-postgres`, PostgreSQL 16.
+- Named volume: `isaber-dev-postgres-data`, mounted at `/var/lib/postgresql/data`.
+- Address and credentials: the loopback-only `127.0.0.1:5432` connection in `backend/.env.example`.
+- State: schema 8, with no local owner or article data at initialization.
+
+Reuse it with `podman start isaber-dev-postgres`; stop it while retaining data with `podman stop isaber-dev-postgres`. The Compose setup above is an alternative installation using the same port. Local initialization does not copy the production account or articles.
 
 In the terminal where you will run Go:
 
@@ -63,6 +72,8 @@ Migration `00004_revision_import_issues.sql` adds internal saved revision issues
 Migration `00006_revision_updated_at.sql` adds a nullable revision timestamp for owner-selected last updated times. The last-updated-time release required schema version 6. Apply `migrate up` before starting its binary. Existing revisions receive null and retain automatic publication dating; existing article dates are unchanged. The additive column remains compatible with older binaries.
 
 The subsequent remembered-login release requires schema version 7. Migration `00007_remembered_sessions.sql` adds `sessions.remember_me`, defaulting to false. Existing sessions keep their expiry, idle policy, and credential hashes; no article data changes. Apply `migrate up` with operator credentials before deploying that API binary. The API does not apply migrations automatically. Older binaries can still use the additive schema. It was applied to production on November 15, 2026 with the reviewed migration binary in the existing migration container under the deployment lock. Owner, article, revision, asset, and session credential/expiry fingerprints matched before and after. Runtime SELECT/INSERT/UPDATE access to the new column and continued HTTPS health were verified.
+
+The global-pinning release requires schema version 8. Migration `00008_article_pins.sql` adds `articles.pinned`, defaulting to false, a publication constraint, a browse-order index, and a trigger that clears pins when unpublishing. Existing articles, revisions, visibility, and dates remain unchanged. The trigger also allows the preceding binary to unpublish a pinned article during rollout. Apply it with operator credentials before starting the new API. On November 16, 2026, the owner authorized migration of both environments. The persistent local database was initialized through migration 8. Tencent advanced from schema 7 to 8 under the deployment lock using the checksum-verified migration binary from backend commit `d8de95b`; a private pre-migration dump and operation log were retained on that host. Existing data fingerprints, runtime column privileges, the pin constraint/index/trigger, unchanged application container IDs, and HTTPS health were verified. See the [deployment record](deployment.md#global-pinning-migration--november-16-2026) for the retained audit location.
 
 The Go pool allows five open connections and two idle connections initially. Both are modest development defaults; review aggregate pool sizes against the database limit before adding replicas or migration workers.
 

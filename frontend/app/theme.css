@@ -1,0 +1,91 @@
+/* Shared color roles. The server puts the saved preference on <html> before
+   any content is painted; a new visitor always receives the light palette. */
+:root {
+  color-scheme: light;
+  --site-scheme: light;
+  --site-bg: #ffe2ed;
+  --site-ink: #202640;
+  --site-muted: #625c70;
+  --site-line: #d4c5ce;
+  --site-control-line: #9b899a;
+  --site-surface: #f6e9ef;
+  --site-inset: #fffaf9;
+  --site-hover: #f1dfe9;
+  --site-accent: #324bb4;
+  --site-button: #2e46ae;
+  --site-button-ink: #fff;
+  --site-button-hover: #23388d;
+  --site-header: #121215;
+  --site-header-ink: #fff;
+  --site-footer: #f2e5ed;
+  --site-code-bg: #f5edf2;
+  --site-code-ink: #242b43;
+  --site-inline-bg: #efdeec;
+  --site-inline-ink: #773970;
+  --site-danger: #a32b37;
+  --site-warning: #7c4a13;
+  --site-badge-bg: #f4cfdf;
+  --site-badge-ink: #202640;
+  --site-masthead: linear-gradient(115deg,#4520d7,#176fe4 74%,#253ba6);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --site-scheme: dark;
+  --site-bg: #1d2857;
+  --site-ink: #e5e9f6;
+  --site-muted: #bec9e5;
+  --site-line: rgb(255 255 255 / .22);
+  --site-control-line: #8693b8;
+  --site-surface: #29386e;
+  --site-inset: #202b55;
+  --site-hover: #28376a;
+  --site-accent: #ffb4d0;
+  --site-button: #ff9b8a;
+  --site-button-ink: #151b36;
+  --site-button-hover: #ffb7a9;
+  --site-header: #121215;
+  --site-header-ink: #fff;
+  --site-footer: #222c86;
+  --site-code-bg: #121b3a;
+  --site-code-ink: #e9edf8;
+  --site-inline-bg: #303f75;
+  --site-inline-ink: #ffcee0;
+  --site-danger: #ffb8c2;
+  --site-warning: #ffd29c;
+  --site-badge-bg: #ffb4d0;
+  --site-badge-ink: #151519;
+  --site-masthead: linear-gradient(115deg,#4520d7,#176fe4 74%,#253ba6);
+}
+body { background: var(--site-bg); color: var(--site-ink); }
+body a { text-underline-offset: .25em; }
+.article-browser a { color: var(--site-accent); }
+.site-header-actions { display: flex; align-items: center; gap: 24px; }
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 8px 12px; border: 1px solid var(--site-control-line);
+  border-radius: 0; background: transparent; color: inherit; font: inherit;
+  font-size: 13px; cursor: pointer; touch-action: manipulation; flex-shrink: 0;
+}
+.theme-toggle:hover { background: #2b2b35; color: #fff; }
+.theme-toggle:focus-visible { outline: 3px solid #ffb4d0; outline-offset: 4px; }
+.theme-toggle:disabled { cursor: default; opacity: .6; }
+@media (max-width: 620px) {
+  .site-header-actions { gap: 16px; }
+  .theme-toggle { width: 44px; padding: 10px; }
+  .theme-toggle span { display: none; }
+}
+/* Highlight.js's dark stylesheet stays the default for dark surfaces. Scope
+   its light counterpart to public reading only; admin previews remain dark. */
+:root[data-theme="light"] .article-page .hljs { color: var(--site-code-ink); }
+:root[data-theme="light"] .article-page :is(.hljs-doctag,.hljs-keyword,.hljs-template-tag,.hljs-template-variable,.hljs-type,.hljs-variable.language_) { color: #b1294c; }
+:root[data-theme="light"] .article-page :is(.hljs-title,.hljs-title.class_,.hljs-title.function_) { color: #693e9b; }
+:root[data-theme="light"] .article-page :is(.hljs-attr,.hljs-attribute,.hljs-literal,.hljs-meta,.hljs-number,.hljs-operator,.hljs-variable,.hljs-selector-attr,.hljs-selector-class,.hljs-selector-id) { color: #244fa3; }
+:root[data-theme="light"] .article-page :is(.hljs-regexp,.hljs-string,.hljs-meta .hljs-string) { color: #205649; }
+:root[data-theme="light"] .article-page :is(.hljs-built_in,.hljs-symbol) { color: #914308; }
+:root[data-theme="light"] .article-page :is(.hljs-comment,.hljs-code,.hljs-formula) { color: #686170; }
+:root[data-theme="light"] .article-page :is(.hljs-name,.hljs-quote,.hljs-selector-tag,.hljs-selector-pseudo) { color: #246337; }
+:root[data-theme="light"] .article-page :is(.hljs-subst,.hljs-emphasis,.hljs-strong) { color: var(--site-code-ink); }
+:root[data-theme="light"] .article-page :is(.hljs-section,.hljs-link) { color: #244fa3; }
+:root[data-theme="light"] .article-page .hljs-bullet { color: #79501a; }
+:root[data-theme="light"] .article-page .hljs-addition { color: #246337; background: #e7efdf; }
+:root[data-theme="light"] .article-page .hljs-deletion { color: #a0203d; background: #f8dde1; }

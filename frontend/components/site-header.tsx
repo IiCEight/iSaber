@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { ThemeToggle } from "./theme-provider";
 
 const links = [{ href: "/archive", label: "Archive" }, { href: "/about", label: "About" }, { href: "/archive#archive-search-panel", label: "Search" }];
 
@@ -21,14 +22,17 @@ export default function SiteHeader() {
   }}>{label}</Link>);
   return <header className={`site-header${pathname === "/" ? " site-header--home" : pathname === "/about" ? " site-header--about" : ""}`}>
     <Link className="site-brand" href="/" aria-label="iSaber home">iSaber</Link>
-    <nav className="site-nav" aria-label="Main">{navigation}</nav>
-    <details className="site-mobile-nav" ref={menu} onKeyDown={(event) => {
-      if (event.key === "Escape" && menu.current?.open) {
-        menu.current.open = false;
-        menu.current.querySelector("summary")?.focus();
-      }
-    }}>
-      <summary>Menu</summary><nav aria-label="Mobile">{navigation}</nav>
-    </details>
+    <div className="site-header-actions">
+      <nav className="site-nav" aria-label="Main">{navigation}</nav>
+      <ThemeToggle />
+      <details className="site-mobile-nav" ref={menu} onKeyDown={(event) => {
+        if (event.key === "Escape" && menu.current?.open) {
+          menu.current.open = false;
+          menu.current.querySelector("summary")?.focus();
+        }
+      }}>
+        <summary>Menu</summary><nav aria-label="Mobile">{navigation}</nav>
+      </details>
+    </div>
   </header>;
 }

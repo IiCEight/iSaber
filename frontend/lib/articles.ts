@@ -8,6 +8,8 @@ export type Revision = {
   restored_from_revision_id: string | null;
 };
 export type ArticleSummary = {
+  // Older APIs omit this additive field; treat absence as unpinned.
+  pinned?: boolean;
   id: string; slug: string | null; title: string | null; status: "draft" | "published";
   visibility: "public" | "private"; has_draft: boolean; version: number;
   published_at: string | null; updated_at: string | null; modified_at: string;
@@ -17,6 +19,8 @@ export type Article = ArticleSummary & {
   publishable: boolean; issues: Issue[];
 };
 export type PublicArticle = {
+  // Older APIs omit this additive field; treat absence as unpinned.
+  pinned?: boolean;
   id: string; slug: string; title: string; summary: string; language: "en" | "zh";
   written_at: string; published_at: string; updated_at: string; category: Label | null;
   tags: Label[]; markdown: string; comments_enabled: boolean;

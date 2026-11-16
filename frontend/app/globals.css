@@ -1,5 +1,5 @@
 /* Shared foundation; the approved Home direction is scoped in home.css. */
-:root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+:root { color-scheme: var(--site-scheme); font-family: system-ui, sans-serif; }
 * { box-sizing: border-box; }
 body { margin: 0; line-height: 1.6; }
 header, main { width: min(64rem, 100%); margin-inline: auto; padding: 1.5rem; }
@@ -12,7 +12,7 @@ p { max-width: 65ch; }
 :focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
 .skip-link { position: absolute; z-index: 50; top: -5rem; left: 1rem; padding: 0.5rem; background: Canvas; color: CanvasText; }
 .skip-link:focus { top: 0.5rem; }
-.site-header { position: relative; z-index: 10; width: 100%; min-height: 72px; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 12px 28px; margin: 0; background: #121215; color: white; font-family: Arial,sans-serif; }
+.site-header { position: relative; z-index: 10; width: 100%; min-height: 72px; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 12px 28px; margin: 0; background: var(--site-header); color: var(--site-header-ink); font-family: Arial,sans-serif; }
 .site-header--home { position: fixed; left: 0; top: 0; }
 .site-header--about { position: sticky; top: 0; }
 .site-brand { font-size: 1.25rem; letter-spacing: -.06em; }
@@ -21,7 +21,7 @@ p { max-width: 65ch; }
 .site-nav a:hover,.site-nav a[aria-current="page"] { text-decoration: underline; }
 .site-mobile-nav { display: none; position: relative; }
 .site-mobile-nav summary { min-height: 44px; display: list-item; align-content: center; cursor: pointer; }
-.site-mobile-nav nav { position: absolute; right: 0; top: 100%; min-width: 180px; padding: 12px; border: 1px solid #777; background: #121215; }
+.site-mobile-nav nav { position: absolute; right: 0; top: 100%; min-width: 180px; padding: 12px; border: 1px solid var(--site-control-line); background: var(--site-header); }
 .site-mobile-nav nav a { display: block; min-height: 44px; padding: 10px; font-weight: 400; }
 .article-browser { overflow-wrap: anywhere; }
 .article-browser input,.article-browser select,.article-browser button { max-width: 100%; min-height: 44px; font: inherit; padding: .5rem; }
@@ -64,3 +64,6 @@ p { max-width: 65ch; }
 .article-comments textarea { min-height: 8rem; }
 .comment-body { white-space: pre-wrap; overflow-wrap: anywhere; }
 #comments li { margin-block: 1.5rem; }
+
+.pinned-writing-label { display: inline-flex; align-items: center; gap: .35em; font-size: .8rem; line-height: 1.4; white-space: nowrap; }
+.pinned-writing-label svg { flex: none; }
