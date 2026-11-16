@@ -45,13 +45,40 @@ if printf 'untrusted/image:latest\n%s\n' "$new" | bash "$script" deploy; then ex
 test ! -e "$ISABER_ROOT/calls"
 setup success
 deploy
-grep -q "$new" "$ISABER_ROOT/release.env"
+grep -Fxq "FRONTEND_IMAGE=ghcr.nju.edu.cn/iiiisaber/isaber-frontend@$new" "$ISABER_ROOT/release.env"
+grep -Fxq "BACKEND_IMAGE=ghcr.nju.edu.cn/iiiisaber/isaber-backend@$new" "$ISABER_ROOT/release.env"
 cmp "$ISABER_ROOT/original-release" "$ISABER_ROOT/previous.env"
 cmp "$ISABER_ROOT/original-secrets" "$ISABER_ROOT/.env"
 # Repeating the current release must preserve the older rollback target.
 deploy
 cmp "$ISABER_ROOT/original-release" "$ISABER_ROOT/previous.env"
 bash "$script" rollback
+cmp "$ISABER_ROOT/original-release" "$ISABER_ROOT/release.env"
+# An operator can select another owner without changing code or credentials.
+setup configured-namespace
+printf 'BLOG_IMAGE_NAMESPACE=future-owner\n' >> "$ISABER_ROOT/.env"
+cp "$ISABER_ROOT/.env" "$ISABER_ROOT/original-secrets"
+deploy
+grep -Fxq "FRONTEND_IMAGE=ghcr.nju.edu.cn/future-owner/isaber-frontend@$new" "$ISABER_ROOT/release.env"
+grep -Fxq "BACKEND_IMAGE=ghcr.nju.edu.cn/future-owner/isaber-backend@$new" "$ISABER_ROOT/release.env"
+cmp "$ISABER_ROOT/original-secrets" "$ISABER_ROOT/.env"
+bash "$script" rollback
+cmp "$ISABER_ROOT/original-release" "$ISABER_ROOT/release.env"
+# Malformed configuration cannot change the registry or introduce shell input.
+namespace_case=0
+for namespace in 'bad/owner' 'bad.owner' 'UPPER' 'bad owner'; do
+  namespace_case=$((namespace_case+1))
+  setup "invalid-namespace-$namespace_case"
+  printf 'BLOG_IMAGE_NAMESPACE=%s\n' "$namespace" >> "$ISABER_ROOT/.env"
+  if deploy; then printf 'Expected invalid namespace rejection\n' >&2; exit 1; fi
+  test ! -e "$ISABER_ROOT/calls"
+  cmp "$ISABER_ROOT/original-release" "$ISABER_ROOT/release.env"
+done
+# Rollback accepts only the configured owner and the explicit legacy namespace.
+setup unrelated-rollback
+sed 's@/iiceight/@/unrelated-owner/@g' "$ISABER_ROOT/release.env" > "$ISABER_ROOT/previous.env"
+if bash "$script" rollback; then printf 'Expected unrelated rollback rejection\n' >&2; exit 1; fi
+test ! -e "$ISABER_ROOT/calls"
 cmp "$ISABER_ROOT/original-release" "$ISABER_ROOT/release.env"
 for failure in fail-pull fail-start fail-health interrupt-start; do
   setup "$failure"
@@ -64,4 +91,4 @@ done
 setup locked
 if printf '%s\n%s\n' "$new" "$new" | flock "$ISABER_ROOT/.deploy.lock" bash "$script" deploy; then exit 1; fi
 test ! -e "$ISABER_ROOT/calls"
-printf 'Deployment input, success, rollback, pull/start/HTTPS failure, interruption, and locking checks passed.\n'
+printf 'Deployment namespace, input, success, rollback, pull/start/HTTPS failure, interruption, and locking checks passed.\n'
