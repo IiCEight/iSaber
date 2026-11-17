@@ -12,5 +12,5 @@ export function pageHref(basePath: string, query: string, page: number): string 
   const params = new URLSearchParams(query);
   params.delete("cursor"); params.delete("page");
   if (page > 1) params.set("page", String(page));
-  return `${basePath}${params.size ? `?${params}` : ""}${basePath === "/archive" ? "#archive-writing" : ""}`;
+  return `${basePath}${params.size ? `?${params}` : ""}${(basePath === "/archive" || basePath.startsWith("/categories/")) ? "#archive-writing" : ""}`;
 }

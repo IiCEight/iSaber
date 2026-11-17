@@ -147,3 +147,5 @@
 }
 
 .archive-page [hidden] { display: none; }
+/* Category links sit above the article title's stretched click target. */
+.archive-article-meta a { position: relative; z-index: 1; }

@@ -46,7 +46,7 @@ func (s *Service) listAdminNumbered(w http.ResponseWriter, r *http.Request, valu
 	args = append(args, page.PageSize, page.offset())
 	rows, err := tx.QueryContext(r.Context(), `SELECT a.id,a.slug,CASE WHEN d.id IS NULL THEN p.title ELSE d.title END,
  CASE WHEN a.published_revision_id IS NULL THEN 'draft' ELSE 'published' END,
- a.pinned,a.visibility,(a.draft_revision_id IS NOT NULL),a.version,a.published_at,a.updated_at,a.modified_at`+
+ a.pinned,a.category_pinned,a.visibility,(a.draft_revision_id IS NOT NULL),a.version,a.published_at,a.updated_at,a.modified_at`+
 		adminCollectionSQL+` ORDER BY a.modified_at DESC,a.id DESC LIMIT $4 OFFSET $5`, args...)
 	if err != nil {
 		reply(w, nil, err)
@@ -56,7 +56,7 @@ func (s *Service) listAdminNumbered(w http.ResponseWriter, r *http.Request, valu
 	items := []ArticleSummary{}
 	for rows.Next() {
 		var item ArticleSummary
-		if err := rows.Scan(&item.ID, &item.Slug, &item.Title, &item.Status, &item.Pinned, &item.Visibility, &item.HasDraft, &item.Version, &item.PublishedAt, &item.UpdatedAt, &item.ModifiedAt); err != nil {
+		if err := rows.Scan(&item.ID, &item.Slug, &item.Title, &item.Status, &item.Pinned, &item.CategoryPinned, &item.Visibility, &item.HasDraft, &item.Version, &item.PublishedAt, &item.UpdatedAt, &item.ModifiedAt); err != nil {
 			reply(w, nil, err)
 			return
 		}

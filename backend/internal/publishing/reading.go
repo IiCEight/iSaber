@@ -31,6 +31,7 @@ func (s *Service) readingRoutes(mux *http.ServeMux) {
 			next(w, r.WithContext(context.WithValue(ctx, ownerReadingKey{}, true)))
 		}
 	}
+	s.categoryRoutes(mux, "/api/v1/admin/reading", protect)
 	mux.HandleFunc("GET /api/v1/admin/reading/articles", protect(s.listPublic))
 	mux.HandleFunc("GET /api/v1/admin/reading/articles/search", protect(s.searchPublic))
 	mux.HandleFunc("GET /api/v1/admin/reading/articles/{slug}", protect(func(w http.ResponseWriter, r *http.Request) {

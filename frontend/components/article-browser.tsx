@@ -5,13 +5,13 @@ import { pageHref } from "../lib/pagination";
 import { validArticleSort } from "../lib/article-sort";
 import ArchiveView from "./archive-view";
 import { getReadingAccess, getReadingLabels, readingPage } from "../lib/reading-api";
-import type { Label, NumberedPage, ReadingArticleSummary } from "../lib/articles";
+import type { Category, Label, NumberedPage, ReadingArticleSummary } from "../lib/articles";
 
 export type BrowseParams = { q?: string | string[]; cursor?: string; page?: string | string[]; sort?: string | string[]; category?: string; tag?: string; language?: string };
-export default async function ArticleBrowser({ params, basePath }: { params: BrowseParams; basePath: "/archive" | "/search" }) {
+export default async function ArticleBrowser({ params, basePath, category }: { params: BrowseParams; basePath: string; category?: Category }) {
   const access = await getReadingAccess();
   const query = new URLSearchParams();
-  for (const key of ["category", "tag", "language", "cursor"] as const) if (typeof params[key] === "string" && params[key]) query.set(key, params[key]);
+  for (const key of ["category", "tag", "language", "cursor"] as const) if ((!category || key !== "category") && typeof params[key] === "string" && params[key]) query.set(key, params[key]);
   const rawQuery = typeof params.q === "string" ? params.q : "";
   const text = rawQuery.trim();
   const searching = params.q !== undefined && (basePath === "/search" || typeof params.q !== "string" || text !== "");
@@ -20,7 +20,7 @@ export default async function ArticleBrowser({ params, basePath }: { params: Bro
   const emptySearch = searching && !malformedQuery && text === "";
   const tooLong = searching && Array.from(rawQuery).length > 200;
   const filters = ["category", "tag", "language"].some((key) => query.has(key));
-  const numbered = basePath === "/archive";
+  const numbered = basePath === "/archive" || !!category;
   const validSort = params.sort === undefined || validArticleSort(params.sort, searching);
   if (numbered && typeof params.sort === "string") query.set("sort", params.sort);
   if (numbered && params.sort === "relevance" && !searching) { query.delete("sort"); redirect(pageHref(basePath, query.toString(), 1)); }
@@ -31,7 +31,7 @@ export default async function ArticleBrowser({ params, basePath }: { params: Bro
   const apiQuery = new URLSearchParams(query);
   if (numbered) { apiQuery.set("page", String(requestedPage)); apiQuery.set("limit", "10"); }
   const [articlesResult, categoriesResult, tagsResult] = await Promise.allSettled([
-    malformedQuery || emptySearch || tooLong || (numbered && (!validPage || !validSort)) ? Promise.resolve({ status: 400, page: null }) : readingPage(apiQuery.toString(), searching),
+    malformedQuery || emptySearch || tooLong || (numbered && (!validPage || !validSort)) ? Promise.resolve({ status: 400, page: null }) : readingPage(apiQuery.toString(), searching, category?.slug),
     getReadingLabels("categories"), getReadingLabels("tags"),
   ]);
   const page = articlesResult.status === "fulfilled" ? articlesResult.value.page : null;
@@ -40,11 +40,11 @@ export default async function ArticleBrowser({ params, basePath }: { params: Bro
   const tags: Label[] = tagsResult.status === "fulfilled" ? tagsResult.value : [];
   const nextQuery = new URLSearchParams(query);
   if (page?.next_cursor) nextQuery.set("cursor", page.next_cursor);
-  if (basePath === "/archive") {
+  if (numbered) {
     const collection = page && "page" in page && "total" in page && "page_size" in page && "total_pages" in page ? page as NumberedPage<ReadingArticleSummary> : null;
     if (collection && collection.page !== requestedPage) redirect(pageHref(basePath, query.toString(), collection.page));
     const error = !validPage ? "Use a positive whole page number." : !validSort ? "Use a valid article order." : malformedQuery ? "Use a single search query." : tooLong ? "Use a search query of at most 200 characters." : !collection ? invalid ? "Check the query and filters, then try again." : searching ? "Search is temporarily unavailable. Please try again shortly." : "Articles are temporarily unavailable. Please try again shortly." : null;
-    return <ArchiveView page={collection} query={query.toString()} categories={categories} tags={tags} labelsUnavailable={categoriesResult.status === "rejected" || tagsResult.status === "rejected"} error={error} searching={searching} filtered={filters} owner={!!access} />;
+    return <ArchiveView category={category} basePath={basePath} page={collection} query={query.toString()} categories={categories} tags={tags} labelsUnavailable={categoriesResult.status === "rejected" || tagsResult.status === "rejected"} error={error} searching={searching} filtered={filters} owner={!!access} />;
   }
   return (
     <div className="article-browser">

@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import type { Label } from "../lib/articles";
+import type { Category, Label } from "../lib/articles";
 
 const fields = ["q", "category", "tag", "language"] as const;
-export default function ArchiveFilters({ query, categories, tags, labelsUnavailable }: {
-  query: string; categories: Label[]; tags: Label[]; labelsUnavailable: boolean;
+export default function ArchiveFilters({ query, categories, tags, labelsUnavailable, category, basePath = "/archive" }: {
+  basePath?: string; category?: Category; query: string; categories: Label[]; tags: Label[]; labelsUnavailable: boolean;
 }) {
   const router = useRouter();
   const [enhanced, setEnhanced] = useState(false);
@@ -51,9 +51,9 @@ export default function ArchiveFilters({ query, categories, tags, labelsUnavaila
   const without = (key: string) => {
     const next = new URLSearchParams(query); next.delete(key); next.delete("cursor"); next.delete("page");
     if (key === "q" && next.get("sort") === "relevance") next.delete("sort");
-    return `/archive${next.size ? `?${next}` : ""}#archive-writing`;
+    return `${basePath}${next.size ? `?${next}` : ""}#archive-writing`;
   };
-  const active = fields.filter(key => applied.get(key));
+  const active = fields.filter(key => (!category || key !== "category") && applied.get(key));
   const names = { q: "Search", category: "Category", tag: "Tag", language: "Language" };
   const valueLabel = (key: typeof fields[number]) => {
     const value = applied.get(key) ?? "";
@@ -64,7 +64,7 @@ export default function ArchiveFilters({ query, categories, tags, labelsUnavaila
   };
   return <>
     <div className="archive-index-top" id="archive-writing">
-      <h2>All writing</h2>
+      <h2>{category ? `Writing in ${category.name}` : "All writing"}</h2>
       <button ref={opener} className="archive-search-toggle" type="button" hidden={!enhanced} aria-label="Search and filters" aria-expanded={open} aria-controls="archive-search-panel" onClick={() => open ? close() : expand()}>
         <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg>
         {active.length > 0 && <span className="archive-filter-dot" aria-hidden="true" />}
@@ -73,25 +73,25 @@ export default function ArchiveFilters({ query, categories, tags, labelsUnavaila
     <section id="archive-search-panel" className={`archive-search-panel${enhanced && !open ? " is-collapsed" : ""}`} aria-label="Search and filter articles" aria-hidden={enhanced && !open} inert={enhanced && !open} onKeyDown={event => { if (event.key === "Escape" && enhanced) { event.preventDefault(); close(); } }}>
       <div className="archive-search-inner"><div className="archive-search-surface">
         <div className="archive-panel-heading"><h3>Search &amp; filter</h3><button type="button" aria-label="Collapse search" hidden={!enhanced} onClick={close}>×</button></div>
-        <form ref={form} key={query} action="/archive#archive-writing" method="get" className="archive-tools" aria-busy={pending} onSubmit={event => {
+        <form ref={form} key={query} action={`${basePath}#archive-writing`} method="get" className="archive-tools" aria-busy={pending} onSubmit={event => {
           event.preventDefault();
           const data = new FormData(event.currentTarget), next = new URLSearchParams();
-          for (const key of fields) { const value = String(data.get(key) ?? "").trim(); if (value) next.set(key, value); }
+          for (const key of fields) { if (category && key === "category") continue; const value = String(data.get(key) ?? "").trim(); if (value) next.set(key, value); }
           const order = applied.get("sort");
           if (order && (order !== "relevance" || next.has("q"))) next.set("sort", order);
           close();
-          startTransition(() => router.push(`/archive${next.size ? `?${next}` : ""}#archive-writing`));
+          startTransition(() => router.push(`${basePath}${next.size ? `?${next}` : ""}#archive-writing`));
         }}>
           {applied.get("sort") && <input type="hidden" name="sort" value={applied.get("sort") ?? ""} />}
           <search aria-label="Search public articles"><div className="archive-search-line">
-            <label htmlFor="archive-query">Search articles<input ref={input} id="archive-query" type="search" name="q" defaultValue={applied.get("q") ?? ""} maxLength={200} placeholder="Search the collection…" /></label>
+            <label htmlFor="archive-query">{category ? `Search in ${category.name}` : "Search articles"}<input ref={input} id="archive-query" type="search" name="q" defaultValue={applied.get("q") ?? ""} maxLength={200} placeholder="Search the collection…" /></label>
             <button className="archive-solid" type="submit" disabled={pending}>Search ↗</button>
-          </div><p className="archive-search-help">Search titles, summaries, tags, and article text. All terms must match.</p></search>
-          <div className="archive-filter-row">
-            <label>Category<select name="category" defaultValue={applied.get("category") ?? ""}>
+          </div><p className="archive-search-help">{category && `Stay in ${category.name}. `}Search titles, summaries, tags, and article text. All terms must match.</p></search>
+          <div className={`archive-filter-row${category ? " category-filter-row" : ""}`}>
+            {!category && <label>Category<select name="category" defaultValue={applied.get("category") ?? ""}>
               <option value="">All categories</option>{applied.has("category") && !categories.some(label => label.slug === applied.get("category")) && <option value={applied.get("category") ?? ""}>Selected category: {applied.get("category")}</option>}
               {categories.map(label => <option key={label.id} value={label.slug}>{label.name}</option>)}
-            </select></label>
+            </select></label>}
             <label>Tag<select name="tag" defaultValue={applied.get("tag") ?? ""}>
               <option value="">All tags</option>{applied.has("tag") && !tags.some(label => label.slug === applied.get("tag")) && <option value={applied.get("tag") ?? ""}>Selected tag: {applied.get("tag")}</option>}
               {tags.map(label => <option key={label.id} value={label.slug}>{label.name}</option>)}
@@ -103,13 +103,13 @@ export default function ArchiveFilters({ query, categories, tags, labelsUnavaila
             <button className="archive-clear" type="reset">Reset fields</button>
           </div>
           {labelsUnavailable && <p className="archive-search-help">Some filter options are temporarily unavailable. Your selected conditions are preserved.</p>}
-          <div className="archive-panel-actions"><Link href="/archive#archive-writing" onClick={close}>Clear all</Link><button className="archive-solid" type="submit" disabled={pending}>View results ↗</button></div>
+          <div className="archive-panel-actions"><Link href={`${basePath}#archive-writing`} onClick={close}>Clear all</Link><button className="archive-solid" type="submit" disabled={pending}>View results ↗</button></div>
         </form>
       </div></div>
     </section>
     {active.length > 0 && <nav className="archive-active-conditions" aria-label="Applied search conditions">
       {active.map(key => <Link className="archive-condition-chip" key={key} href={without(key)} prefetch={false} aria-label={`Remove ${names[key]}: ${valueLabel(key)}`} onClick={close}><span>{names[key]}: {valueLabel(key)}</span><span aria-hidden="true">×</span></Link>)}
-      <Link className="archive-clear" href="/archive#archive-writing" onClick={close}>Clear all</Link>
+      <Link className="archive-clear" href={`${basePath}#archive-writing`} onClick={close}>Clear all</Link>
     </nav>}
     <p className="archive-pending" role="status">{pending ? "Updating articles…" : ""}</p>
   </>;

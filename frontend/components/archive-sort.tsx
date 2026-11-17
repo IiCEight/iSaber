@@ -2,7 +2,7 @@ import Link from "next/link";
 import { pageHref } from "../lib/pagination";
 import { articleSortFields, defaultArticleSort, validArticleSort } from "../lib/article-sort";
 
-export default function ArchiveSort({ query, searching }: { query: string; searching: boolean }) {
+export default function ArchiveSort({ query, searching, basePath = "/archive" }: { query: string; searching: boolean; basePath?: string }) {
   const applied = new URLSearchParams(query);
   const order = validArticleSort(applied.get("sort"), searching) ? applied.get("sort") ?? defaultArticleSort : defaultArticleSort;
   const ascending = articleSortFields.some(field => field.oldest === order);
@@ -10,7 +10,7 @@ export default function ArchiveSort({ query, searching }: { query: string; searc
   const href = (value: string) => {
     const next = new URLSearchParams(query);
     next.set("sort", value);
-    return pageHref("/archive", next.toString(), 1);
+    return pageHref(basePath, next.toString(), 1);
   };
   return <nav className="archive-sort" aria-label="Sort articles">
     <span className="archive-sort-caption">Sort by</span>

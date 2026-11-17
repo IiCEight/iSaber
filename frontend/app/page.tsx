@@ -74,7 +74,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
               {article.summary && <p>{article.summary}</p>}
               <div className="home-article-meta">
                 {article.pinned && <PinBadge />}{article.visibility === "private" && <span className="private-writing-label">Private</span>}
-                {article.category && <Link href={{ pathname: "/archive", query: { category: article.category.slug } }}>{article.category.name}</Link>}
+                {article.category && <Link href={`/categories/${article.category.slug}`}>{article.category.name}</Link>}
                 <span>{article.language === "zh" ? "中文" : "English"}</span>
                 <time dateTime={article.published_at} lang="en">{new Date(article.published_at).toLocaleDateString("en-GB", { timeZone: "Asia/Shanghai", day: "2-digit", month: "short", year: "numeric" })}</time>
               </div>

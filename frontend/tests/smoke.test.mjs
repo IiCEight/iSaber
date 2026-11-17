@@ -131,7 +131,7 @@ test("production frontend handles unavailable and older backend capabilities", a
     assert.match(html, /Public article 0/);
     assert.match(html, /中文标题与阅读/);
     assert.doesNotMatch(html, /Public article 4/);
-    assert.match(html, /href="\/archive\?category=notes"/);
+    assert.match(html, /href="\/categories\/notes"/);
     const listing = publicRequests.find(request => request.path === "/api/v1/articles");
     assert.equal(listing.query.get("limit"), "4");
     assert.equal(listing.cookie, undefined);

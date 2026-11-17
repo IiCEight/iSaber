@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-motion="off">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Technology · iSaber category design review</title>
+  <link rel="icon" href="/shared/icon.png" type="image/png">
+  <link rel="stylesheet" href="/shared/globals.css">
+  <link rel="stylesheet" href="/shared/theme.css">
+  <link rel="stylesheet" href="/shared/archive.css">
+  <link rel="stylesheet" href="/shared/pagination.css">
+  <link rel="stylesheet" href="category-prototype.css">
+  <script src="category-prototype.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#category-writing">Skip to articles</a>
+  <aside class="category-review" aria-label="Design review controls">
+    <p><strong>DESIGN REVIEW · CATEGORY / 03</strong><br>Sample description and articles · category pins are independent of global pins</p>
+    <div class="category-review-controls">
+      <label>Preview state <select id="preview-state" disabled><option value="sample">Sample collection</option><option value="empty">Empty category</option><option value="error">Articles unavailable</option></select></label>
+      <label><input id="reduce-motion" type="checkbox" disabled>Reduce motion</label><span id="motion-status" aria-live="polite">Static preview</span>
+    </div>
+  </aside>
+  <header class="site-header">
+    <a class="site-brand" href="home-prototype.html" aria-label="iSaber Home prototype">iSaber</a>
+    <div class="site-header-actions">
+      <nav class="site-nav" aria-label="Main"><a href="archive-prototype.html">Archive</a><a href="about-prototype.html">About</a><a href="#category-search-panel" data-open-search>Search</a></nav>
+      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Switch to dark theme" title="Switch to dark theme" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14A9 9 0 0 1 10 3.5 9 9 0 1 0 20.5 14Z"/></svg><span>Dark</span></button>
+      <details class="site-mobile-nav"><summary>Menu</summary><nav aria-label="Mobile"><a href="archive-prototype.html">Archive</a><a href="about-prototype.html">About</a><a href="#category-search-panel" data-open-search>Search</a></nav></details>
+    </div>
+  </header>
+  <main class="app-main" id="content">
+    <div class="archive-page category-page">
+      <section class="category-masthead" aria-labelledby="category-title">
+        <div class="category-masthead-copy">
+          <nav class="category-breadcrumb" aria-label="Breadcrumb"><a href="archive-prototype.html">Archive</a><span aria-hidden="true">/</span><span aria-current="page">Technology</span></nav>
+          <h1 id="category-title">Technology.</h1>
+          <div class="category-description"><p>Code, systems, and the things I learn by building them.</p><p lang="zh-CN">写下原理，也记录动手之后的理解。</p></div>
+        </div>
+        <div class="category-art" aria-hidden="true">
+          <div class="category-art-rig">
+            <span class="category-circle category-circle-one"></span>
+            <span class="category-circle category-circle-two"></span>
+            <span class="category-circle category-circle-three"></span>
+            <span class="category-circle category-circle-four"></span>
+          </div>
+        </div>
+        <div class="category-masthead-foot"><span id="category-total">12 articles in this thread</span><span>English &amp; <span lang="zh-CN">中文</span></span></div>
+      </section>
+      <section class="archive-index category-index" aria-labelledby="category-writing">
+        <div class="archive-index-top"><h2 id="category-writing" tabindex="-1">Writing in Technology</h2><button class="archive-search-toggle" id="open-search" type="button" aria-label="Search and filter Technology articles" aria-expanded="false" aria-controls="category-search-panel" hidden><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><span class="archive-filter-dot" hidden></span></button></div>
+        <section id="category-search-panel" class="archive-search-panel" aria-label="Search and filter Technology" hidden>
+          <div class="archive-search-inner"><div class="archive-search-surface">
+            <div class="archive-panel-heading"><h3>Follow a thread.</h3><button type="button" id="close-search" aria-label="Collapse search">×</button></div>
+            <form id="category-search-form" class="archive-tools" action="category-prototype.html#category-writing" method="get">
+              <div class="archive-search-line"><label for="category-query">Search in Technology<input id="category-query" name="q" type="search" maxlength="200" placeholder="A word, a question, an idea…"></label><button class="archive-solid" type="submit">Search ↗</button></div>
+              <p class="archive-search-help">Stay in Technology. Search these sample titles, summaries, and tags.</p>
+              <div class="archive-filter-row category-filter-row">
+                <label>Tag<select name="tag"><option value="">All tags</option><option value="architecture">Architecture</option><option value="go">Go</option><option value="data">Data</option><option value="delivery">Delivery</option><option value="design">Design</option><option value="learning">Learning</option><option value="tools">Tools</option></select></label>
+                <label>Language<select name="language"><option value="">English &amp; 中文</option><option value="en">English</option><option value="zh">中文</option></select></label>
+                <button type="button" class="archive-clear" id="reset-form">Reset fields</button>
+              </div>
+              <div class="archive-panel-actions"><span class="category-scope">Technology is this page’s category.</span><button class="archive-solid" type="submit">Apply filters ↗</button></div>
+            </form>
+          </div></div>
+        </section>
+        <div class="archive-active-conditions" id="active-conditions" hidden><div id="condition-chips" class="archive-active-conditions"></div><button class="archive-clear" id="clear-all" type="button">Clear filters</button></div>
+        <div class="archive-results-note"><p role="status" id="result-count">12 sample articles</p><div class="archive-sort" id="category-sort" role="group" aria-label="Sort category articles" hidden><span class="archive-sort-caption" id="sort-hint">Category pins first</span><div class="archive-sort-fields"><button type="button" class="archive-sort-field category-sort-button" data-sort="written" aria-pressed="true">Written</button><button type="button" class="archive-sort-field category-sort-button" data-sort="updated" aria-pressed="false">Last updated</button><button type="button" class="archive-sort-field category-sort-button" data-sort="newest" aria-pressed="false">Published</button><button type="button" class="archive-sort-field category-sort-button" data-sort="relevance" aria-pressed="false" hidden>Relevance</button></div><button class="archive-sort-direction category-sort-button" id="sort-direction" type="button" aria-label="Change to oldest first"><span id="direction-label">Newest first</span><span class="archive-sort-arrow" aria-hidden="true">↓</span></button></div></div>
+        <noscript><p class="category-noscript">All 12 sample articles are shown below. Filtering, pagination, and article previews use JavaScript in this local design study.</p></noscript>
+        <ol class="archive-articles" id="category-articles">
+        <li class="archive-article-row category-row" id="sample-understanding-a-go-service" data-written="2025-06-11" data-published="2026-09-19T08:00:00Z" data-updated="2026-11-04T08:00:00Z" data-language="zh" data-tags="go learning" data-category-pin="true" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">01 /</span><time datetime="2025-06-11" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">11 Jun 2025</span></time></div>
+          <div><h3 lang="zh-CN"><a class="sample-article-link" href="#sample-understanding-a-go-service">从请求到响应，理解一个 Go 服务</a></h3><p class="archive-summary" lang="zh-CN">拆开一次请求，看看路由、业务逻辑与数据库怎样一起工作。</p><div class="archive-article-meta"><span class="category-pin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-4 2-3 5-2 2-5-5 2-2 5-3 2-4Z"/><path d="m9 15-6 6"/></svg>Pinned in Technology</span><span>#Go</span><span>#Learning</span><span class="archive-language">中文</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-a-small-blog-with-room-to-grow" data-written="2024-07-18" data-published="2026-06-10T08:00:00Z" data-updated="2026-10-30T08:00:00Z" data-language="en" data-tags="architecture go" data-category-pin="true" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">02 /</span><time datetime="2024-07-18" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">18 Jul 2024</span></time></div>
+          <div><h3 lang="en"><a class="sample-article-link" href="#sample-a-small-blog-with-room-to-grow">A small blog, with room to grow</a></h3><p class="archive-summary" lang="en">Clear boundaries, a Go service, and a place for the decisions behind the code.</p><div class="archive-article-meta"><span class="category-pin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-4 2-3 5-2 2-5-5 2-2 5-3 2-4Z"/><path d="m9 15-6 6"/></svg>Pinned in Technology</span><span>#Architecture</span><span>#Go</span><span class="archive-language">EN</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-what-a-deploy-teaches-you" data-written="2026-11-16" data-published="2026-11-16T08:00:00Z" data-updated="2026-11-16T08:00:00Z" data-language="en" data-tags="delivery architecture" data-category-pin="false" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">03 /</span><time datetime="2026-11-16" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">16 Nov 2026</span></time></div>
+          <div><h3 lang="en"><a class="sample-article-link" href="#sample-what-a-deploy-teaches-you">What a deploy teaches you about your system</a></h3><p class="archive-summary" lang="en">The build is green. The release is not. A few notes on finding the boundary that failed.</p><div class="archive-article-meta"><span>#Delivery</span><span>#Architecture</span><span class="archive-language">EN</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-redis-beyond-the-cache" data-written="2026-11-10" data-published="2026-11-12T08:00:00Z" data-updated="2026-11-15T08:00:00Z" data-language="zh" data-tags="data learning" data-category-pin="false" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">04 /</span><time datetime="2026-11-10" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">10 Nov 2026</span></time></div>
+          <div><h3 lang="zh-CN"><a class="sample-article-link" href="#sample-redis-beyond-the-cache">Redis 不只是一个缓存</a></h3><p class="archive-summary" lang="zh-CN">从数据结构开始，重新理解几个常见的使用场景，以及它们的边界。</p><div class="archive-article-meta"><span>#Data</span><span>#Learning</span><span class="archive-language">中文</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-make-the-feedback-loop-shorter" data-written="2026-11-03" data-published="2026-11-05T08:00:00Z" data-updated="2026-11-13T08:00:00Z" data-language="en" data-tags="tools delivery" data-category-pin="false" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">05 /</span><time datetime="2026-11-03" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">03 Nov 2026</span></time></div>
+          <div><h3 lang="en"><a class="sample-article-link" href="#sample-make-the-feedback-loop-shorter">Make the feedback loop shorter</a></h3><p class="archive-summary" lang="en">Small local tools that make it easier to try an idea, see the result, and keep going.</p><div class="archive-article-meta"><span>#Tools</span><span>#Delivery</span><span class="archive-language">EN</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-a-calmer-reading-experience" data-written="2026-10-24" data-published="2026-11-08T08:00:00Z" data-updated="2026-11-11T08:00:00Z" data-language="en" data-tags="design learning" data-category-pin="false" data-global-pin="true">
+          <div class="archive-article-date"><span class="row-number">06 /</span><time datetime="2026-10-24" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">24 Oct 2026</span></time></div>
+          <div><h3 lang="en"><a class="sample-article-link" href="#sample-a-calmer-reading-experience">Designing a calmer reading experience</a></h3><p class="archive-summary" lang="en">Readable type, useful contrast, and a little space to let the writing do its work.</p><div class="archive-article-meta"><span>#Design</span><span>#Learning</span><span class="archive-language">EN</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-how-a-query-finds-its-way" data-written="2026-10-12" data-published="2026-10-20T08:00:00Z" data-updated="2026-10-28T08:00:00Z" data-language="en" data-tags="data architecture" data-category-pin="false" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">07 /</span><time datetime="2026-10-12" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">12 Oct 2026</span></time></div>
+          <div><h3 lang="en"><a class="sample-article-link" href="#sample-how-a-query-finds-its-way">How a query finds its way</a></h3><p class="archive-summary" lang="en">Indexes, query plans, and what changes when a familiar table gets a little larger.</p><div class="archive-article-meta"><span>#Data</span><span>#Architecture</span><span class="archive-language">EN</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-notes-on-concurrency" data-written="2026-09-20" data-published="2026-10-04T08:00:00Z" data-updated="2026-10-05T08:00:00Z" data-language="zh" data-tags="go architecture" data-category-pin="false" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">08 /</span><time datetime="2026-09-20" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">20 Sep 2026</span></time></div>
+          <div><h3 lang="zh-CN"><a class="sample-article-link" href="#sample-notes-on-concurrency">并发不是同时做更多的事</a></h3><p class="archive-summary" lang="zh-CN">几个小例子，理解 goroutine、channel，以及什么时候应该先把事情写简单。</p><div class="archive-article-meta"><span>#Go</span><span>#Architecture</span><span class="archive-language">中文</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-markdown-and-the-writing-workflow" data-written="2026-08-30" data-published="2026-09-01T08:00:00Z" data-updated="2026-11-01T08:00:00Z" data-language="en" data-tags="tools design" data-category-pin="false" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">09 /</span><time datetime="2026-08-30" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">30 Aug 2026</span></time></div>
+          <div><h3 lang="en"><a class="sample-article-link" href="#sample-markdown-and-the-writing-workflow">Markdown and the writing workflow</a></h3><p class="archive-summary" lang="en">A plain-text file, a few conventions, and less friction between an idea and a published article.</p><div class="archive-article-meta"><span>#Tools</span><span>#Design</span><span class="archive-language">EN</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-when-a-failure-is-useful" data-written="2026-07-14" data-published="2026-08-03T08:00:00Z" data-updated="2026-08-10T08:00:00Z" data-language="en" data-tags="delivery learning" data-category-pin="false" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">10 /</span><time datetime="2026-07-14" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">14 Jul 2026</span></time></div>
+          <div><h3 lang="en"><a class="sample-article-link" href="#sample-when-a-failure-is-useful">When a failure is useful</a></h3><p class="archive-summary" lang="en">What a well-placed error can tell you, and what an endless log usually cannot.</p><div class="archive-article-meta"><span>#Delivery</span><span>#Learning</span><span class="archive-language">EN</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-an-interface-worth-removing" data-written="2026-06-21" data-published="2026-07-02T08:00:00Z" data-updated="2026-10-17T08:00:00Z" data-language="en" data-tags="go design" data-category-pin="false" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">11 /</span><time datetime="2026-06-21" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">21 Jun 2026</span></time></div>
+          <div><h3 lang="en"><a class="sample-article-link" href="#sample-an-interface-worth-removing">An interface worth removing</a></h3><p class="archive-summary" lang="en">Following the cost of one abstraction through a small service.</p><div class="archive-article-meta"><span>#Go</span><span>#Design</span><span class="archive-language">EN</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        <li class="archive-article-row category-row" id="sample-a-long-technical-title" data-written="2025-11-09" data-published="2026-01-20T08:00:00Z" data-updated="2026-02-03T08:00:00Z" data-language="en" data-tags="architecture learning" data-category-pin="false" data-global-pin="false">
+          <div class="archive-article-date"><span class="row-number">12 /</span><time datetime="2025-11-09" title="Written date"><span class="archive-date-label">Written date: </span><span class="row-date">09 Nov 2025</span></time></div>
+          <div><h3 lang="en"><a class="sample-article-link" href="#sample-a-long-technical-title">UnderstandingConcurrentSystemsWithoutLosingTheThreadOrTheReaderAcrossScreenSizes</a></h3><p class="archive-summary" lang="en">A long-title sample for checking wrapping, narrow screens, and reading rhythm.</p><div class="archive-article-meta"><span>#Architecture</span><span>#Learning</span><span class="archive-language">EN</span></div></div>
+          <span class="archive-article-arrow" aria-hidden="true">↗</span>
+        </li>
+        </ol>
+        <div class="archive-state category-state" id="empty-state" hidden><p class="archive-eyebrow" id="empty-label">A different thread</p><h3 id="empty-title" tabindex="-1">No articles on this thread.</h3><p id="empty-copy">Try another word or clear a filter to explore more of Technology.</p><button class="archive-solid" id="empty-reset" type="button">Clear filters ↗</button></div>
+        <div class="archive-state category-state" id="error-state" hidden><p class="archive-eyebrow">A brief interruption</p><h3>The writing will be back.</h3><p>Technology’s articles are temporarily unavailable. Please try again shortly.</p><button class="archive-solid" id="retry" type="button">Try again ↗</button></div>
+        <nav class="pagination" id="category-pagination" aria-label="Category article pages" hidden><div class="pagination-controls" id="pagination-controls"></div></nav>
+        <div class="archive-collection-end"><p id="collection-end">You’ve reached the end of this category.</p><a href="#category-title">Back to the top ↑</a></div>
+      </section>
+      <footer class="archive-footer"><a class="site-brand" href="home-prototype.html">iSaber</a><nav aria-label="Footer"><a href="archive-prototype.html">All writing ↗</a><a href="about-prototype.html">About ↗</a></nav></footer>
+    </div>
+  </main>
+  <dialog class="category-sample" id="sample-preview" aria-labelledby="sample-title"><p class="archive-eyebrow">Sample article · Design review</p><h2 id="sample-title"></h2><p id="sample-summary"></p><p class="category-sample-note">This is a sample for reviewing the category page. In the finished site, the title opens the full reading page.</p><form method="dialog"><button class="archive-solid">Back to Technology</button></form></dialog>
+</body>
+</html>

@@ -8,9 +8,25 @@ import argparse
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 class PreviewHandler(SimpleHTTPRequestHandler):
+    # Fixed public assets only: prototypes reuse production styles without
+    # exposing the repository, configuration files, or application data.
+    project = Path(__file__).resolve().parents[2]
+    shared_assets = {
+        "/shared/globals.css": project / "frontend/app/globals.css",
+        "/shared/theme.css": project / "frontend/app/theme.css",
+        "/shared/archive.css": project / "frontend/app/archive/archive.css",
+        "/shared/pagination.css": project / "frontend/components/pagination.css",
+        "/shared/icon.png": project / "frontend/app/icon.png",
+    }
+
+    def translate_path(self, path):
+        asset = self.shared_assets.get(urlsplit(path).path)
+        return str(asset) if asset else super().translate_path(path)
+
     def send_head(self):
         # Ignore validators as well as disabling storage: existing browser
         # caches must receive the current files rather than a 304 response.

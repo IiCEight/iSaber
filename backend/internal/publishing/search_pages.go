@@ -15,7 +15,7 @@ func scanSearchResult(ctx context.Context, rows *sql.Rows, terms []searchTerm) (
 	var categoryJSON, tagsJSON []byte
 	var markdown string
 	var visibility string
-	if err := rows.Scan(&article.ID, &article.Slug, &article.Title, &article.Summary, &article.Language, &article.WrittenAt, &article.PublishedAt, &article.UpdatedAt, &categoryJSON, &tagsJSON, &markdown, &visibility, &article.Pinned); err != nil {
+	if err := rows.Scan(&article.ID, &article.Slug, &article.Title, &article.Summary, &article.Language, &article.WrittenAt, &article.PublishedAt, &article.UpdatedAt, &categoryJSON, &tagsJSON, &markdown, &visibility, &article.Pinned, &article.CategoryPinned); err != nil {
 		return searchResult{}, "", err
 	}
 	if ownerReading(ctx) {
@@ -133,7 +133,7 @@ func (s *Service) searchPublicNumbered(w http.ResponseWriter, r *http.Request, v
 const publishedSearchSQL = `SELECT a.id,a.slug,r.title,COALESCE(r.summary,''),r.language,to_char(r.written_at,'YYYY-MM-DD'),a.published_at,a.updated_at,
  CASE WHEN c.id IS NULL THEN 'null'::jsonb ELSE jsonb_build_object('id',c.id,'name',c.name,'slug',c.slug) END,
  COALESCE((SELECT jsonb_agg(jsonb_build_object('id',t.id,'name',t.name,'slug',t.slug) ORDER BY t.name,t.id)
- FROM tags t JOIN revision_tags rt ON rt.tag_id=t.id WHERE rt.revision_id=r.id),'[]'::jsonb),r.markdown,a.visibility,a.pinned
+ FROM tags t JOIN revision_tags rt ON rt.tag_id=t.id WHERE rt.revision_id=r.id),'[]'::jsonb),r.markdown,a.visibility,a.pinned,a.category_pinned
  FROM articles a JOIN revisions r ON r.id=a.published_revision_id LEFT JOIN categories c ON c.id=r.category_id
  WHERE ($1='' OR r.language=$1) AND ($2='' OR c.slug=$2)
  AND ($3='' OR EXISTS(SELECT 1 FROM revision_tags rt JOIN tags t ON t.id=rt.tag_id WHERE rt.revision_id=r.id AND t.slug=$3))`

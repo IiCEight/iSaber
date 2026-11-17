@@ -1,20 +1,21 @@
 import Link from "next/link";
 import PinBadge from "./pin-badge";
+import CategoryMasthead from "./category-masthead";
 import ArchiveFilters from "./archive-filters";
 import Pagination from "./pagination";
 import ArchiveSort from "./archive-sort";
 import { defaultArticleSort } from "../lib/article-sort";
-import type { Label, NumberedPage, ReadingArticleSummary } from "../lib/articles";
+import type { Category, Label, NumberedPage, ReadingArticleSummary } from "../lib/articles";
 
-export default function ArchiveView({ page, query, categories, tags, labelsUnavailable, error, searching, filtered, owner = false }: {
-  page: NumberedPage<ReadingArticleSummary> | null; query: string; categories: Label[]; tags: Label[];
+export default function ArchiveView({ page, query, categories, tags, labelsUnavailable, error, searching, filtered, owner = false, category, basePath = "/archive" }: {
+  category?: Category; basePath?: string; page: NumberedPage<ReadingArticleSummary> | null; query: string; categories: Label[]; tags: Label[];
   labelsUnavailable: boolean; error: string | null; searching: boolean; filtered: boolean; owner?: boolean;
 }) {
   const invalidQuery = error?.startsWith("Use ") || error?.startsWith("Check ");
   const offset = page ? (page.page - 1) * page.page_size : 0;
   const order = new URLSearchParams(query).get("sort") ?? defaultArticleSort;
-  return <div className="archive-page">
-    <section className="archive-masthead" aria-labelledby="archive-title">
+  return <div className={`archive-page${category ? " category-page" : ""}`}>
+    {category ? <CategoryMasthead category={category} /> : <section className="archive-masthead" aria-labelledby="archive-title">
       <div className="archive-masthead-copy"><p className="archive-eyebrow">01 / The collection</p><h1 id="archive-title">Archive.</h1><p>Notes, explorations, and things made along the way.</p></div>
       <div className="archive-lens-art" aria-hidden="true">
         {[0, 36, 72, 108, 144, 180, 216, 252, 288, 324].map(degrees => {
@@ -24,20 +25,20 @@ export default function ArchiveView({ page, query, categories, tags, labelsUnava
         <div className="archive-lens-label"><span>↘</span>Follow a thread</div>
       </div>
       <div className="archive-masthead-foot"><span>Personal notes &amp; technical writing</span><span>English &amp; <span lang="zh-CN">中文</span></span></div>
-    </section>
+    </section>}
     <section className="archive-index" aria-label="Article collection">
-      <ArchiveFilters query={query} categories={categories} tags={tags} labelsUnavailable={labelsUnavailable} />
-      <div className="archive-results-note"><p role="status">{page ? page.total === 0 ? "0 articles" : `${offset + 1}–${offset + page.items.length} of ${page.total} article${page.total === 1 ? "" : "s"}` : "Collection unavailable"}</p><ArchiveSort query={query} searching={searching} /></div>
-      {error ? <div className="archive-state"><p className="archive-eyebrow">{invalidQuery ? "A different thread" : "A brief interruption"}</p><h2>{invalidQuery ? "Check your search." : "The writing will be back."}</h2><p>{error}</p><a href={`/archive${query ? `?${query}` : ""}#archive-writing`}>Try again ↗</a><Link href="/archive#archive-writing">Clear conditions</Link></div>
-        : page?.items.length === 0 ? <div className="archive-state"><p className="archive-eyebrow">{searching || filtered ? "A different thread" : "The first chapter"}</p><h2>{searching || filtered ? "No articles on this thread." : "The first chapter is on its way."}</h2><p>{searching ? owner ? "No articles match this search." : "No public articles match this search." : filtered ? "No articles match these filters." : "There are no published articles yet. Come back for the first entry."}</p>{(searching || filtered) && <Link href="/archive#archive-writing">Clear all ↗</Link>}</div>
+      <ArchiveFilters category={category} basePath={basePath} query={query} categories={categories} tags={tags} labelsUnavailable={labelsUnavailable} />
+      <div className="archive-results-note"><p role="status">{page ? page.total === 0 ? "0 articles" : `${offset + 1}–${offset + page.items.length} of ${page.total} article${page.total === 1 ? "" : "s"}` : "Collection unavailable"}</p><ArchiveSort query={query} searching={searching} basePath={basePath} /></div>
+      {error ? <div className="archive-state"><p className="archive-eyebrow">{invalidQuery ? "A different thread" : "A brief interruption"}</p><h2>{invalidQuery ? "Check your search." : "The writing will be back."}</h2><p>{error}</p><a href={`${basePath}${query ? `?${query}` : ""}#archive-writing`}>Try again ↗</a><Link href={`${basePath}#archive-writing`}>Clear conditions</Link></div>
+        : page?.items.length === 0 ? <div className="archive-state"><p className="archive-eyebrow">{searching || filtered ? "A different thread" : "The first chapter"}</p><h2>{searching || filtered ? "No articles on this thread." : "The first chapter is on its way."}</h2><p>{searching ? owner ? "No articles match this search." : "No public articles match this search." : filtered ? "No articles match these filters." : "There are no published articles yet. Come back for the first entry."}</p>{(searching || filtered) && <Link href={`${basePath}#archive-writing`}>Clear all ↗</Link>}</div>
           : <ol className="archive-articles" start={offset + 1}>{page?.items.map((article, index) => <li className="archive-article-row" key={article.id}>
             <div className="archive-article-date"><span>{String(offset + index + 1).padStart(2, "0")} /</span><ArchiveArticleDate article={article} order={order} /></div>
             <div><h3 lang={article.language === "zh" ? "zh-CN" : "en"}><Link href={`/articles/${article.slug}`}>{article.title}</Link></h3>
               {article.summary && <p className="archive-summary" lang={article.language === "zh" ? "zh-CN" : "en"}>{article.summary}</p>}
-              <div className="archive-article-meta">{article.pinned && <PinBadge />}{article.visibility === "private" && <span className="private-writing-label">Private</span>}{article.category && <span className="archive-category">{article.category.name}</span>}{article.tags.map(tag => <span key={tag.id}>#{tag.name}</span>)}<span className="archive-language">{article.language === "zh" ? "中文" : "EN"}</span></div>
+              <div className="archive-article-meta">{category ? article.category_pinned && <span className="category-pin"><PinBadge label={`Pinned in ${category.name}`} /></span> : article.pinned && <PinBadge />}{article.visibility === "private" && <span className="private-writing-label">Private</span>}{!category && article.category && <Link className="archive-category" href={`/categories/${article.category.slug}`}>{article.category.name}</Link>}{article.tags.map(tag => <span key={tag.id}>#{tag.name}</span>)}<span className="archive-language">{article.language === "zh" ? "中文" : "EN"}</span></div>
             </div><span className="archive-article-arrow" aria-hidden="true">↗</span>
           </li>)}</ol>}
-      {page && !error && <Pagination current={page.page} total={page.total_pages} query={query} />}
+      {page && !error && <Pagination current={page.page} total={page.total_pages} query={query} basePath={basePath} />}
       <div className="archive-collection-end"><p>{page && page.items.length > 0 && page.page === page.total_pages ? "You’ve reached the end of this collection." : ""}</p><a href="#content">Back to the top ↑</a></div>
     </section>
     <footer className="archive-footer"><Link className="site-brand" href="/">iSaber</Link><nav aria-label="Footer"><Link href="/">Home ↗</Link><Link href="/about">About ↗</Link></nav></footer>

@@ -53,7 +53,7 @@ export async function getReadingLabels(kind: "categories" | "tags") {
   return [...found.values()];
 }
 
-export async function readingPage(query: string, searching: boolean) {
-  const response = await readingFetch(`articles${searching ? "/search" : ""}?${query}`);
+export async function readingPage(query: string, searching: boolean, category?: string) {
+  const response = await readingFetch(`${category ? `categories/${encodeURIComponent(category)}/articles` : `articles${searching ? "/search" : ""}`}?${query}`);
   return { status: response.status, page: response.ok ? await response.json() as Page<ReadingArticleSummary> : null };
 }
