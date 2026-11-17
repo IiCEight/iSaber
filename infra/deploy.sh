@@ -18,6 +18,9 @@ flock -n 9 || { printf 'Another deployment is running.\n' >&2; exit 1; }
 [[ -f .env && ! -L .env && -f compose.yml && -f Caddyfile ]]
 domain=$(sed -n 's/^BLOG_DOMAIN=//p' .env)
 bind=$(sed -n 's/^BLOG_BIND_ADDR=//p' .env)
+namespace=$(sed -n 's/^BLOG_IMAGE_NAMESPACE=//p' .env)
+namespace=${namespace:-iiiisaber}
+[[ "$namespace" =~ ^[a-z0-9][a-z0-9-]{0,38}$ ]]
 [[ "$domain" =~ ^[a-zA-Z0-9.-]+$ && "$domain" == *.* && "$bind" =~ ^[0-9.]+$ ]]
 
 # Docker/Compose errors can include configuration: retain them only on the host.
@@ -62,14 +65,17 @@ if [[ "$operation" == rollback ]]; then
   [[ -f previous.env && ! -L previous.env ]]
   cp previous.env .candidate.env
 else
-  printf 'FRONTEND_IMAGE=ghcr.nju.edu.cn/iiceight/isaber-frontend@%s\nBACKEND_IMAGE=ghcr.nju.edu.cn/iiceight/isaber-backend@%s\n' \
-    "$frontend" "$backend" > .candidate.env
+  printf 'FRONTEND_IMAGE=ghcr.nju.edu.cn/%s/isaber-frontend@%s\nBACKEND_IMAGE=ghcr.nju.edu.cn/%s/isaber-backend@%s\n' \
+    "$namespace" "$frontend" "$namespace" "$backend" > .candidate.env
 fi
 # Files used for rollback are generated here, not uploaded programs or shell input.
 mapfile -t refs < .candidate.env
 [[ ${#refs[@]} == 2 ]]
-[[ "${refs[0]}" =~ ^FRONTEND_IMAGE=ghcr\.nju\.edu\.cn/iiceight/isaber-frontend@sha256:[0-9a-f]{64}$ ]]
-[[ "${refs[1]}" =~ ^BACKEND_IMAGE=ghcr\.nju\.edu\.cn/iiceight/isaber-backend@sha256:[0-9a-f]{64}$ ]]
+# Preserve the pre-rename rollback target while restricting image repositories.
+frontend_pattern="^FRONTEND_IMAGE=ghcr\\.nju\\.edu\\.cn/($namespace|iiceight)/isaber-frontend@sha256:[0-9a-f]{64}$"
+backend_pattern="^BACKEND_IMAGE=ghcr\\.nju\\.edu\\.cn/($namespace|iiceight)/isaber-backend@sha256:[0-9a-f]{64}$"
+[[ "${refs[0]}" =~ $frontend_pattern ]]
+[[ "${refs[1]}" =~ $backend_pattern ]]
 printf 'Pulling tested application images (up to eight minutes).\n' >&3
 timeout --kill-after=10s 8m bash -c 'exec docker compose --project-name isaber --env-file .env --env-file .candidate.env --file compose.yml pull api frontend'
 if [[ -f release.env ]]; then
