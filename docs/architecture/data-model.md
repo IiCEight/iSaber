@@ -100,3 +100,11 @@ Transactions must protect publication pointers, dates, revision/asset membership
 The owner approved revision pointers, immediate visibility controls, public date semantics, asynchronous imports, incomplete drafts, version checks, retry semantics, owner sessions, and the no-store delivery policy.
 
 Physical database/storage selection, password-hashing parameters, session expiry, rate-limit thresholds, and code-generation tooling still require implementation decisions. Performance budgets remain open. This approval does not introduce migrations or approve a visual design.
+
+## Category pages and category pins
+
+Migration `00009_category_pages.sql` adds `categories.description_en` and `description_zh` (plain text, empty by default, maximum 2000 characters each). Category edits use the category version; description-only edits preserve article versions and all content dates.
+
+`articles.category_pinned` is independent of the existing global `pinned` flag. It applies to the current published category, including private publications visible only to the owner. The database requires publication and a category, clears category pins when the published category changes or the article is unpublished, and preserves them for same-category replacements. Pin-only controls change the article version and management timestamp without changing writing, publication, or update dates.
+
+Category article endpoints always use numbered pagination and a fixed category slug. Browse sorts category pins first, then the selected date within each group. Search retains existing all-term matching and date/relevance order without promoting either pin type. Public category metadata/counts require a public published association; private-only and unused categories return 404 to guests. The protected owner-reading endpoints additionally expose private publications and empty categories. All delivery remains uncached.

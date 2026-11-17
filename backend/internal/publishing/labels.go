@@ -17,7 +17,9 @@ import (
 
 type adminLabel struct {
 	Label
-	Version int64 `json:"version"`
+	Version       int64   `json:"version"`
+	DescriptionEN *string `json:"description_en,omitempty"`
+	DescriptionZH *string `json:"description_zh,omitempty"`
 }
 
 // Article mutations share this transaction lock before locking an article row.
@@ -58,11 +60,19 @@ func (s *Service) createLabel(ctx context.Context, kind string, fields map[strin
 	if err != nil {
 		return result, err
 	}
+	descriptions, err := categoryDescriptions(kind, fields)
+	if err != nil {
+		return result, err
+	}
 	var slug string
-	if len(fields) != 2 || json.Unmarshal(fields["slug"], &slug) != nil || len(slug) > 160 || !slugPattern.MatchString(slug) {
+	if len(fields) != 2+len(descriptions) || json.Unmarshal(fields["slug"], &slug) != nil || len(slug) > 160 || !slugPattern.MatchString(slug) {
 		return result, fault(422, "invalid_label")
 	}
-	err = s.db.QueryRowContext(ctx, `INSERT INTO `+labelTable(kind)+`(id,name,slug) VALUES($1,$2,$3) RETURNING id,name,slug,version`, uuid.NewString(), name, slug).Scan(&result.ID, &result.Name, &result.Slug, &result.Version)
+	if kind == "categories" {
+		err = s.db.QueryRowContext(ctx, `INSERT INTO categories(id,name,slug,description_en,description_zh) VALUES($1,$2,$3,$4,$5) RETURNING id,name,slug,version,description_en,description_zh`, uuid.NewString(), name, slug, descriptions["description_en"], descriptions["description_zh"]).Scan(&result.ID, &result.Name, &result.Slug, &result.Version, &result.DescriptionEN, &result.DescriptionZH)
+	} else {
+		err = s.db.QueryRowContext(ctx, `INSERT INTO `+labelTable(kind)+`(id,name,slug) VALUES($1,$2,$3) RETURNING id,name,slug,version`, uuid.NewString(), name, slug).Scan(&result.ID, &result.Name, &result.Slug, &result.Version)
+	}
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) && pg.Code == "23505" {
 		return result, fault(409, "slug_conflict")
@@ -75,8 +85,12 @@ func (s *Service) renameLabel(ctx context.Context, kind, id string, fields map[s
 	if err != nil {
 		return result, err
 	}
+	descriptions, err := categoryDescriptions(kind, fields)
+	if err != nil {
+		return result, err
+	}
 	version, err := expectedVersion(fields)
-	if err != nil || len(fields) != 2 {
+	if err != nil || len(fields) != 2+len(descriptions) {
 		return result, fault(422, "invalid_label")
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -96,6 +110,23 @@ func (s *Service) renameLabel(ctx context.Context, kind, id string, fields map[s
 	}
 	if result.Version != version {
 		return result, fault(409, "version_conflict")
+	}
+	if kind == "categories" {
+		if err := tx.QueryRowContext(ctx, `SELECT description_en,description_zh FROM categories WHERE id=$1`, id).Scan(&result.DescriptionEN, &result.DescriptionZH); err != nil {
+			return result, err
+		}
+		en, zh := *result.DescriptionEN, *result.DescriptionZH
+		if v, ok := descriptions["description_en"]; ok {
+			en = v
+		}
+		if v, ok := descriptions["description_zh"]; ok {
+			zh = v
+		}
+		if en != *result.DescriptionEN || zh != *result.DescriptionZH {
+			if err := tx.QueryRowContext(ctx, `UPDATE categories SET description_en=$2,description_zh=$3,version=version+1 WHERE id=$1 RETURNING version,description_en,description_zh`, id, en, zh).Scan(&result.Version, &result.DescriptionEN, &result.DescriptionZH); err != nil {
+				return result, err
+			}
+		}
 	}
 	if name == result.Name {
 		return result, tx.Commit()
@@ -146,6 +177,7 @@ func (s *Service) adminLabelRoutes(mux *http.ServeMux) {
 	}
 }
 func (s *Service) publicLabelRoutes(mux *http.ServeMux) {
+	s.categoryRoutes(mux, "/api/v1", nil)
 	for _, kind := range []string{"categories", "tags"} {
 		mux.HandleFunc("GET /api/v1/"+kind, func(w http.ResponseWriter, r *http.Request) { s.listLabels(w, r, kind, false) })
 	}
@@ -207,7 +239,11 @@ func (s *Service) listLabels(w http.ResponseWriter, r *http.Request, kind string
 	if kind == "tags" {
 		association = "EXISTS(SELECT 1 FROM revision_tags rt WHERE rt.revision_id=r.id AND rt.tag_id=l.id)"
 	}
-	rows, err := s.db.QueryContext(r.Context(), `SELECT l.id,l.name,l.slug,l.version FROM `+labelTable(kind)+` l
+	descriptionsSQL := "NULL::text,NULL::text"
+	if kind == "categories" {
+		descriptionsSQL = "l.description_en,l.description_zh"
+	}
+	rows, err := s.db.QueryContext(r.Context(), `SELECT l.id,l.name,l.slug,l.version,`+descriptionsSQL+` FROM `+labelTable(kind)+` l
  WHERE ($1 OR EXISTS(SELECT 1 FROM articles a JOIN revisions r ON r.id=a.published_revision_id WHERE (a.visibility='public' OR $5) AND `+association+`))
  AND ($2::text IS NULL OR (l.name COLLATE "C",l.id)>($2 COLLATE "C",$3::uuid)) ORDER BY l.name COLLATE "C",l.id LIMIT $4`, admin, name, id, limit+1, ownerReading(r.Context()))
 	if err != nil {
@@ -218,7 +254,7 @@ func (s *Service) listLabels(w http.ResponseWriter, r *http.Request, kind string
 	labels := []adminLabel{}
 	for rows.Next() {
 		var label adminLabel
-		if err := rows.Scan(&label.ID, &label.Name, &label.Slug, &label.Version); err != nil {
+		if err := rows.Scan(&label.ID, &label.Name, &label.Slug, &label.Version, &label.DescriptionEN, &label.DescriptionZH); err != nil {
 			reply(w, nil, err)
 			return
 		}

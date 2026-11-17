@@ -39,17 +39,18 @@ type Revision struct {
 }
 
 type ArticleSummary struct {
-	Pinned      bool       `json:"pinned"`
-	ID          string     `json:"id"`
-	Slug        *string    `json:"slug"`
-	Title       *string    `json:"title"`
-	Status      string     `json:"status"`
-	Visibility  string     `json:"visibility"`
-	HasDraft    bool       `json:"has_draft"`
-	Version     int64      `json:"version"`
-	PublishedAt *time.Time `json:"published_at"`
-	UpdatedAt   *time.Time `json:"updated_at"`
-	ModifiedAt  time.Time  `json:"modified_at"`
+	CategoryPinned bool       `json:"category_pinned"`
+	Pinned         bool       `json:"pinned"`
+	ID             string     `json:"id"`
+	Slug           *string    `json:"slug"`
+	Title          *string    `json:"title"`
+	Status         string     `json:"status"`
+	Visibility     string     `json:"visibility"`
+	HasDraft       bool       `json:"has_draft"`
+	Version        int64      `json:"version"`
+	PublishedAt    *time.Time `json:"published_at"`
+	UpdatedAt      *time.Time `json:"updated_at"`
+	ModifiedAt     time.Time  `json:"modified_at"`
 }
 
 type Article struct {

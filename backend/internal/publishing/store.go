@@ -69,9 +69,9 @@ func loadRevision(ctx context.Context, q queryer, id string) (*Revision, error) 
 func loadArticle(ctx context.Context, q queryer, id string) (*Article, error) {
 	a := &Article{Issues: []Issue{}}
 	var draft, published *string
-	err := q.QueryRowContext(ctx, `SELECT id,slug,visibility,comments_enabled,pinned,draft_revision_id,published_revision_id,
+	err := q.QueryRowContext(ctx, `SELECT id,slug,visibility,comments_enabled,pinned,category_pinned,draft_revision_id,published_revision_id,
         published_at,updated_at,version,modified_at FROM articles WHERE id=$1`, id).
-		Scan(&a.ID, &a.Slug, &a.Visibility, &a.CommentsEnabled, &a.Pinned, &draft, &published, &a.PublishedAt, &a.UpdatedAt, &a.Version, &a.ModifiedAt)
+		Scan(&a.ID, &a.Slug, &a.Visibility, &a.CommentsEnabled, &a.Pinned, &a.CategoryPinned, &draft, &published, &a.PublishedAt, &a.UpdatedAt, &a.Version, &a.ModifiedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fault(404, "not_found")
 	}

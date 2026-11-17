@@ -235,6 +235,13 @@ func (s *Service) Controls(ctx context.Context, id string, fields map[string]jso
 				return nil, fault(422, "invalid_visibility")
 			}
 			a.Visibility = value
+		case "category_pinned":
+			if string(raw) == "null" || json.Unmarshal(raw, &a.CategoryPinned) != nil {
+				return nil, fault(422, "invalid_controls")
+			}
+			if a.CategoryPinned && (a.Published == nil || a.Published.Category == nil) {
+				return nil, fault(422, "category_pin_requires_category")
+			}
 		case "pinned":
 			if string(raw) == "null" || json.Unmarshal(raw, &a.Pinned) != nil {
 				return nil, fault(422, "invalid_controls")
@@ -250,8 +257,8 @@ func (s *Service) Controls(ctx context.Context, id string, fields map[string]jso
 			return nil, fault(400, "unknown_field")
 		}
 	}
-	_, err = tx.ExecContext(ctx, `UPDATE articles SET visibility=$1,comments_enabled=$2,pinned=$3,version=version+1,modified_at=clock_timestamp(),
-        updated_at=CASE WHEN $4 AND published_revision_id IS NOT NULL THEN COALESCE((SELECT updated_at FROM revisions WHERE id=published_revision_id),clock_timestamp()) ELSE updated_at END WHERE id=$5`, a.Visibility, a.CommentsEnabled, a.Pinned, fields["visibility"] != nil || fields["comments_enabled"] != nil, id)
+	_, err = tx.ExecContext(ctx, `UPDATE articles SET visibility=$1,comments_enabled=$2,pinned=$3,category_pinned=$6,version=version+1,modified_at=clock_timestamp(),
+        updated_at=CASE WHEN $4 AND published_revision_id IS NOT NULL THEN COALESCE((SELECT updated_at FROM revisions WHERE id=published_revision_id),clock_timestamp()) ELSE updated_at END WHERE id=$5`, a.Visibility, a.CommentsEnabled, a.Pinned, fields["visibility"] != nil || fields["comments_enabled"] != nil, id, a.CategoryPinned)
 	if err != nil {
 		return nil, err
 	}

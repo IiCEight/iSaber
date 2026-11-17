@@ -272,7 +272,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateLabel'
+              $ref: '#/components/schemas/CreateCategory'
       description: Duplicate slug returns 409. Creating a label does not assign it to an article.
   /admin/categories/{label_id}:
     patch:
@@ -305,11 +305,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RenameLabel'
+              $ref: '#/components/schemas/UpdateCategory'
       description: Stable slug and associations; stale version returns 409. Update live metadata dates and article
-        versions for current draft/published associations transactionally. Draft-only renames leave live dates unchanged;
-        historical-only associations do not change current article versions/dates. An unchanged name with a matching
-        version is a no-op.
+        versions for current draft/published associations transactionally. Draft-only renames leave live dates
+        unchanged; historical-only associations do not change current article versions/dates. An unchanged name
+        with a matching version is a no-op. Descriptions accept English and Chinese plain text up to 2000 characters
+        each. Description-only changes update the category version without changing article versions or content
+        dates.
   /tags:
     get:
       operationId: listPublicTags
@@ -1169,6 +1171,150 @@ paths:
       description: Stale version returns 409. Removing is a logical moderation state, not physical deletion. Approved
         comments are public only while the article is public and published. Text is immutable; an unchanged status with
         a matching version is a no-op.
+  /categories/{slug}:
+    get:
+      operationId: getPublicCategory
+      summary: Read category descriptions and visible article count
+      tags:
+      - Public
+      security: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/slug'
+      description: Owner scope includes private published articles and empty categories. Public scope returns
+        404 unless the category has a current public published article; private-only counts and metadata are
+        never returned.
+  /categories/{slug}/articles:
+    get:
+      operationId: listPublicCategoryArticles
+      summary: Browse or search within one category
+      tags:
+      - Public
+      security: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticlePage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/slug'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/article_sort'
+      - $ref: '#/components/parameters/language'
+      - $ref: '#/components/parameters/tag'
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: .*\S.*
+        description: Optional all-term article search within this category.
+      description: Category is fixed by slug. Numbered pagination defaults to page 1. category and cursor query
+        parameters are rejected. Category pins come first within each date-sorted browse group; global pins do
+        not affect this page. With q, the existing all-term search and date/relevance order apply without boosting
+        any pins. Public scope excludes private articles and private-only category metadata.
+  /admin/reading/categories/{slug}:
+    get:
+      operationId: getOwnerCategory
+      summary: Read category descriptions and visible article count
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: private, no-store
+            X-Robots-Tag:
+              schema:
+                type: string
+              description: noindex, nofollow
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/slug'
+      description: Owner scope includes private published articles and empty categories. Public scope returns
+        404 unless the category has a current public published article; private-only counts and metadata are
+        never returned.
+  /admin/reading/categories/{slug}/articles:
+    get:
+      operationId: listOwnerCategoryArticles
+      summary: Browse or search within one category
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: private, no-store
+            X-Robots-Tag:
+              schema:
+                type: string
+              description: noindex, nofollow
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerReadingPage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/slug'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/article_sort'
+      - $ref: '#/components/parameters/language'
+      - $ref: '#/components/parameters/tag'
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: .*\S.*
+        description: Optional all-term article search within this category.
+      description: Category is fixed by slug. Numbered pagination defaults to page 1. category and cursor query
+        parameters are rejected. Category pins come first within each date-sorted browse group; global pins do
+        not affect this page. With q, the existing all-term search and date/relevance order apply without boosting
+        any pins. Public scope excludes private articles and private-only category metadata.
 components:
   securitySchemes:
     ownerSession:
@@ -1513,6 +1659,14 @@ components:
         version:
           type: integer
           minimum: 1
+        description_en:
+          type: string
+          maxLength: 2000
+          description: Categories only; omitted for tags.
+        description_zh:
+          type: string
+          maxLength: 2000
+          description: Categories only; omitted for tags.
       required:
       - id
       - name
@@ -1645,6 +1799,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Label'
+        category_pinned:
+          type: boolean
+          description: Independent pin within the published category. Cleared on unpublish or publishing into another
+            category; pin-only changes preserve content dates.
       required:
       - pinned
       - id
@@ -1706,6 +1864,10 @@ components:
           description: Normalized safe-to-render Markdown; raw HTML and unsafe links still require renderer sanitization.
         comments_enabled:
           type: boolean
+        category_pinned:
+          type: boolean
+          description: Independent pin within the published category. Cleared on unpublish or publishing into another
+            category; pin-only changes preserve content dates.
       required:
       - pinned
       - id
@@ -1873,6 +2035,10 @@ components:
         modified_at:
           type: string
           format: date-time
+        category_pinned:
+          type: boolean
+          description: Independent pin within the published category. Cleared on unpublish or publishing into another
+            category; pin-only changes preserve content dates.
       required:
       - pinned
       - id
@@ -1952,6 +2118,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Issue'
+        category_pinned:
+          type: boolean
+          description: Independent pin within the published category. Cleared on unpublish or publishing into another
+            category; pin-only changes preserve content dates.
       required:
       - pinned
       - id
@@ -2127,14 +2297,20 @@ components:
           - private
         pinned:
           type: boolean
-          description: Published articles only, public or private. Unpublishing clears the pin. Pin-only changes preserve all article content dates.
+          description: Published articles only, public or private. Unpublishing clears the pin. Pin-only changes
+            preserve all article content dates.
         comments_enabled:
           type: boolean
+        category_pinned:
+          type: boolean
+          description: Independent pin within the published category. Cleared on unpublish or publishing into another
+            category; pin-only changes preserve content dates.
       required:
       - expected_version
       additionalProperties: false
       minProperties: 2
-      description: Apply controls immediately without publishing a draft. Pinning uses expected_version; drafts reject pinned=true with 422 pin_requires_publication. Visibility changes preserve the pin.
+      description: Apply controls immediately without publishing a draft. Pinning uses expected_version; drafts
+        reject pinned=true with 422 pin_requires_publication. Visibility changes preserve the pin.
       examples:
       - expected_version: 2
         visibility: public
@@ -2415,6 +2591,10 @@ components:
           enum:
           - public
           - private
+        category_pinned:
+          type: boolean
+          description: Independent pin within the published category. Cleared on unpublish or publishing into another
+            category; pin-only changes preserve content dates.
       required:
       - pinned
       - id
@@ -2482,6 +2662,10 @@ components:
           enum:
           - public
           - private
+        category_pinned:
+          type: boolean
+          description: Independent pin within the published category. Cleared on unpublish or publishing into another
+            category; pin-only changes preserve content dates.
       required:
       - pinned
       - id
@@ -2639,3 +2823,82 @@ components:
       - items
       - next_cursor
       additionalProperties: false
+    CreateCategory:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: .*\S.*
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+        description_en:
+          type: string
+          maxLength: 2000
+        description_zh:
+          type: string
+          maxLength: 2000
+      required:
+      - name
+      - slug
+      additionalProperties: false
+    UpdateCategory:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: .*\S.*
+        description_en:
+          type: string
+          maxLength: 2000
+        description_zh:
+          type: string
+          maxLength: 2000
+      required:
+      - expected_version
+      - name
+      additionalProperties: false
+    Category:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: .*\S.*
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          description: Stable URL identifier; supply a romanized or English identifier for Chinese titles.
+        description_en:
+          type: string
+          maxLength: 2000
+        description_zh:
+          type: string
+          maxLength: 2000
+        total:
+          type: integer
+          minimum: 0
+      required:
+      - id
+      - name
+      - slug
+      - description_en
+      - description_zh
+      - total

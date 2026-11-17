@@ -460,6 +460,7 @@ func (s *Service) listAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 type publicArticleSummary struct {
+	CategoryPinned bool `json:"category_pinned"`
 	// Owner reader responses identify visibility; public responses omit it.
 	Visibility  string    `json:"visibility,omitempty"`
 	Pinned      bool      `json:"pinned"`
@@ -494,8 +495,8 @@ func readPublicArticle(ctx context.Context, q queryer, slug string) (publicArtic
 	var value publicArticle
 	var revisionID string
 	var visibility string
-	err := q.QueryRowContext(ctx, `SELECT id,slug,published_revision_id,published_at,updated_at,comments_enabled,visibility,pinned FROM articles
-        WHERE slug=$1 AND ($2 OR visibility='public') AND published_revision_id IS NOT NULL`, slug, ownerReading(ctx)).Scan(&value.ID, &value.Slug, &revisionID, &value.PublishedAt, &value.UpdatedAt, &value.CommentsEnabled, &visibility, &value.Pinned)
+	err := q.QueryRowContext(ctx, `SELECT id,slug,published_revision_id,published_at,updated_at,comments_enabled,visibility,pinned,category_pinned FROM articles
+        WHERE slug=$1 AND ($2 OR visibility='public') AND published_revision_id IS NOT NULL`, slug, ownerReading(ctx)).Scan(&value.ID, &value.Slug, &revisionID, &value.PublishedAt, &value.UpdatedAt, &value.CommentsEnabled, &visibility, &value.Pinned, &value.CategoryPinned)
 	if errors.Is(err, sql.ErrNoRows) {
 		return value, fault(404, "not_found")
 	}

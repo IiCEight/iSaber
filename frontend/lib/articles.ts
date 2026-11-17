@@ -1,6 +1,7 @@
 export type Issue = { severity: "warning" | "blocking"; code: string; path: string | null; message: string };
 export type Label = { id: string; name: string; slug: string };
-export type AdminLabel = Label & { version: number };
+export type Category = Label & { description_en: string; description_zh: string; total: number };
+export type AdminLabel = Label & { version: number; description_en?: string; description_zh?: string };
 export type Revision = {
   id: string; article_id: string; title: string | null; summary: string | null;
   language: "en" | "zh" | null; written_at: string | null; updated_at: string | null; category: Label | null;
@@ -10,6 +11,7 @@ export type Revision = {
 export type ArticleSummary = {
   // Older APIs omit this additive field; treat absence as unpinned.
   pinned?: boolean;
+  category_pinned?: boolean;
   id: string; slug: string | null; title: string | null; status: "draft" | "published";
   visibility: "public" | "private"; has_draft: boolean; version: number;
   published_at: string | null; updated_at: string | null; modified_at: string;
@@ -21,6 +23,7 @@ export type Article = ArticleSummary & {
 export type PublicArticle = {
   // Older APIs omit this additive field; treat absence as unpinned.
   pinned?: boolean;
+  category_pinned?: boolean;
   id: string; slug: string; title: string; summary: string; language: "en" | "zh";
   written_at: string; published_at: string; updated_at: string; category: Label | null;
   tags: Label[]; markdown: string; comments_enabled: boolean;

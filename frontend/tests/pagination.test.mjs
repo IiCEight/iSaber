@@ -30,3 +30,14 @@ test("page links retain applied conditions and never expose a cursor", () => {
   assert.equal(url.searchParams.get("page"), "3");
   assert.equal(url.searchParams.has("cursor"), false);
 });
+
+ test("category page links preserve scope and return to the article list", () => {
+ const href = pageHref("/categories/technology", "q=Go&tag=learning&sort=updated&page=2", 3);
+ const url = new URL(href, "https://example.test");
+ assert.equal(url.pathname, "/categories/technology");
+ assert.equal(url.hash, "#archive-writing");
+ assert.equal(url.searchParams.get("q"), "Go");
+ assert.equal(url.searchParams.get("tag"), "learning");
+ assert.equal(url.searchParams.get("sort"), "updated");
+ assert.equal(url.searchParams.get("page"), "3");
+ });

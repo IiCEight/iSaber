@@ -77,6 +77,8 @@
 .archive-article-date { font-size: 14px; color: var(--archive-muted); padding-top: 8px; }
 .archive-article-date > span { display: block; font-size: 12px; letter-spacing: .1em; color: var(--site-muted); margin-bottom: 30px; }
 .archive-article-row h3 { font-size: clamp(1.5rem,2.5vw,2.35rem); line-height: 1.15; font-weight: 500; letter-spacing: -.04em; margin: 0 0 14px; overflow-wrap: anywhere; }
+/* Category links sit above the article title's stretched click target. */
+.archive-article-meta a { position: relative; z-index: 1; }
 .archive-article-row h3 a { text-decoration: none; }
 .archive-article-row h3 a::after { content: ""; position: absolute; inset: 0; }
 .archive-article-row h3 a:focus-visible { outline: none; }

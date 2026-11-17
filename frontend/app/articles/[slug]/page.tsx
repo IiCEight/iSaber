@@ -39,7 +39,7 @@ export default async function ArticlePage({ params }: Props) {
       <div className="article-opening-art" aria-hidden="true"><span /><span /><span /><span /></div>
       <div className="article-opening-copy">
         <Link className="article-back" href="/archive">← All writing</Link>
-        <div className="article-labels">{article.pinned && <PinBadge />}{article.visibility === "private" && <span className="private-writing-label">Private · Only you</span>}{article.category && <Link href={{ pathname: "/archive", query: { category: article.category.slug } }}>{article.category.name}</Link>}<span>{article.language === "zh" ? "中文" : "English"}</span></div>
+        <div className="article-labels">{article.pinned && <PinBadge />}{article.visibility === "private" && <span className="private-writing-label">Private · Only you</span>}{article.category && <Link href={`/categories/${article.category.slug}`}>{article.category.name}</Link>}<span>{article.language === "zh" ? "中文" : "English"}</span></div>
         <h1>{article.title}</h1>
         {article.summary && <p className="article-standfirst">{article.summary}</p>}
         <div className="article-opening-byline"><span>iSaber</span>{article.tags.length > 0 && <nav aria-label="Article tags">{article.tags.map(tag => <Link key={tag.id} href={{ pathname: "/archive", query: { tag: tag.slug } }}>#{tag.name}</Link>)}</nav>}</div>
