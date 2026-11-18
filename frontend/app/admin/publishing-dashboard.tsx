@@ -8,6 +8,7 @@ import AdminPagination from "./admin-pagination";
 import ArticleMetadata from "./article-metadata";
 import LabelManager from "./label-manager";
 import CommentModeration from "./comment-moderation";
+import FriendManager from "./friend-manager";
 import { AdminBadge, AdminIcon, AdminNote, AdminTable, adminDate } from "./admin-ui";
 import { useAdminConfirmation } from "./admin-confirmation";
 import { articleOutline } from "../../lib/article-outline";
@@ -21,7 +22,11 @@ class APIError extends Error {
 const messages: Record<string, string> = {
   category_pin_requires_category: "Publish this article with a category before pinning it there.",
   pin_requires_publication: "Publish this article before pinning it.",
-  version_conflict: "This article, label, or comment changed. Reload it before saving again.",
+  version_conflict: "This item changed. Reload it before saving again.",
+  invalid_friend: "Enter a name (up to 80 characters) and introduction (up to 300 characters).",
+  invalid_friend_url: "Use HTTPS website and icon URLs without credentials.",
+  friend_directory_full: "The directory holds up to 200 entries.",
+  friend_request_reviewed: "This request has already been reviewed. Reload requests.",
   invalid_label_name: "Enter a nonblank label name of at most 120 characters.",
   invalid_label: "Check the label name and URL name, then try again.",
   slug_conflict: "That URL name is already used. Choose another one.",
@@ -36,7 +41,7 @@ const messages: Record<string, string> = {
   idempotency_conflict: "This request key belongs to a different operation. Reload before starting again.",
 };
 
-type View = "articles" | "import" | "editor" | "labels" | "comments";
+type View = "articles" | "import" | "editor" | "labels" | "comments" | "friends";
 export default function PublishingDashboard({ csrf, onExpired, username, signingOut, onSignOut, sessionMessage }: {
   csrf: string; onExpired: () => void; username: string; signingOut: boolean; onSignOut: () => Promise<void>; sessionMessage: string;
 }) {
@@ -44,6 +49,7 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
   const [view, setView] = useState<View>("articles");
   const [editorTab, setEditorTab] = useState<"metadata" | "preview" | "history">("metadata");
   const [dirty, setDirty] = useState(false);
+  const [friendsDirty, setFriendsDirty] = useState(false);
   const [ready, setReady] = useState(false);
   const [listError, setListError] = useState("");
   const [filterFields, setFilterFields] = useState({ q: "", status: "", visibility: "" });
@@ -52,11 +58,11 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => { setReady(true); }, []);
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty && !friendsDirty) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  }, [dirty, friendsDirty]);
   const [collection, setCollection] = useState<NumberedPage<ArticleSummary> | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -266,6 +272,7 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
   }
 
   async function discardChanges() {
+    if (friendsDirty && !await confirmAction("You have unsaved friend-link edits. Continue without saving them?", { title: "Leave unsaved changes?", action: "Continue", danger: true })) return false;
     if (!dirty) return true;
     if (!await confirmAction("The current metadata changes have not been saved. Discard them and continue?", { title: "Leave unsaved changes?", action: "Discard changes", danger: true })) return false;
     metadataForm.current?.reset(); setDirty(false); return true;
@@ -302,12 +309,12 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
     requestAnimationFrame(() => document.getElementById("admin-preview-content")?.focus());
   }
   const canPublish = !!article?.draft && article.publishable && preview?.id === article.draft.id && !dirty;
-  const viewName = { articles: "Articles", import: "Import article", editor: "Article details", labels: "Categories & tags", comments: "Comments" }[view];
+  const viewName = { articles: "Articles", import: "Import article", editor: "Article details", labels: "Categories & tags", comments: "Comments", friends: "Friends" }[view];
   return <div className="shell">
     <aside className="sidebar" aria-label="Workspace sidebar">
       <a className="brand" href="/" target="_blank" rel="noreferrer"><span className="brand-mark" aria-hidden="true">iS</span><span>iSaber<small>Content workspace</small></span></a>
       <p className="nav-heading">MANAGE</p>
-      <nav aria-label="Workspace">{([ ["articles", "Articles"], ["import", "Import article"], ["labels", "Categories & tags"], ["comments", "Comments"] ] as const).map(([key, name]) => <button key={key} type="button" disabled={locked} aria-current={view === key || (key === "articles" && view === "editor") ? "page" : undefined} onClick={() => { if (key === "import") setUploadTarget("new"); void navigate(key); }}><AdminIcon name={key} /><span>{name}</span></button>)}</nav>
+      <nav aria-label="Workspace">{([ ["articles", "Articles"], ["import", "Import article"], ["labels", "Categories & tags"], ["comments", "Comments"], ["friends", "Friends"] ] as const).map(([key, name]) => <button key={key} type="button" disabled={locked} aria-current={view === key || (key === "articles" && view === "editor") ? "page" : undefined} onClick={() => { if (key === "import") setUploadTarget("new"); void navigate(key); }}><AdminIcon name={key} /><span>{name}</span></button>)}</nav>
       <div className="sidebar-foot"><span className="avatar" aria-hidden="true">{username.slice(0, 1).toUpperCase()}</span><div><strong>{username}</strong><small>Owner workspace</small></div></div>
     </aside>
     <div className="workspace">
@@ -384,6 +391,7 @@ export default function PublishingDashboard({ csrf, onExpired, username, signing
           </aside></div>
         </div>}
         <div hidden={view !== "labels"}><div className="page-heading"><div><h1>Categories & tags</h1><p>Organize all your writing in one collection.</p></div></div><LabelManager labels={labels} busy={locked} request={request} run={run} onChanged={labelsChanged} refresh={loadLabels} /></div>
+        <div hidden={view !== "friends"}><div className="page-heading"><div><h1>Friends</h1><p>Review link requests and curate your directory.</p></div></div><FriendManager active={view === "friends"} busy={locked} request={request} run={run} onDirty={setFriendsDirty} /></div>
         <div hidden={view !== "comments"}><div className="page-heading"><div><h1>Comments</h1><p>Review reader submissions before they become public.</p></div></div><CommentModeration article={article} busy={locked} active={view === "comments"} request={request} run={run} onOpenArticle={openArticle} /></div>
       </section>
       <footer className="workspace-foot"><span>iSaber administration</span><span>Dates shown in China time</span></footer>

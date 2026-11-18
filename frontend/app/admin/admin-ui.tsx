@@ -4,6 +4,7 @@ const paths = {
   articles: "M4 4h16v16H4z M8 8h8 M8 12h8 M8 16h5",
   import: "M12 16V3 M7 8l5-5 5 5 M4 15v6h16v-6",
   labels: "M3 4h8l10 10-7 7L3 10z M7 8h.01",
+  friends: "M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M2 21v-2a6 6 0 0 1 12 0v2 M17 4a4 4 0 0 1 0 8 M18 15a5 5 0 0 1 4 5v1",
   comments: "M4 4h16v13H9l-5 4z M8 8h8 M8 12h5",
   info: "M12 8h.01 M12 11v6 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
   file: "M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6",

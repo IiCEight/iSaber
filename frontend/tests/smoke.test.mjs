@@ -13,6 +13,7 @@ const origin = "http://127.0.0.1:4317";
 
 test("production frontend handles unavailable and older backend capabilities", async (t) => {
   let listMode = "unavailable";
+  let friendMode = "unavailable";
   const publicRequests = [];
   let readerAuthenticated = true;
   const readerCookie = "isaber_dev_session=reader-fixture";
@@ -31,7 +32,10 @@ test("production frontend handles unavailable and older backend capabilities", a
   const olderAPI = createServer((request, response) => {
     const url = new URL(request.url, "http://fixture.invalid");
     publicRequests.push({ path: url.pathname, query: url.searchParams, cookie: request.headers.cookie });
-    if (url.pathname === "/api/v1/auth/session") {
+    if (url.pathname === "/api/v1/friends" && friendMode !== "unavailable") {
+      response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+      response.end(JSON.stringify({ items: friendMode === "empty" ? [] : [{ id: "friend-fixture", site_name: "Friends fixture 中文", site_url: "https://friend.example/", introduction: "A public corner of the web.", icon_url: "https://friend.example/icon.png" }] }));
+    } else if (url.pathname === "/api/v1/auth/session") {
       const authenticated = (request.headers.cookie === "fixture-owner=session" || (readerAuthenticated && request.headers.cookie === readerCookie));
       response.writeHead(authenticated ? 200 : 401, { "Content-Type": "application/json", "Cache-Control": "no-store" });
       response.end(JSON.stringify(authenticated ? { owner: { id: "owner-fixture", username: "private-owner-fixture" }, csrf_token: "private-csrf-fixture", expires_at: "2027-01-01T00:00:00Z" } : { code: "unauthorized" }));
@@ -93,6 +97,20 @@ test("production frontend handles unavailable and older backend capabilities", a
     await delay(100);
   }
   assert.ok(ready, `Frontend did not become ready:\n${logs}`);
+
+  await t.test("Friends distinguishes an outage, empty directory and published links without forwarding owner cookies", async () => {
+    const unavailable = await fetch(`${origin}/friends`);
+    assert.equal(unavailable.status, 200); assert.match(await unavailable.text(), /directory is temporarily unavailable/);
+    friendMode = "empty";
+    assert.match(await (await fetch(`${origin}/friends`)).text(), /Room for good company/);
+    friendMode = "published"; publicRequests.length = 0;
+    const response = await fetch(`${origin}/friends`, { headers: { Cookie: "fixture-owner=session" } });
+    const html = await response.text();
+    assert.match(html, /Friends fixture 中文/); assert.match(html, /https:\/\/friend.example\//); assert.match(html, /Profile icon URL/);
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/);
+    assert.ok(publicRequests.filter(request => request.path === "/api/v1/friends").every(request => request.cookie === undefined));
+    friendMode = "unavailable";
+  });
 
   await t.test("new and invalid theme preferences render light HTML regardless of the system color hint", async () => {
     for (const cookie of ["", "isaber_theme=unknown"]) {

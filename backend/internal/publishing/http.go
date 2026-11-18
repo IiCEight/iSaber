@@ -27,6 +27,7 @@ func (s *Service) AdminHandler() http.Handler {
 	s.historyRoutes(mux)
 	s.adminLabelRoutes(mux)
 	s.adminCommentRoutes(mux)
+	s.adminFriendRoutes(mux)
 	s.readingRoutes(mux)
 	mux.HandleFunc("GET /api/v1/admin/articles", s.listAdmin)
 	mux.HandleFunc("GET /api/v1/admin/articles/{article_id}", func(w http.ResponseWriter, r *http.Request) {
@@ -132,6 +133,7 @@ func (s *Service) PublicHandler(assetHandlers ...http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	s.publicLabelRoutes(mux)
 	s.publicCommentRoutes(mux)
+	s.publicFriendRoutes(mux)
 	assetHandler := s.AssetHandler()
 	if len(assetHandlers) > 0 {
 		assetHandler = assetHandlers[0]
