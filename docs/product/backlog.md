@@ -157,3 +157,14 @@ See [deployment](../operations/deployment.md), [mirror evidence](../operations/g
 - [x] Merge Vivid Home integration (#22) and continuous scroll/lens interactions (#23).
 - [ ] Review the live integrated site with representative English/Chinese articles, mobile layouts, keyboard navigation and reduced motion.
 - [ ] Refine final owner copy/fonts and separately design Archive, Article, and About.
+
+## Friends (Feature 6) — local integration, November 18, 2026
+
+- [x] Preserve the owner-approved Friends design and latest local edits in the React page.
+- [x] Add published directory entries, owner draft/edit/publish/hide/order controls, and private moderated link requests.
+- [x] Add optional HTTPS icon URLs with initials fallback and private optional reply email.
+- [x] Add migration 10, API contract, privacy/concurrency/retry coverage, and browser flow verification.
+- [x] Owner acceptance of the integrated page and authorization to commit, push and deploy.
+- [ ] Production migration and release acceptance.
+
+See [Friends operations](../operations/friends.md). Statistics remains deferred; the GitHub navigation icon (Feature 7) is separate.

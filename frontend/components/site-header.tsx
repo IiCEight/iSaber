@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { ThemeToggle } from "./theme-provider";
 
-const links = [{ href: "/archive", label: "Archive" }, { href: "/about", label: "About" }, { href: "/archive#archive-search-panel", label: "Search" }];
+const links = [{ href: "/archive", label: "Archive" }, { href: "/friends", label: "Friends" }, { href: "/about", label: "About" }, { href: "/archive#archive-search-panel", label: "Search" }];
 
 export default function SiteHeader() {
   const pathname = usePathname();

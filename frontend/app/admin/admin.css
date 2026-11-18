@@ -186,3 +186,5 @@
 
 .admin-category-fields { display: grid; gap: 14px; padding: 18px 0; }
 .admin-category-fields label { display: grid; gap: 6px; }
+
+[data-admin-ui] .admin-friend-editor + .admin-friend-editor { border-top: 1px solid var(--admin-line, #dedde5); }

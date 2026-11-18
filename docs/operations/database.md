@@ -1,6 +1,6 @@
 # Database setup and migrations
 
-Status: PostgreSQL and migrations are deployed on Tencent in the isolated blog Compose project. Schema version 8, separate runtime/operator roles and private persistent storage are verified. Migration 00008 was applied on November 16, 2026 before the global-pinning application release, with existing data fingerprints and application health preserved. A persistent local PostgreSQL development database was initialized to schema 8 the same day and upgraded to schema 9 on November 17, 2026. Tencent remains at schema 8 for this feature. Migration 00007 was applied on November 15, 2026 before the remembered-login application release; existing content, owner data, and session credential/expiry fingerprints were unchanged, and the preceding application remained healthy. Migration 00006 was applied on November 14, 2026 before the last updated time application release; article, revision, owner, and asset fingerprints were unchanged and the existing application remained healthy. See [deployment](deployment.md) for the accepted installation; the commands below cover local development and deliberate migration operations.
+Status: Local development is at schema 10 after the additive Friends migration on November 18, 2026. A private local backup preceded the upgrade. Friends has not been deployed. Tencent was upgraded to schema 9 for Category pages on November 17, 2026; its owner, content, assets and existing application remained intact. The production runtime/operator roles and private persistent storage are separate. See [Friends operations](friends.md) for migration 10 release requirements and [deployment](deployment.md) for the accepted Tencent setup. The commands below cover local development and deliberate migration operations.
 
 ## Local development
 
@@ -17,7 +17,7 @@ The current Linux workspace uses the already-installed Podman runtime instead of
 - Container: `isaber-dev-postgres`, PostgreSQL 16.
 - Named volume: `isaber-dev-postgres-data`, mounted at `/var/lib/postgresql/data`.
 - Address and credentials: the loopback-only `127.0.0.1:5432` connection in `backend/.env.example`.
-- State: schema 9 as of November 17, 2026; currently no local owner, articles, or categories. No production data has been copied.
+- State: schema 10 as of November 18, 2026; currently no local owner, articles, or categories. No production data has been copied.
 
 Reuse it with `podman start isaber-dev-postgres`; stop it while retaining data with `podman stop isaber-dev-postgres`. The Compose setup above is an alternative installation using the same port. Local initialization does not copy the production account or articles.
 

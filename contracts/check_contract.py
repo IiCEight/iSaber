@@ -92,6 +92,11 @@ for name, schema in spec["components"]["schemas"].items():
         validator(name).validate(example)
 
 invalid = [
+    ("SubmitFriendRequest", {"site_name": "x", "site_url": "http://friend.example", "introduction": "Hello"}),
+    ("SubmitFriendRequest", {"site_name": "x", "site_url": "https://friend.example", "introduction": "Hello", "icon_url": None}),
+    ("SubmitFriendRequest", {"site_name": "x", "site_url": "https://friend.example", "introduction": "Hello", "published": True}),
+    ("UpdateFriend", {"expected_version": 1, "published": None}),
+    ("ReviewFriendRequest", {"expected_version": 1, "status": "pending"}),
     ("ArticleControls", {"expected_version": 1, "category_pinned": None}),
     ("UpdateCategory", {"expected_version": 1, "name": "Technology", "description_en": "x" * 2001}),
     ("ArticleControls", {"expected_version": 1, "pinned": None}),

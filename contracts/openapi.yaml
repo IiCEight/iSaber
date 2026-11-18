@@ -1315,6 +1315,238 @@ paths:
         parameters are rejected. Category pins come first within each date-sorted browse group; global pins do
         not affect this page. With q, the existing all-term search and date/relevance order apply without boosting
         any pins. Public scope excludes private articles and private-only category metadata.
+  /friends:
+    get:
+      operationId: listFriends
+      summary: List published friend links in owner-selected order
+      tags:
+      - Public
+      security: []
+      responses:
+        '200':
+          description: Success; no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendDirectory'
+        default:
+          $ref: '#/components/responses/Problem'
+      description: Published entries only, including for signed-in owners. No private
+        request, email, ordering, or version fields are returned. No server-side avatar
+        fetch.
+  /friend-requests:
+    post:
+      operationId: submitFriendRequest
+      summary: Submit a private friend-link request
+      tags:
+      - Public
+      security: []
+      responses:
+        '202':
+          description: Success; no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRequestAccepted'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/Origin'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitFriendRequest'
+      description: 'Same-origin JSON. Required UUID retry key is retained for 24 hours.
+        Pending requests and reply email stay owner-only; no email is sent. Global limit:
+        five accepted requests per minute, 1000 pending requests, two simultaneous body/database
+        operations. Quota rejections return Retry-After. Image URLs are stored, never
+        fetched by the server.'
+  /admin/friends:
+    get:
+      operationId: listAdminFriends
+      summary: List all published and hidden directory entries
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success; no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminFriendDirectory'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      operationId: createFriend
+      summary: Create a hidden friend-link draft
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '201':
+          description: Success; no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminFriend'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/Origin'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFriend'
+      description: Creates a hidden draft. Directory capacity is 200 entries.
+  /admin/friends/{friend_id}:
+    patch:
+      operationId: updateFriend
+      summary: Edit, publish or hide a friend link
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success; no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminFriend'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - name: friend_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFriend'
+      description: Requires the current version. Publication is a separate explicit
+        owner action. Hiding retains the entry.
+  /admin/friends/order:
+    put:
+      operationId: reorderFriends
+      summary: Reorder the complete directory atomically
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success; no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendsReordered'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FriendOrder'
+      description: Supply every current directory ID exactly once, including hidden
+        entries, with its expected version. A missing/duplicate/stale entry returns
+        409 and rolls back all changes. Success increments all entry versions.
+  /admin/friend-requests:
+    get:
+      operationId: listFriendRequests
+      summary: Review private friend-link requests
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+      responses:
+        '200':
+          description: Success; no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRequestPage'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+      description: Owner-only reply emails and request metadata. Newest first; unknown
+        or repeated parameters are rejected.
+  /admin/friend-requests/{request_id}:
+    patch:
+      operationId: reviewFriendRequest
+      summary: Approve a request as a hidden draft, or reject it
+      tags:
+      - Administration
+      security:
+      - ownerSession: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Success; no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRequest'
+        default:
+          $ref: '#/components/responses/Problem'
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewFriendRequest'
+      description: Only pending requests may be reviewed. Approval atomically creates
+        one hidden directory draft and records its ID. It never publishes or sends an
+        email. Current version is required; repeated or stale reviews return 409.
 components:
   securitySchemes:
     ownerSession:
@@ -1547,6 +1779,371 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    Friend:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        site_name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+        site_url:
+          type: string
+          format: uri
+          pattern: ^https://
+          maxLength: 2048
+        introduction:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: \S
+        icon_url:
+          type: string
+          maxLength: 2048
+          anyOf:
+          - const: ''
+          - format: uri
+            pattern: ^https://
+      required:
+      - id
+      - site_name
+      - site_url
+      - introduction
+      - icon_url
+      additionalProperties: false
+    AdminFriend:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        site_name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+        site_url:
+          type: string
+          format: uri
+          pattern: ^https://
+          maxLength: 2048
+        introduction:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: \S
+        icon_url:
+          type: string
+          maxLength: 2048
+          anyOf:
+          - const: ''
+          - format: uri
+            pattern: ^https://
+        published:
+          type: boolean
+        position:
+          type: integer
+          minimum: 0
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - site_name
+      - site_url
+      - introduction
+      - icon_url
+      - published
+      - position
+      - version
+      - created_at
+      - updated_at
+      additionalProperties: false
+    CreateFriend:
+      type: object
+      properties:
+        site_name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+        site_url:
+          type: string
+          format: uri
+          pattern: ^https://
+          maxLength: 2048
+        introduction:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: \S
+        icon_url:
+          type: string
+          maxLength: 2048
+          anyOf:
+          - const: ''
+          - format: uri
+            pattern: ^https://
+      required:
+      - site_name
+      - site_url
+      - introduction
+      additionalProperties: false
+    UpdateFriend:
+      type: object
+      properties:
+        site_name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+        site_url:
+          type: string
+          format: uri
+          pattern: ^https://
+          maxLength: 2048
+        introduction:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: \S
+        icon_url:
+          type: string
+          maxLength: 2048
+          anyOf:
+          - const: ''
+          - format: uri
+            pattern: ^https://
+        expected_version:
+          type: integer
+          minimum: 1
+        published:
+          type: boolean
+      required:
+      - expected_version
+      additionalProperties: false
+      minProperties: 2
+    SubmitFriendRequest:
+      type: object
+      properties:
+        site_name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+        site_url:
+          type: string
+          format: uri
+          pattern: ^https://
+          maxLength: 2048
+        introduction:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: \S
+        icon_url:
+          type: string
+          maxLength: 2048
+          anyOf:
+          - const: ''
+          - format: uri
+            pattern: ^https://
+        email:
+          type: string
+          maxLength: 254
+          anyOf:
+          - const: ''
+          - format: email
+      required:
+      - site_name
+      - site_url
+      - introduction
+      additionalProperties: false
+    FriendRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        site_name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+        site_url:
+          type: string
+          format: uri
+          pattern: ^https://
+          maxLength: 2048
+        introduction:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: \S
+        icon_url:
+          type: string
+          maxLength: 2048
+          anyOf:
+          - const: ''
+          - format: uri
+            pattern: ^https://
+        email:
+          type: string
+          maxLength: 254
+          anyOf:
+          - const: ''
+          - format: email
+        status:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+        friend_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        moderated_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      required:
+      - id
+      - site_name
+      - site_url
+      - introduction
+      - icon_url
+      - email
+      - status
+      - friend_id
+      - version
+      - created_at
+      - moderated_at
+      additionalProperties: false
+    ReviewFriendRequest:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - approved
+          - rejected
+      required:
+      - expected_version
+      - status
+      additionalProperties: false
+    FriendOrder:
+      type: object
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              expected_version:
+                type: integer
+                minimum: 1
+            required:
+            - id
+            - expected_version
+            additionalProperties: false
+      required:
+      - items
+      additionalProperties: false
+    FriendDirectory:
+      type: object
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/Friend'
+      required:
+      - items
+      additionalProperties: false
+    AdminFriendDirectory:
+      type: object
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/AdminFriend'
+      required:
+      - items
+      additionalProperties: false
+    FriendRequestPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FriendRequest'
+        page:
+          type: integer
+          minimum: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+        total_pages:
+          type: integer
+          minimum: 1
+        next_cursor:
+          type: 'null'
+      required:
+      - items
+      - page
+      - page_size
+      - total
+      - total_pages
+      - next_cursor
+      additionalProperties: false
+    FriendRequestAccepted:
+      type: object
+      properties:
+        status:
+          type: string
+          const: pending
+      required:
+      - status
+      additionalProperties: false
+    FriendsReordered:
+      type: object
+      properties:
+        status:
+          type: string
+          const: reordered
+      required:
+      - status
+      additionalProperties: false
     Problem:
       type: object
       properties:

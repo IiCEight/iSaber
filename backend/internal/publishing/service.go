@@ -18,6 +18,7 @@ type Service struct {
 	root          *os.Root
 	searchSlots   chan struct{}
 	commentSlots  chan struct{}
+	friendSlots   chan struct{}
 	commentOrigin string
 }
 
@@ -42,7 +43,7 @@ func NewService(db *sql.DB, directory string, options ...ServiceOption) (*Servic
 	if err != nil {
 		return nil, errors.New("cannot open private upload directory")
 	}
-	service := &Service{db: db, root: root, searchSlots: make(chan struct{}, 2), commentSlots: make(chan struct{}, 2)}
+	service := &Service{db: db, root: root, searchSlots: make(chan struct{}, 2), commentSlots: make(chan struct{}, 2), friendSlots: make(chan struct{}, 2)}
 	for _, option := range options {
 		option(service)
 	}
