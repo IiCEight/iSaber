@@ -16,7 +16,7 @@ Website names allow 80 characters, introductions 300 characters, and URLs 2048 c
 
 ## API and persistence
 
-Migration `00010_friends.sql` adds `friends` and `friend_requests`. It does not change articles, categories, owner credentials, or existing sessions. The API minimum schema version is 10. Local schema 10 was applied after a private local backup; production migration and release remain separate work.
+Migration `00010_friends.sql` adds `friends` and `friend_requests`. It does not change articles, categories, owner credentials, or existing sessions. The API minimum schema version is 10. Local schema 10 was applied after a private local backup. Production advanced to schema 10 on November 18 with existing data fingerprints preserved and runtime permissions verified. The application rollout completed on November 21 after the HTTPS certificate was replaced; main run [44340486486](https://github.com/iiiiSaber/iSaber/actions/runs/44340486486) passed its deployment health check. The public Friends page and directory API returned HTTPS 200 from the origin and a second network. Verification also found the frontend image omitted its `public` directory; the packaging correction explicitly includes that directory and checks the profile JPEG in container acceptance.
 
 Public `GET /api/v1/friends` returns only published entries and their public display fields. This rule also applies when an owner is signed in. Public `POST /api/v1/friend-requests` accepts same-origin JSON with a UUID Idempotency-Key. Replaying the same key and normalized payload returns the original acceptance for 24 hours; changed payloads conflict. Only committed submissions consume the key. The request acknowledgment returns `pending`, with no email or request data.
 
