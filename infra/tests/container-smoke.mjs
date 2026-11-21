@@ -15,6 +15,12 @@ assert.match(home, /The first chapter is on its way/);
 assert.match(await (await check("/archive", 200)).text(), /<h1 id="archive-title">Archive\.<\/h1>/);
 assert.match(await (await check("/search", 200)).text(), /Enter a word or phrase/);
 await check("/about", 200);
+assert.match(await (await check("/friends", 200)).text(), /Good/);
+assert.deepEqual(await (await check("/api/v1/friends", 200)).json(), { items: [] });
+const profile = await fetch("http://127.0.0.1:3000/isaber-profile.jpg", { signal: AbortSignal.timeout(10000) });
+assert.equal(profile.status, 200, "Friends profile image must be included in the production image");
+assert.match(profile.headers.get("content-type") ?? "", /^image\/jpeg\b/);
+assert.deepEqual([...new Uint8Array(await profile.arrayBuffer()).slice(0, 3)], [0xff, 0xd8, 0xff]);
 const staticPaths = [...home.matchAll(/(?:src|href)="([^"?]+\.(?:js|css))(?:\?[^"]*)?"/g)].map(match => match[1]);
 assert.ok(staticPaths.length > 0, "SSR must reference static assets");
 for (const path of staticPaths) {
